@@ -13,6 +13,7 @@ import { DropdownQuestion } from './question-types/DropdownQuestion';
 import { LinearScaleQuestion } from './question-types/LinearScaleQuestion';
 import { DateQuestion } from './question-types/DateQuestion';
 import { FileUploadQuestion } from './question-types/FileUploadQuestion';
+import { ConditionsEditor } from './ConditionsEditor';
 
 interface QuestionCardProps {
   question: Question;
@@ -83,6 +84,7 @@ export function QuestionCard({ question }: QuestionCardProps) {
               <Trash2 className="h-4 w-4 text-red-500" />
             </Button>
           </div>
+          <ConditionsEditor question={question} />
         </div>
       </div>
     </div>
