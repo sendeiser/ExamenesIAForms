@@ -10,15 +10,18 @@ import { QuestionCard } from './QuestionCard';
 
 export function SectionsManager() {
   const sections = useEditorStore((s) => s.sections);
-  const unassignedQuestions = useEditorStore((s) => s.questions.filter((q) => !q.sectionId));
+  const allQuestions = useEditorStore((s) => s.questions);
+  const reorderQuestions = useEditorStore((s) => s.reorderQuestions);
   const reorderSections = useEditorStore((s) => s.reorderSections);
+
+  const unassignedQuestions = allQuestions.filter((q) => !q.sectionId);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  function handleDragEnd(event: DragEndEvent) {
+  function handleSectionDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     const oldIndex = sections.findIndex((s) => s.id === active.id);
@@ -28,6 +31,20 @@ export function SectionsManager() {
     reorderSections(reordered.map((s, i) => ({ ...s, order: i })));
   }
 
+  function handleUnassignedDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = unassignedQuestions.findIndex((q) => q.id === active.id);
+    const newIndex = unassignedQuestions.findIndex((q) => q.id === over.id);
+    const reordered = [...unassignedQuestions];
+    reordered.splice(newIndex, 0, reordered.splice(oldIndex, 1)[0]);
+    const updatedAll = allQuestions.map((q) => {
+      const found = reordered.find((r) => r.id === q.id);
+      return found ? { ...found, order: reordered.indexOf(found) } : q;
+    });
+    reorderQuestions(updatedAll);
+  }
+
   const allSectionIds = sections.map((s) => s.id);
 
   return (
@@ -35,13 +52,17 @@ export function SectionsManager() {
       {unassignedQuestions.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wide">Sin sección</h3>
-          {unassignedQuestions.map((q) => (
-            <QuestionCard key={q.id} question={q} />
-          ))}
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleUnassignedDragEnd}>
+            <SortableContext items={unassignedQuestions.map((q) => q.id)} strategy={verticalListSortingStrategy}>
+              {unassignedQuestions.map((q) => (
+                <QuestionCard key={q.id} question={q} />
+              ))}
+            </SortableContext>
+          </DndContext>
         </div>
       )}
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleSectionDragEnd}>
         <SortableContext items={allSectionIds} strategy={verticalListSortingStrategy}>
           {sections.map((section) => (
             <SectionCard key={section.id} section={section} />

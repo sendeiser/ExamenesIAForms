@@ -27,6 +27,11 @@ export interface QuestionSettings {
   maxSize?: number;
 }
 
+export interface QuizQuestionSettings {
+  correctAnswer: string | string[] | null;
+  points: number;
+}
+
 export interface Question {
   id: string;
   formId: string;
@@ -39,6 +44,7 @@ export interface Question {
   settings: QuestionSettings;
   conditions: QuestionCondition | null;
   sectionId: string | null;
+  quizSettings?: QuizQuestionSettings;
 }
 
 export interface Section {

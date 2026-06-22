@@ -14,6 +14,7 @@ import { LinearScaleQuestion } from './question-types/LinearScaleQuestion';
 import { DateQuestion } from './question-types/DateQuestion';
 import { FileUploadQuestion } from './question-types/FileUploadQuestion';
 import { ConditionsEditor } from './ConditionsEditor';
+import { QuizSettings } from './QuizSettings';
 
 interface QuestionCardProps {
   question: Question;
@@ -39,6 +40,7 @@ function QuestionTypeComponent({ question }: { question: Question }) {
 
 export function QuestionCard({ question }: QuestionCardProps) {
   const { updateQuestion, removeQuestion } = useEditorStore();
+  const form = useEditorStore((s) => s.form);
   const sections = useEditorStore((s) => s.sections);
   const moveQuestionToSection = useEditorStore((s) => s.moveQuestionToSection);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: question.id });
@@ -85,6 +87,9 @@ export function QuestionCard({ question }: QuestionCardProps) {
             </Button>
           </div>
           <ConditionsEditor question={question} />
+          {form?.settings?.isQuiz && (
+            <QuizSettings question={question} updateQuestion={updateQuestion} />
+          )}
         </div>
       </div>
     </div>

@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { useEditorStore } from '../../store/editorStore';
 import { Button } from '../ui/Button';
-import { Type, AlignLeft, List, CheckSquare, ChevronDown, Minus, Calendar, Clock, Upload, Layers } from 'lucide-react';
+import { Type, AlignLeft, List, CheckSquare, ChevronDown, Minus, Calendar, Clock, Upload, Layers, Sparkles } from 'lucide-react';
+import { AiGenerateModal } from './AiGenerateModal';
 
 const questionTypes = [
   { type: 'text' as const, icon: Type, label: 'Texto' },
@@ -15,21 +17,29 @@ const questionTypes = [
 ];
 
 export function QuestionToolbar() {
+  const [aiOpen, setAiOpen] = useState(false);
   const addQuestion = useEditorStore((s) => s.addQuestion);
   const addSection = useEditorStore((s) => s.addSection);
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {questionTypes.map(({ type, icon: Icon, label }) => (
-        <Button key={type} variant="secondary" onClick={() => addQuestion(type)}>
-          <Icon className="h-4 w-4" />
-          {label}
+    <>
+      <div className="flex flex-wrap gap-2">
+        {questionTypes.map(({ type, icon: Icon, label }) => (
+          <Button key={type} variant="secondary" onClick={() => addQuestion(type)}>
+            <Icon className="h-4 w-4" />
+            {label}
+          </Button>
+        ))}
+        <Button variant="secondary" onClick={() => addSection()}>
+          <Layers className="h-4 w-4" />
+          Sección
         </Button>
-      ))}
-      <Button variant="secondary" onClick={() => addSection()}>
-        <Layers className="h-4 w-4" />
-        Sección
-      </Button>
-    </div>
+        <Button variant="secondary" onClick={() => setAiOpen(true)}>
+          <Sparkles className="h-4 w-4" />
+          IA
+        </Button>
+      </div>
+      <AiGenerateModal open={aiOpen} onClose={() => setAiOpen(false)} />
+    </>
   );
 }
