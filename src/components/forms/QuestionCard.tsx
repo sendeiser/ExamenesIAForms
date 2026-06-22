@@ -38,6 +38,8 @@ function QuestionTypeComponent({ question }: { question: Question }) {
 
 export function QuestionCard({ question }: QuestionCardProps) {
   const { updateQuestion, removeQuestion } = useEditorStore();
+  const sections = useEditorStore((s) => s.sections);
+  const moveQuestionToSection = useEditorStore((s) => s.moveQuestionToSection);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: question.id });
 
   const style = {
@@ -67,6 +69,16 @@ export function QuestionCard({ question }: QuestionCardProps) {
               onChange={(checked) => updateQuestion(question.id, { required: checked })}
             />
             <div className="flex-1" />
+            <select
+              value={question.sectionId ?? ''}
+              onChange={(e) => moveQuestionToSection(question.id, e.target.value || null)}
+              className="text-xs border rounded px-2 py-1 bg-white"
+            >
+              <option value="">Sin sección</option>
+              {sections.map((s) => (
+                <option key={s.id} value={s.id}>{s.title}</option>
+              ))}
+            </select>
             <Button variant="ghost" onClick={() => removeQuestion(question.id)}>
               <Trash2 className="h-4 w-4 text-red-500" />
             </Button>

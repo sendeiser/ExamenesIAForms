@@ -1,6 +1,6 @@
 import { useEditorStore } from '../../store/editorStore';
 import { Button } from '../ui/Button';
-import { Type, AlignLeft, List, CheckSquare, ChevronDown, Minus, Calendar, Clock, Upload } from 'lucide-react';
+import { Type, AlignLeft, List, CheckSquare, ChevronDown, Minus, Calendar, Clock, Upload, Layers } from 'lucide-react';
 
 const questionTypes = [
   { type: 'text' as const, icon: Type, label: 'Texto' },
@@ -16,6 +16,7 @@ const questionTypes = [
 
 export function QuestionToolbar() {
   const addQuestion = useEditorStore((s) => s.addQuestion);
+  const addSection = useEditorStore((s) => s.addSection);
 
   return (
     <div className="flex flex-wrap gap-2">
@@ -25,6 +26,10 @@ export function QuestionToolbar() {
           {label}
         </Button>
       ))}
+      <Button variant="secondary" onClick={() => addSection()}>
+        <Layers className="h-4 w-4" />
+        Sección
+      </Button>
     </div>
   );
 }
