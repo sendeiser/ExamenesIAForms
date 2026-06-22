@@ -20,6 +20,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             error ? 'border-red-300' : 'border-gray-300',
             className,
           )}
+          aria-invalid={error ? true : undefined}
           {...props}
         >
           {options.map((opt) => (
