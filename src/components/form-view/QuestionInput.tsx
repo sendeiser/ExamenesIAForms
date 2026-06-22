@@ -1,4 +1,5 @@
 import { Input } from '../ui/Input';
+import { FileUploadInput } from './FileUploadInput';
 
 export function QuestionInput({ question, value, onChange }: { question: any; value: any; onChange: (v: any) => void }) {
   switch (question.type) {
@@ -111,17 +112,11 @@ export function QuestionInput({ question, value, onChange }: { question: any; va
       );
     case 'fileUpload':
       return (
-        <div>
-          <input
-            type="file"
-            accept={question.settings?.accept ?? '*/*'}
-            onChange={(e) => onChange(e.target.files?.[0])}
-            className="text-sm"
-          />
-          {value && typeof value === 'object' && (
-            <p className="text-xs text-green-600 mt-1">Archivo seleccionado: {(value as File).name}</p>
-          )}
-        </div>
+        <FileUploadInput
+          questionId={question.id}
+          value={value as string | null}
+          onChange={(url) => onChange(url)}
+        />
       );
     default:
       return null;
