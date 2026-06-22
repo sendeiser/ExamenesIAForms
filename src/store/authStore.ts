@@ -1,28 +1,42 @@
 import { create } from 'zustand';
-import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, type User } from 'firebase/auth';
+import { signInWithPopup, GoogleAuthProvider, signOut, type User } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 
 interface AuthState {
   user: User | null;
   loading: boolean;
+  error: string | null;
   signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
+  setUser: (user: User | null) => void;
+  setLoading: (loading: boolean) => void;
+  clearError: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   loading: true,
+  error: null,
 
   signInWithGoogle: async () => {
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    try {
+      set({ error: null });
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+    } catch (err: any) {
+      set({ error: err?.message ?? 'Error al iniciar sesión' });
+    }
   },
 
   logout: async () => {
-    await signOut(auth);
+    try {
+      await signOut(auth);
+    } catch (err: any) {
+      set({ error: err?.message ?? 'Error al cerrar sesión' });
+    }
   },
-}));
 
-onAuthStateChanged(auth, (user) => {
-  useAuthStore.setState({ user, loading: false });
-});
+  setUser: (user) => set({ user, loading: false }),
+  setLoading: (loading) => set({ loading }),
+  clearError: () => set({ error: null }),
+}));

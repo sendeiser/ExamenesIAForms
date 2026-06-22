@@ -35,14 +35,53 @@ function formConverter(): FirestoreDataConverter<Form> {
   };
 }
 
+function questionConverter(): FirestoreDataConverter<Question> {
+  return {
+    toFirestore(question: Question) {
+      const { id, ...data } = question;
+      return data;
+    },
+    fromFirestore(snapshot, options) {
+      const data = snapshot.data(options);
+      return { id: snapshot.id, ...data } as Question;
+    },
+  };
+}
+
+function sectionConverter(): FirestoreDataConverter<Section> {
+  return {
+    toFirestore(section: Section) {
+      const { id, ...data } = section;
+      return data;
+    },
+    fromFirestore(snapshot, options) {
+      const data = snapshot.data(options);
+      return { id: snapshot.id, ...data } as Section;
+    },
+  };
+}
+
+function responseConverter(): FirestoreDataConverter<FormResponse> {
+  return {
+    toFirestore(response: FormResponse) {
+      const { id, ...data } = response;
+      return { ...data, submittedAt: Timestamp.fromDate(response.submittedAt) };
+    },
+    fromFirestore(snapshot, options) {
+      const data = snapshot.data(options);
+      return { id: snapshot.id, ...data, submittedAt: data.submittedAt?.toDate() ?? new Date() } as FormResponse;
+    },
+  };
+}
+
 export const formsRef = collection(db, 'forms').withConverter(formConverter());
-export const formDoc = (id: string) => doc(db, 'forms', id).withConverter(formConverter());
+export const formDocRef = (id: string) => doc(db, 'forms', id).withConverter(formConverter());
 
 export const questionsRef = (formId: string) =>
-  collection(db, 'forms', formId, 'questions');
+  collection(db, 'forms', formId, 'questions').withConverter(questionConverter());
 
 export const sectionsRef = (formId: string) =>
-  collection(db, 'forms', formId, 'sections');
+  collection(db, 'forms', formId, 'sections').withConverter(sectionConverter());
 
 export const responsesRef = (formId: string) =>
-  collection(db, 'forms', formId, 'responses');
+  collection(db, 'forms', formId, 'responses').withConverter(responseConverter());
