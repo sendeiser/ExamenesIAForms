@@ -5,6 +5,8 @@ import { FormEditor } from '../components/forms/FormEditor';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { Toggle } from '../components/ui/Toggle';
+import { ThemeEditor } from '../components/forms/ThemeEditor';
 import { Eye, BarChart3, Share2 } from 'lucide-react';
 
 export default function FormBuilderPage() {
@@ -30,6 +32,11 @@ export default function FormBuilderPage() {
           onChange={(e) => updateForm({ title: e.target.value })}
           className="text-2xl font-bold border-0 px-0 focus:ring-0 w-full max-w-lg"
         />
+        <Toggle
+          label="Modo examen"
+          checked={form.settings.isQuiz}
+          onChange={(checked) => updateForm({ settings: { ...form.settings, isQuiz: checked } })}
+        />
         <div className="flex items-center gap-2">
           <Button variant="secondary" onClick={() => window.open(previewUrl, '_blank')}>
             <Eye className="h-4 w-4" />
@@ -47,6 +54,7 @@ export default function FormBuilderPage() {
           </Link>
         </div>
       </div>
+      <ThemeEditor />
       <FormEditor />
     </div>
   );

@@ -3,8 +3,11 @@ import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { QuestionInput } from './QuestionInput';
 import { SectionPage } from './SectionPage';
+import { QuizResult } from './QuizResult';
+import { scoreQuiz } from '../../lib/quizScoring';
 import type { Form } from '../../types/form';
 import type { Question, Section } from '../../types/question';
+import type { QuizScore } from '../../lib/quizScoring';
 
 interface FormViewProps {
   form: Form;
@@ -17,6 +20,7 @@ export function FormView({ form, questions, sections, onSubmit }: FormViewProps)
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [quizScore, setQuizScore] = useState<QuizScore | null>(null);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
 
   const unassigned = useMemo(() => questions.filter((q) => !q.sectionId), [questions]);
@@ -54,25 +58,45 @@ export function FormView({ form, questions, sections, onSubmit }: FormViewProps)
 
   async function handleSubmit() {
     setSaving(true);
-    await onSubmit(answers);
-    setSaving(false);
-    setSubmitted(true);
+    try {
+      await onSubmit(answers);
+      setSubmitted(true);
+      if (form.settings?.isQuiz) {
+        setQuizScore(scoreQuiz(questions, answers));
+      }
+    } catch {
+      //
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (submitted) {
     return (
-      <Card className="p-8 text-center max-w-lg mx-auto">
-        <div className="text-4xl mb-4">&#127881;</div>
-        <h2 className="text-xl font-semibold mb-2">{form.settings.confirmationMessage}</h2>
-        <p className="text-gray-500">Tu respuesta ha sido registrada.</p>
-      </Card>
+      <div className="max-w-2xl mx-auto">
+        {form.settings?.isQuiz && quizScore ? (
+          <QuizResult score={quizScore} />
+        ) : (
+          <Card className="p-8 text-center max-w-lg mx-auto">
+            <div className="text-4xl mb-4">&#127881;</div>
+            <h2 className="text-xl font-semibold mb-2">{form.settings.confirmationMessage}</h2>
+            <p className="text-gray-500">Tu respuesta ha sido registrada.</p>
+          </Card>
+        )}
+      </div>
     );
   }
 
   // No sections: single page mode
   if (!hasSections) {
     return (
-      <div className="max-w-2xl mx-auto space-y-4">
+      <div
+        className="max-w-2xl mx-auto space-y-4"
+        style={{
+          '--form-primary': form.theme?.primaryColor ?? '#6366f1',
+          '--form-bg': form.theme?.backgroundColor ?? '#ffffff',
+        } as React.CSSProperties}
+      >
         <Card className="p-8">
           <h1 className="text-2xl font-bold text-gray-900">{form.title}</h1>
           {form.description && <p className="text-gray-500 mt-2">{form.description}</p>}
@@ -95,7 +119,13 @@ export function FormView({ form, questions, sections, onSubmit }: FormViewProps)
 
   // Sections: multi-page mode
   return (
-    <div className="max-w-2xl mx-auto space-y-4">
+    <div
+      className="max-w-2xl mx-auto space-y-4"
+      style={{
+        '--form-primary': form.theme?.primaryColor ?? '#6366f1',
+        '--form-bg': form.theme?.backgroundColor ?? '#ffffff',
+      } as React.CSSProperties}
+    >
       {form.theme.showProgressBar && (
         <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
           <div
