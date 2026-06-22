@@ -31,6 +31,23 @@ export function FormView({ form, questions, sections, onSubmit }: FormViewProps)
   const currentSection = hasSections ? sections[currentSectionIndex] : null;
   const currentQuestions = hasSections ? (sectionQuestions[currentSection?.id ?? ''] ?? []) : unassigned;
 
+  function isQuestionVisible(q: Question): boolean {
+    if (!q.conditions?.enabled || !q.conditions.questionId) return true;
+    const depAnswer = answers[q.conditions.questionId];
+    if (depAnswer === undefined || depAnswer === null || depAnswer === '') return false;
+
+    switch (q.conditions.operator) {
+      case 'equals':
+        return String(depAnswer) === q.conditions.value;
+      case 'notEquals':
+        return String(depAnswer) !== q.conditions.value;
+      case 'contains':
+        return String(depAnswer).includes(q.conditions.value);
+      default:
+        return true;
+    }
+  }
+
   function setAnswer(questionId: string, value: any) {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   }
@@ -60,7 +77,7 @@ export function FormView({ form, questions, sections, onSubmit }: FormViewProps)
           <h1 className="text-2xl font-bold text-gray-900">{form.title}</h1>
           {form.description && <p className="text-gray-500 mt-2">{form.description}</p>}
         </Card>
-        {questions.map((q) => (
+        {questions.filter(isQuestionVisible).map((q) => (
           <Card key={q.id} className="p-6">
             <label className="block mb-3">
               <span className="text-sm font-medium text-gray-900">{q.title}</span>
@@ -98,7 +115,7 @@ export function FormView({ form, questions, sections, onSubmit }: FormViewProps)
       {currentSection && (
         <SectionPage
           section={currentSection}
-          questions={currentQuestions}
+          questions={currentQuestions.filter(isQuestionVisible)}
           answers={answers}
           onAnswer={setAnswer}
           isFirst={currentSectionIndex === 0}
