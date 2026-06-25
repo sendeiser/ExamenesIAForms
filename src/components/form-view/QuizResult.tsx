@@ -126,7 +126,7 @@ Sin markdown, sin \`\`\`, sin explicaciones adicionales.`;
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.5, maxOutputTokens: 2048 },
+        generationConfig: { temperature: 0.5, maxOutputTokens: 8192 },
       }),
     }
   );
@@ -141,7 +141,12 @@ Sin markdown, sin \`\`\`, sin explicaciones adicionales.`;
 
   const arrayStart = cleaned.indexOf('[');
   const arrayEnd = cleaned.lastIndexOf(']');
-  const jsonStr = arrayStart !== -1 && arrayEnd > arrayStart ? cleaned.slice(arrayStart, arrayEnd + 1) : cleaned;
+
+  if (arrayEnd === -1 || arrayEnd < arrayStart) {
+    throw new Error(`La IA no completó la respuesta (JSON truncado). Respuesta: ${text.slice(0, 600)}`);
+  }
+
+  const jsonStr = cleaned.slice(arrayStart, arrayEnd + 1);
 
   try {
     const items: Array<{ index: number; feedback: string }> = JSON.parse(jsonStr);

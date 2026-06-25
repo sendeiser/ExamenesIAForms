@@ -367,7 +367,7 @@ async function callGeminiWithDocument(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 4096 },
+        generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
       }),
     }
   );
@@ -384,7 +384,12 @@ async function callGeminiWithDocument(
 
   const arrayStart = cleaned.indexOf('[');
   const arrayEnd = cleaned.lastIndexOf(']');
-  const jsonStr = arrayStart !== -1 && arrayEnd > arrayStart ? cleaned.slice(arrayStart, arrayEnd + 1) : cleaned;
+
+  if (arrayEnd === -1 || arrayEnd < arrayStart) {
+    throw new Error(`La IA no completó la respuesta (el JSON está truncado). Respuesta: ${text.slice(0, 600)}`);
+  }
+
+  const jsonStr = cleaned.slice(arrayStart, arrayEnd + 1);
 
   try {
     return JSON.parse(jsonStr);
