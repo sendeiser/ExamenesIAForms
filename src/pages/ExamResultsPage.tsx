@@ -239,8 +239,8 @@ export default function ExamResultsPage() {
 
       {/* ── Responses table ── */}
       <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[650px]">
+        <div>
+          <table className="w-full text-sm hidden sm:table">
             <thead>
               <tr className="bg-gray-50 border-b">
                 <th className="text-left px-4 py-3 font-medium text-gray-600 w-8 print:hidden" />
@@ -263,11 +263,9 @@ export default function ExamResultsPage() {
                 const s: QuizScore | null = scored ? (item as typeof scored[0]).score : null;
                 const expanded = expandedRows.has(r.id);
                 const editing = editTarget === r.id;
-                const currentAnswers = editing ? editAnswers : r.answers;
 
                 return (
                   <tr key={r.id} className="border-b hover:bg-gray-50">
-                    {/* Expand toggle */}
                     <td className="px-4 py-3 text-gray-400 print:hidden">
                       {s && (
                         <button onClick={() => toggleRow(r.id)} className="p-1">
@@ -293,7 +291,6 @@ export default function ExamResultsPage() {
                     <td className="px-4 py-3 text-gray-400 text-xs">
                       {r.submittedAt?.toLocaleString() ?? ''}
                     </td>
-                    {/* Actions */}
                     <td className="px-4 py-3 print:hidden">
                       <div className="flex items-center gap-1">
                         {editing ? (
@@ -322,6 +319,69 @@ export default function ExamResultsPage() {
               })}
             </tbody>
           </table>
+
+          {/* ── Mobile card view (no table) ── */}
+          <div className="sm:hidden divide-y">
+            {(scored ?? responses).map((item: any) => {
+              const r: FormResponse = scored ? (item as typeof scored[0]).response : item;
+              const s: QuizScore | null = scored ? (item as typeof scored[0]).score : null;
+              const expanded = expandedRows.has(r.id);
+              const editing = editTarget === r.id;
+
+              return (
+                <div key={r.id} className="px-4 py-3 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {s && (
+                        <button onClick={() => toggleRow(r.id)} className="p-1 -ml-1 text-gray-400">
+                          {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                        </button>
+                      )}
+                      <span className="font-medium text-sm">{r.respondent?.name || '—'}</span>
+                    </div>
+                    <div className="flex items-center gap-1 print:hidden">
+                      {editing ? (
+                        <>
+                          <button onClick={saveEdit} className="p-1.5 text-green-600 hover:bg-green-50 rounded" title="Guardar">
+                            <Save className="h-4 w-4" />
+                          </button>
+                          <button onClick={cancelEdit} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded" title="Cancelar">
+                            <X className="h-4 w-4" />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button onClick={() => startEdit(r)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded" title="Editar respuestas">
+                            <Edit3 className="h-4 w-4" />
+                          </button>
+                          <button onClick={() => setDeleteTarget(r.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded" title="Eliminar">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-gray-500">{r.respondent?.email || r.respondentEmail || '—'}</div>
+
+                  <div className="flex items-center gap-3 text-xs">
+                    {s && (
+                      <>
+                        <span>
+                          Puntaje: <strong>{s.earnedPoints}/{s.totalPoints}</strong>
+                        </span>
+                        <span className="font-mono">{s.percentage}%</span>
+                        <span className={s.percentage >= 70 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                          {s.percentage >= 70 ? 'Aprobado' : 'Reprobado'}
+                        </span>
+                      </>
+                    )}
+                    <span className="text-gray-400 ml-auto">{r.submittedAt?.toLocaleString() ?? ''}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
         {responses.length === 0 && (
           <div className="text-center py-12 text-gray-400">Sin respuestas aún</div>
