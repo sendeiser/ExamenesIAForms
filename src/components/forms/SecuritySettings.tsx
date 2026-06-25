@@ -12,7 +12,14 @@ export function SecuritySettings() {
 
   if (!form) return null;
 
-  const s = form.settings;
+  const defaults = {
+    securityEnabled: false,
+    maxViolations: 3,
+    fullscreen: true,
+    disableCopy: true,
+    preventTabSwitch: true,
+  };
+  const s = { ...defaults, ...(form.settings ?? {}) };
 
   function update(field: string, value: any) {
     updateForm({ settings: { ...s, [field]: value } });
