@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, addDoc, getDocs, query, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, orderBy, Timestamp, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import type { FormResponse, RespondentInfo } from '../types/response';
 
@@ -24,7 +24,19 @@ export function useResponses(formId: string) {
     });
   }
 
+  async function deleteResponse(responseId: string) {
+    await deleteDoc(doc(db, 'forms', formId, 'responses', responseId));
+    setResponses((prev) => prev.filter((r) => r.id !== responseId));
+  }
+
+  async function updateResponse(responseId: string, updates: { answers?: Record<string, any>; respondent?: RespondentInfo }) {
+    await updateDoc(doc(db, 'forms', formId, 'responses', responseId), updates);
+    setResponses((prev) =>
+      prev.map((r) => (r.id === responseId ? { ...r, ...updates } as FormResponse : r)),
+    );
+  }
+
   useEffect(() => { fetchResponses(); }, [formId]);
 
-  return { responses, loading, submitResponse, refetch: fetchResponses };
+  return { responses, loading, submitResponse, deleteResponse, updateResponse, refetch: fetchResponses };
 }
