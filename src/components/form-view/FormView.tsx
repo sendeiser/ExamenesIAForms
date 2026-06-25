@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { QuestionInput } from './QuestionInput';
@@ -77,11 +77,20 @@ export function FormView({ form, questions, sections, respondent, onSubmit }: Fo
     preventTabSwitch: form.settings?.preventTabSwitch ?? true,
   }), [security, form.settings?.maxViolations, form.settings?.fullscreen, form.settings?.disableCopy, form.settings?.preventTabSwitch]);
 
+  const handleSubmitRef = useRef<(...args: any[]) => Promise<void>>();
+
+  const { start: startSecurity, stop: stopSecurity, started: securityStarted } = useExamSecurity({
+    config: securityConfig,
+    onViolation: (count) => setViolations(count),
+    onMaxViolations: () => handleSubmitRef.current?.(true),
+  });
+
   const handleSubmit = useCallback(async (auto?: boolean) => {
     setSaving(true);
     try {
       await onSubmit(answers, respondent);
       setSubmitted(true);
+      stopSecurity();
       if (form.settings?.isQuiz) {
         setQuizScore(scoreQuiz(questions, answers));
       }
@@ -90,13 +99,9 @@ export function FormView({ form, questions, sections, respondent, onSubmit }: Fo
     } finally {
       setSaving(false);
     }
-  }, [answers, respondent, onSubmit, form.settings?.isQuiz, questions]);
+  }, [answers, respondent, onSubmit, form.settings?.isQuiz, questions, stopSecurity]);
 
-  const { start: startSecurity, started: securityStarted } = useExamSecurity({
-    config: securityConfig,
-    onViolation: (count) => setViolations(count),
-    onMaxViolations: () => handleSubmit(true),
-  });
+  handleSubmitRef.current = handleSubmit;
 
   const unassigned = useMemo(() => questions.filter((q) => !q.sectionId), [questions]);
   const sectionQuestions = useMemo(() => {

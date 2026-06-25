@@ -32,6 +32,11 @@ export function useExamSecurity({ config, onViolation, onMaxViolations, onStart 
     onStart?.();
   }
 
+  function stop() {
+    startedRef.current = false;
+    setStarted(false);
+  }
+
   useEffect(() => {
     if (!config.enabled || !started) return;
 
@@ -123,5 +128,5 @@ export function useExamSecurity({ config, onViolation, onMaxViolations, onStart 
     };
   }, [config.enabled, config.maxViolations, config.fullscreen, config.disableCopy, config.preventTabSwitch, started]);
 
-  return { start, started };
+  return { start, stop, started };
 }
