@@ -1,11 +1,13 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { QuestionInput } from './QuestionInput';
 import { SectionPage } from './SectionPage';
 import { FormHeader } from './FormHeader';
 import { QuizResult } from './QuizResult';
+import { SecurityBanner } from './SecurityBanner';
 import { LatexRenderer } from '../ui/LatexRenderer';
+import { useExamSecurity } from '../../hooks/useExamSecurity';
 import { scoreQuiz } from '../../lib/quizScoring';
 import type { Form } from '../../types/form';
 import type { Question, Section } from '../../types/question';
@@ -64,6 +66,37 @@ export function FormView({ form, questions, sections, respondent, onSubmit }: Fo
   const [saving, setSaving] = useState(false);
   const [quizScore, setQuizScore] = useState<QuizScore | null>(null);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
+  const [violations, setViolations] = useState(0);
+
+  const security = form.settings?.securityEnabled;
+  const securityConfig = useMemo(() => ({
+    enabled: security,
+    maxViolations: form.settings?.maxViolations ?? 3,
+    fullscreen: form.settings?.fullscreen ?? true,
+    disableCopy: form.settings?.disableCopy ?? true,
+    preventTabSwitch: form.settings?.preventTabSwitch ?? true,
+  }), [security, form.settings?.maxViolations, form.settings?.fullscreen, form.settings?.disableCopy, form.settings?.preventTabSwitch]);
+
+  const handleSubmit = useCallback(async (auto?: boolean) => {
+    setSaving(true);
+    try {
+      await onSubmit(answers, respondent);
+      setSubmitted(true);
+      if (form.settings?.isQuiz) {
+        setQuizScore(scoreQuiz(questions, answers));
+      }
+    } catch {
+      //
+    } finally {
+      setSaving(false);
+    }
+  }, [answers, respondent, onSubmit, form.settings?.isQuiz, questions]);
+
+  const { start: startSecurity, started: securityStarted } = useExamSecurity({
+    config: securityConfig,
+    onViolation: (count) => setViolations(count),
+    onMaxViolations: () => handleSubmit(true),
+  });
 
   const unassigned = useMemo(() => questions.filter((q) => !q.sectionId), [questions]);
   const sectionQuestions = useMemo(() => {
@@ -98,21 +131,6 @@ export function FormView({ form, questions, sections, respondent, onSubmit }: Fo
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   }
 
-  async function handleSubmit() {
-    setSaving(true);
-    try {
-      await onSubmit(answers, respondent);
-      setSubmitted(true);
-      if (form.settings?.isQuiz) {
-        setQuizScore(scoreQuiz(questions, answers));
-      }
-    } catch {
-      //
-    } finally {
-      setSaving(false);
-    }
-  }
-
   if (submitted) {
     return (
       <div className="max-w-2xl mx-auto">
@@ -131,11 +149,18 @@ export function FormView({ form, questions, sections, respondent, onSubmit }: Fo
 
   const cardStyle = form.theme?.cardStyle ?? 'shadow';
 
+  const content = (child: React.ReactNode) => (
+    <div className="theme-page max-w-2xl mx-auto space-y-4">
+      {security && <SecurityBanner violations={violations} maxViolations={securityConfig.maxViolations} onStart={security ? startSecurity : undefined} started={securityStarted} />}
+      <FormHeader title={form.title} description={form.description} theme={form.theme} />
+      {child}
+    </div>
+  );
+
   // No sections: single page mode
   if (!hasSections) {
-    return (
-      <div className="theme-page max-w-2xl mx-auto space-y-4">
-        <FormHeader title={form.title} description={form.description} theme={form.theme} />
+    return content(
+      <>
         {questions.filter(isQuestionVisible).map((q) => (
           <Card key={q.id} className="p-6" data-style={cardStyle}>
             {q.settings?.imageUrl && (
@@ -151,15 +176,15 @@ export function FormView({ form, questions, sections, respondent, onSubmit }: Fo
           </Card>
         ))}
         <div className="flex justify-end">
-          <Button onClick={handleSubmit} loading={saving} disabled={saving}>Enviar</Button>
+          <Button onClick={() => handleSubmit()} loading={saving} disabled={saving}>Enviar</Button>
         </div>
-      </div>
+      </>
     );
   }
 
   // Sections: multi-page mode
-  return (
-    <div className="theme-page max-w-2xl mx-auto space-y-4">
+  return content(
+    <>
       {form.theme.showProgressBar && (
         <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
           <div
@@ -168,7 +193,6 @@ export function FormView({ form, questions, sections, respondent, onSubmit }: Fo
           />
         </div>
       )}
-      <FormHeader title={form.title} description={form.description} theme={form.theme} />
 
       {currentSection && (
         <SectionPage
@@ -180,11 +204,11 @@ export function FormView({ form, questions, sections, respondent, onSubmit }: Fo
           isLast={currentSectionIndex === totalPages - 1}
           onNext={() => setCurrentSectionIndex((i) => Math.min(i + 1, totalPages - 1))}
           onPrev={() => setCurrentSectionIndex((i) => Math.max(i - 1, 0))}
-          onSubmit={handleSubmit}
+          onSubmit={() => handleSubmit()}
           saving={saving}
           cardStyle={cardStyle}
         />
       )}
-    </div>
+    </>
   );
 }

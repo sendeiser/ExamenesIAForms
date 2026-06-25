@@ -4,6 +4,11 @@ export interface FormSettings {
   limitResponses: number | null;
   confirmationMessage: string;
   isQuiz: boolean;
+  securityEnabled: boolean;
+  maxViolations: number;
+  fullscreen: boolean;
+  disableCopy: boolean;
+  preventTabSwitch: boolean;
 }
 
 export interface FormTheme {

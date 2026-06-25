@@ -25,6 +25,11 @@ const defaultSettings = {
   limitResponses: null,
   confirmationMessage: '¡Respuesta registrada!',
   isQuiz: false,
+  securityEnabled: false,
+  maxViolations: 3,
+  fullscreen: true,
+  disableCopy: true,
+  preventTabSwitch: true,
 };
 
 export const useFormStore = create<FormStore>((set) => ({
