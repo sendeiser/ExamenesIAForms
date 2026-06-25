@@ -389,7 +389,9 @@ async function callGeminiWithDocument(
     throw new Error(`La IA no completó la respuesta (el JSON está truncado). Respuesta: ${text.slice(0, 600)}`);
   }
 
-  const jsonStr = cleaned.slice(arrayStart, arrayEnd + 1);
+  let jsonStr = cleaned.slice(arrayStart, arrayEnd + 1);
+
+  jsonStr = jsonStr.replace(/(?<!\\)\\([a-zA-Z])/g, '\\\\$1');
 
   try {
     return JSON.parse(jsonStr);
