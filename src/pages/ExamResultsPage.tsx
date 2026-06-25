@@ -37,12 +37,13 @@ export default function ExamResultsPage() {
   if (loading) return <LoadingSpinner />;
 
   const totalRespondents = scored?.length ?? responses.length;
-  const avgScore = scored && scored.length > 0
-    ? scored.reduce((s, r) => s + r.score.percentage, 0) / scored.length
+  const totalPoints = scored?.[0]?.score.totalPoints ?? 0;
+  const avgEarned = scored && scored.length > 0
+    ? scored.reduce((s, r) => s + r.score.earnedPoints, 0) / scored.length
     : 0;
-  const sorted = scored ? [...scored].sort((a, b) => b.score.percentage - a.score.percentage) : [];
-  const highest = sorted[0]?.score.percentage ?? 0;
-  const lowest = sorted[sorted.length - 1]?.score.percentage ?? 0;
+  const sorted = scored ? [...scored].sort((a, b) => b.score.earnedPoints - a.score.earnedPoints) : [];
+  const highestEarned = sorted[0]?.score.earnedPoints ?? 0;
+  const lowestEarned = sorted[sorted.length - 1]?.score.earnedPoints ?? 0;
   const passed = scored ? scored.filter((r) => r.score.percentage >= 70).length : 0;
   const passRate = scored && scored.length > 0 ? (passed / scored.length) * 100 : 0;
 
@@ -218,15 +219,15 @@ export default function ExamResultsPage() {
         {scored && (
           <>
             <Card className="p-4 text-center">
-              <p className="text-2xl font-bold text-indigo-600">{avgScore.toFixed(1)}%</p>
+              <p className="text-2xl font-bold text-indigo-600">{avgEarned.toFixed(1)} / {totalPoints}</p>
               <p className="text-xs text-gray-500">Promedio</p>
             </Card>
             <Card className="p-4 text-center">
-              <p className="text-2xl font-bold text-green-600">{highest.toFixed(1)}%</p>
+              <p className="text-2xl font-bold text-green-600">{highestEarned} / {totalPoints}</p>
               <p className="text-xs text-gray-500">Nota más alta</p>
             </Card>
             <Card className="p-4 text-center">
-              <p className="text-2xl font-bold text-red-600">{lowest.toFixed(1)}%</p>
+              <p className="text-2xl font-bold text-red-600">{lowestEarned} / {totalPoints}</p>
               <p className="text-xs text-gray-500">Nota más baja</p>
             </Card>
             <Card className="p-4 text-center">

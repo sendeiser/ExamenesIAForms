@@ -15,28 +15,10 @@ interface UseExamSecurityOptions {
   onStart?: () => void;
 }
 
-const GRACE_MS = 8000;
-
 export function useExamSecurity({ config, onViolation, onMaxViolations, onStart }: UseExamSecurityOptions) {
   const violations = useRef(0);
   const [started, setStarted] = useState(false);
   const startedRef = useRef(false);
-  const hiddenTimer = useRef<ReturnType<typeof setTimeout>>();
-  const blurTimer = useRef<ReturnType<typeof setTimeout>>();
-
-  function clearTimers() {
-    if (hiddenTimer.current) { clearTimeout(hiddenTimer.current); hiddenTimer.current = undefined; }
-    if (blurTimer.current) { clearTimeout(blurTimer.current); blurTimer.current = undefined; }
-  }
-
-  function countViolation() {
-    clearTimers();
-    violations.current += 1;
-    onViolation(violations.current);
-    if (violations.current >= config.maxViolations) {
-      onMaxViolations();
-    }
-  }
 
   function start() {
     if (startedRef.current) return;
@@ -53,7 +35,19 @@ export function useExamSecurity({ config, onViolation, onMaxViolations, onStart 
   function stop() {
     startedRef.current = false;
     setStarted(false);
-    clearTimers();
+  }
+
+  const lastViolation = useRef(0);
+
+  function countViolation() {
+    const now = Date.now();
+    if (now - lastViolation.current < 3000) return; // ignore duplicate within 3s
+    lastViolation.current = now;
+    violations.current += 1;
+    onViolation(violations.current);
+    if (violations.current >= config.maxViolations) {
+      onMaxViolations();
+    }
   }
 
   useEffect(() => {
@@ -61,37 +55,26 @@ export function useExamSecurity({ config, onViolation, onMaxViolations, onStart 
 
     const handleVisibility = () => {
       if (!config.preventTabSwitch) return;
-      if (document.hidden) {
-        hiddenTimer.current = setTimeout(countViolation, GRACE_MS);
-      } else {
-        if (hiddenTimer.current) {
-          clearTimeout(hiddenTimer.current);
-          hiddenTimer.current = undefined;
-        }
-      }
+      if (document.hidden) countViolation();
     };
 
     const handleBlur = () => {
       if (!config.preventTabSwitch) return;
-      blurTimer.current = setTimeout(countViolation, GRACE_MS);
-    };
-
-    const handleFocus = () => {
-      if (blurTimer.current) {
-        clearTimeout(blurTimer.current);
-        blurTimer.current = undefined;
-      }
+      countViolation();
     };
 
     const handleFullscreenChange = () => {
-      if (!config.fullscreen) return;
+      if (!config.fullscreen || !config.preventTabSwitch) return;
       if (!document.fullscreenElement) {
+        countViolation();
         try { document.documentElement.requestFullscreen(); } catch {}
       }
     };
 
     const handleCopy = (e: ClipboardEvent) => {
-      if (config.disableCopy) e.preventDefault();
+      if (config.disableCopy) {
+        e.preventDefault();
+      }
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -117,7 +100,6 @@ export function useExamSecurity({ config, onViolation, onMaxViolations, onStart 
 
     document.addEventListener('visibilitychange', handleVisibility);
     window.addEventListener('blur', handleBlur);
-    window.addEventListener('focus', handleFocus);
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('copy', handleCopy);
     document.addEventListener('cut', handleCopy);
@@ -131,10 +113,8 @@ export function useExamSecurity({ config, onViolation, onMaxViolations, onStart 
     }
 
     return () => {
-      clearTimers();
       document.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('blur', handleBlur);
-      window.removeEventListener('focus', handleFocus);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       document.removeEventListener('copy', handleCopy);
       document.removeEventListener('cut', handleCopy);
