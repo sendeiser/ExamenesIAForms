@@ -19,6 +19,19 @@ export function useExamSecurity({ config, onViolation, onMaxViolations, onStart 
   const violations = useRef(0);
   const [started, setStarted] = useState(false);
   const startedRef = useRef(false);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+
+  async function requestWakeLock() {
+    try {
+      const lock = await navigator.wakeLock.request('screen');
+      wakeLockRef.current = lock;
+      lock.addEventListener('release', () => {
+        if (startedRef.current) {
+          navigator.wakeLock.request('screen').then((newLock) => { wakeLockRef.current = newLock; }).catch(() => {});
+        }
+      });
+    } catch {}
+  }
 
   function start() {
     if (startedRef.current) return;
@@ -29,12 +42,15 @@ export function useExamSecurity({ config, onViolation, onMaxViolations, onStart 
       try { document.documentElement.requestFullscreen(); } catch {}
     }
 
+    requestWakeLock();
     onStart?.();
   }
 
   function stop() {
     startedRef.current = false;
     setStarted(false);
+    wakeLockRef.current?.release();
+    wakeLockRef.current = null;
   }
 
   const lastViolation = useRef(0);
@@ -55,7 +71,11 @@ export function useExamSecurity({ config, onViolation, onMaxViolations, onStart 
 
     const handleVisibility = () => {
       if (!config.preventTabSwitch) return;
-      if (document.hidden) countViolation();
+      if (document.hidden) {
+        countViolation();
+      } else if (!wakeLockRef.current) {
+        requestWakeLock();
+      }
     };
 
     const handleBlur = () => {
