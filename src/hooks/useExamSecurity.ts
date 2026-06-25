@@ -33,7 +33,7 @@ export function useExamSecurity({ config, onViolation, onMaxViolations, onStart 
   }
 
   useEffect(() => {
-    if (!config.enabled || !startedRef.current) return;
+    if (!config.enabled || !started) return;
 
     const handleVisibility = () => {
       if (!config.preventTabSwitch) return;
@@ -121,7 +121,7 @@ export function useExamSecurity({ config, onViolation, onMaxViolations, onStart 
       document.body.style.webkitUserSelect = '';
       if (document.fullscreenElement) document.exitFullscreen();
     };
-  }, [config.enabled, config.maxViolations, config.fullscreen, config.disableCopy, config.preventTabSwitch]);
+  }, [config.enabled, config.maxViolations, config.fullscreen, config.disableCopy, config.preventTabSwitch, started]);
 
   return { start, started };
 }
