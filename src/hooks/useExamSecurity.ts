@@ -37,37 +37,36 @@ export function useExamSecurity({ config, onViolation, onMaxViolations, onStart 
     setStarted(false);
   }
 
+  const lastViolation = useRef(0);
+
+  function countViolation() {
+    const now = Date.now();
+    if (now - lastViolation.current < 3000) return; // ignore duplicate within 3s
+    lastViolation.current = now;
+    violations.current += 1;
+    onViolation(violations.current);
+    if (violations.current >= config.maxViolations) {
+      onMaxViolations();
+    }
+  }
+
   useEffect(() => {
     if (!config.enabled || !started) return;
 
     const handleVisibility = () => {
       if (!config.preventTabSwitch) return;
-      if (document.hidden) {
-        violations.current += 1;
-        onViolation(violations.current);
-        if (violations.current >= config.maxViolations) {
-          onMaxViolations();
-        }
-      }
+      if (document.hidden) countViolation();
     };
 
     const handleBlur = () => {
       if (!config.preventTabSwitch) return;
-      violations.current += 1;
-      onViolation(violations.current);
-      if (violations.current >= config.maxViolations) {
-        onMaxViolations();
-      }
+      countViolation();
     };
 
     const handleFullscreenChange = () => {
       if (!config.fullscreen || !config.preventTabSwitch) return;
       if (!document.fullscreenElement) {
-        violations.current += 1;
-        onViolation(violations.current);
-        if (violations.current >= config.maxViolations) {
-          onMaxViolations();
-        }
+        countViolation();
         try { document.documentElement.requestFullscreen(); } catch {}
       }
     };
