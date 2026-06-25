@@ -382,9 +382,13 @@ async function callGeminiWithDocument(
 
   const cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
 
+  const arrayStart = cleaned.indexOf('[');
+  const arrayEnd = cleaned.lastIndexOf(']');
+  const jsonStr = arrayStart !== -1 && arrayEnd > arrayStart ? cleaned.slice(arrayStart, arrayEnd + 1) : cleaned;
+
   try {
-    return JSON.parse(cleaned);
+    return JSON.parse(jsonStr);
   } catch {
-    throw new Error(`No se pudo procesar la respuesta de la IA. Respuesta: ${text.slice(0, 300)}`);
+    throw new Error(`No se pudo procesar la respuesta de la IA. Respuesta: ${text.slice(0, 600)}`);
   }
 }

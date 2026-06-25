@@ -139,8 +139,12 @@ Sin markdown, sin \`\`\`, sin explicaciones adicionales.`;
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
   const cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
 
+  const arrayStart = cleaned.indexOf('[');
+  const arrayEnd = cleaned.lastIndexOf(']');
+  const jsonStr = arrayStart !== -1 && arrayEnd > arrayStart ? cleaned.slice(arrayStart, arrayEnd + 1) : cleaned;
+
   try {
-    const items: Array<{ index: number; feedback: string }> = JSON.parse(cleaned);
+    const items: Array<{ index: number; feedback: string }> = JSON.parse(jsonStr);
     const map: Record<string, string> = {};
     items.forEach((item) => {
       const q = wrongResults[item.index - 1];
@@ -148,6 +152,6 @@ Sin markdown, sin \`\`\`, sin explicaciones adicionales.`;
     });
     return map;
   } catch {
-    throw new Error(`No se pudo procesar la retroalimentación. Respuesta: ${text.slice(0, 300)}`);
+    throw new Error(`No se pudo procesar la retroalimentación. Respuesta: ${text.slice(0, 600)}`);
   }
 }
