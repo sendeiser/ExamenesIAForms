@@ -37,7 +37,7 @@ export function QuizResult({ score }: QuizResultProps) {
     <div className="space-y-6">
       <Card className="p-6 text-center">
         <h2 className="text-xl font-bold mb-2">Resultado del examen</h2>
-        <div className={`text-5xl font-bold ${gradeColor} my-4`}>{score.percentage}%</div>
+        <div className={`text-5xl font-bold ${gradeColor} my-4`}>{score.percentage.toFixed(1)}%</div>
         <p className="text-gray-500">{score.earnedPoints} / {score.totalPoints} puntos</p>
       </Card>
 

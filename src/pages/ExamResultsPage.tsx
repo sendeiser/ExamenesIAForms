@@ -222,15 +222,15 @@ export default function ExamResultsPage() {
               <p className="text-xs text-gray-500">Promedio</p>
             </Card>
             <Card className="p-4 text-center">
-              <p className="text-2xl font-bold text-green-600">{highest.toFixed(0)}%</p>
+              <p className="text-2xl font-bold text-green-600">{highest.toFixed(1)}%</p>
               <p className="text-xs text-gray-500">Nota más alta</p>
             </Card>
             <Card className="p-4 text-center">
-              <p className="text-2xl font-bold text-red-600">{lowest.toFixed(0)}%</p>
+              <p className="text-2xl font-bold text-red-600">{lowest.toFixed(1)}%</p>
               <p className="text-xs text-gray-500">Nota más baja</p>
             </Card>
             <Card className="p-4 text-center">
-              <p className="text-2xl font-bold text-blue-600">{passRate.toFixed(0)}%</p>
+              <p className="text-2xl font-bold text-blue-600">{passRate.toFixed(1)}%</p>
               <p className="text-xs text-gray-500">Tasa de aprobación</p>
             </Card>
           </>

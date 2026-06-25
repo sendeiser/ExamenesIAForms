@@ -79,7 +79,7 @@ export function scoreQuiz(
   return {
     totalPoints,
     earnedPoints,
-    percentage: totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0,
+    percentage: totalPoints > 0 ? (earnedPoints / totalPoints) * 100 : 0,
     results,
   };
 }
