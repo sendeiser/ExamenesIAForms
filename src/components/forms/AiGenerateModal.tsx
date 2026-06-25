@@ -1,9 +1,9 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, type ReactNode } from 'react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
-import { Loader2, Sparkles, Upload, FileText, X } from 'lucide-react';
+import { Loader2, Sparkles, Upload, FileText, X, BookOpen, Beaker, ScrollText, MessageSquare, PenLine } from 'lucide-react';
 import { useEditorStore } from '../../store/editorStore';
 import type { QuestionType } from '../../types/question';
 
@@ -23,8 +23,70 @@ interface AiQuestion {
   settings?: Record<string, any>;
 }
 
+interface Template {
+  name: string;
+  icon: ReactNode;
+  topic: string;
+  instructions: string;
+  type?: QuestionType | 'mixed';
+}
+
+const TEMPLATES: Template[] = [
+  {
+    name: 'Matemáticas',
+    icon: <BookOpen className="h-4 w-4" />,
+    topic: 'Matemáticas',
+    instructions: 'Preguntas con fórmulas en notación LaTeX ($...$). Incluye ejercicios de álgebra, geometría, cálculo y resolución de problemas con aplicación práctica. Nivel: secundaria / universidad.',
+    type: 'mixed',
+  },
+  {
+    name: 'Ciencias',
+    icon: <Beaker className="h-4 w-4" />,
+    topic: 'Ciencias',
+    instructions: 'Preguntas sobre conceptos científicos, teorías, leyes y experimentos. Usa ejemplos concretos y aplicaciones del mundo real. Incluye preguntas de relación causa-efecto.',
+    type: 'mixed',
+  },
+  {
+    name: 'Historia',
+    icon: <ScrollText className="h-4 w-4" />,
+    topic: 'Historia',
+    instructions: 'Preguntas sobre eventos históricos, fechas clave, personajes importantes y contextos sociopolíticos. Incluye preguntas de análisis y relación causa-efecto.',
+    type: 'mixed',
+  },
+  {
+    name: 'Lenguaje',
+    icon: <MessageSquare className="h-4 w-4" />,
+    topic: 'Lengua y Literatura',
+    instructions: 'Preguntas sobre gramática, ortografía, comprensión lectora, análisis literario, vocabulario y redacción.',
+    type: 'mixed',
+  },
+  {
+    name: 'Tipo test',
+    icon: <PenLine className="h-4 w-4" />,
+    topic: '',
+    instructions: 'Todas las preguntas deben ser de opción múltiple con 4 opciones cada una. Incluir respuestas correctas. Adecuado para exámenes de selección múltiple.',
+    type: 'multipleChoice',
+  },
+  {
+    name: 'Desarrollo',
+    icon: <PenLine className="h-4 w-4" />,
+    topic: '',
+    instructions: 'Preguntas de desarrollo y respuesta larga. Evaluar comprensión profunda, capacidad de análisis y síntesis. Incluir criterios de evaluación en la respuesta correcta.',
+    type: 'paragraph',
+  },
+  {
+    name: 'Personalizado',
+    icon: <PenLine className="h-4 w-4" />,
+    topic: '',
+    instructions: '',
+    type: 'mixed',
+  },
+];
+
 export function AiGenerateModal({ open, onClose }: AiGenerateModalProps) {
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [topic, setTopic] = useState('');
+  const [customInstructions, setCustomInstructions] = useState('');
   const [count, setCount] = useState(5);
   const [type, setType] = useState<QuestionType | 'mixed'>('mixed');
   const [loading, setLoading] = useState(false);
@@ -35,8 +97,14 @@ export function AiGenerateModal({ open, onClose }: AiGenerateModalProps) {
   const updateQuestion = useEditorStore((s) => s.updateQuestion);
   const updateForm = useEditorStore((s) => s.updateForm);
   const form = useEditorStore((s) => s.form);
-  const questions = useEditorStore((s) => s.questions);
   const sections = useEditorStore((s) => s.sections);
+
+  function selectTemplate(tpl: Template) {
+    setSelectedTemplate(tpl.name);
+    setTopic(tpl.topic);
+    setCustomInstructions(tpl.instructions);
+    if (tpl.type) setType(tpl.type);
+  }
 
   async function handleGenerate() {
     if (!topic.trim() && !file) {
@@ -47,7 +115,7 @@ export function AiGenerateModal({ open, onClose }: AiGenerateModalProps) {
     setError('');
 
     try {
-      const questionsData = await callGeminiWithDocument(topic, count, type, file);
+      const questionsData = await callGeminiWithDocument(topic, count, type, file, customInstructions);
       for (let i = 0; i < questionsData.length; i++) {
         const q = questionsData[i];
         const currentLen = useEditorStore.getState().questions.length;
@@ -104,12 +172,43 @@ export function AiGenerateModal({ open, onClose }: AiGenerateModalProps) {
   return (
     <Modal open={open} onClose={onClose} title="Generar preguntas con IA">
       <div className="space-y-4">
+        <div>
+          <p className="text-xs text-gray-500 mb-2">Plantillas rápidas</p>
+          <div className="grid grid-cols-4 gap-1.5">
+            {TEMPLATES.map((tpl) => (
+              <button
+                key={tpl.name}
+                onClick={() => selectTemplate(tpl)}
+                className={`flex flex-col items-center gap-1 p-2 rounded-lg border text-xs transition-all ${
+                  selectedTemplate === tpl.name
+                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                    : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                {tpl.icon}
+                <span className="text-[10px] leading-tight text-center">{tpl.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="space-y-1">
           <label className="block text-sm font-medium text-gray-700">Tema o descripción</label>
           <Input
             value={topic}
-            onChange={(e) => setTopic(e.target.value)}
+            onChange={(e) => { setTopic(e.target.value); setSelectedTemplate(null); }}
             placeholder="Ej: Revolución Francesa, Álgebra lineal..."
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-gray-700">Especificaciones del docente</label>
+          <textarea
+            value={customInstructions}
+            onChange={(e) => { setCustomInstructions(e.target.value); setSelectedTemplate(null); }}
+            placeholder="Ej: Nivel universitario, incluir ejercicios de aplicación, las preguntas deben ser desafiantes..."
+            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            rows={3}
           />
         </div>
 
@@ -179,11 +278,14 @@ export function AiGenerateModal({ open, onClose }: AiGenerateModalProps) {
   );
 }
 
-function buildPrompt(topic: string, count: number, type: QuestionType | 'mixed'): string {
+function buildPrompt(topic: string, count: number, type: QuestionType | 'mixed', customInstructions: string): string {
   const typeConstraint = type !== 'mixed' ? `Todas las preguntas deben ser de tipo "${type}".` : 'Mezcla distintos tipos de pregunta apropiados para el tema.';
   const linearScaleHint = type === 'linearScale' ? 'Para linearScale, incluye también "settings": { "min": 1, "max": 5, "minLabel": "", "maxLabel": "" }' : '';
+  const specSection = customInstructions.trim()
+    ? `\n\nEspecificaciones del docente:\n${customInstructions}`
+    : '';
 
-  return `Genera exactamente ${count} preguntas de examen sobre "${topic}" en español.
+  return `Genera exactamente ${count} preguntas de examen sobre "${topic}" en español.${specSection}
 
 Responde ÚNICAMENTE con un array JSON válido. Sin markdown, sin \`\`\`, sin explicaciones.
 
@@ -235,9 +337,10 @@ async function callGeminiWithDocument(
   topic: string,
   count: number,
   type: QuestionType | 'mixed',
-  file: File | null
+  file: File | null,
+  customInstructions: string
 ): Promise<AiQuestion[]> {
-  const textPrompt = buildPrompt(topic, count, type);
+  const textPrompt = buildPrompt(topic, count, type, customInstructions);
 
   const parts: Array<Record<string, any>> = [];
 
