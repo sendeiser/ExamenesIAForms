@@ -22,20 +22,20 @@ export function QuestionToolbar() {
 
   return (
     <>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible">
         {questionTypes.map(({ type, icon: Icon, label }) => (
-          <Button key={type} variant="secondary" onClick={() => addQuestion(type)}>
+          <Button key={type} variant="secondary" className="shrink-0 sm:shrink">
             <Icon className="h-4 w-4" />
-            {label}
+            <span className="hidden sm:inline">{label}</span>
           </Button>
         ))}
-        <Button variant="secondary" onClick={() => addSection()}>
+        <Button variant="secondary" onClick={() => addSection()} className="shrink-0 sm:shrink">
           <Layers className="h-4 w-4" />
-          Sección
+          <span className="hidden sm:inline">Sección</span>
         </Button>
-        <Button variant="secondary" onClick={() => setAiOpen(true)}>
+        <Button variant="secondary" onClick={() => setAiOpen(true)} className="shrink-0 sm:shrink">
           <Sparkles className="h-4 w-4" />
-          IA
+          <span className="hidden sm:inline">IA</span>
         </Button>
       </div>
       <AiGenerateModal open={aiOpen} onClose={() => setAiOpen(false)} />

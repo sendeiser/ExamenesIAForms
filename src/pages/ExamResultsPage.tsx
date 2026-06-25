@@ -184,7 +184,7 @@ export default function ExamResultsPage() {
   return (
     <div className="space-y-6 print:space-y-4">
       {/* ── Header ── */}
-      <div className="flex items-center justify-between print:hidden">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between print:hidden">
         <div className="flex items-center gap-4">
           <Link to={`/form/${formId}/analytics`}>
             <Button variant="ghost"><ArrowLeft className="h-4 w-4" /></Button>
@@ -194,11 +194,11 @@ export default function ExamResultsPage() {
         <div className="flex items-center gap-2">
           <Button variant="secondary" onClick={() => window.print()}>
             <Printer className="h-4 w-4" />
-            Exportar PDF
+            <span className="hidden sm:inline">Exportar PDF</span>
           </Button>
           <Button variant="secondary" onClick={handleExport}>
             <Download className="h-4 w-4" />
-            Exportar CSV
+            <span className="hidden sm:inline">Exportar CSV</span>
           </Button>
         </div>
       </div>

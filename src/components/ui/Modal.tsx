@@ -51,7 +51,7 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
       <div
         ref={overlayRef}
         className={clsx(
-          'relative z-10 w-full bg-white rounded-xl shadow-xl max-h-[90vh] overflow-y-auto',
+          'relative z-10 w-full bg-white rounded-xl shadow-xl max-h-[90vh] overflow-y-auto mx-4',
           { 'max-w-sm': size === 'sm', 'max-w-lg': size === 'md', 'max-w-2xl': size === 'lg' },
         )}
       >

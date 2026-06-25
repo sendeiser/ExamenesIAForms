@@ -55,7 +55,7 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <Link to={`/form/${formId}`}>
             <Button variant="ghost"><ArrowLeft className="h-4 w-4" /></Button>
@@ -66,12 +66,12 @@ export default function AnalyticsPage() {
           <Link to={`/form/${formId}/exam-results`}>
             <Button variant="secondary">
               <GraduationCap className="h-4 w-4" />
-              Calificaciones
+              <span className="hidden sm:inline">Calificaciones</span>
             </Button>
           </Link>
           <Button variant="secondary" onClick={handleExport}>
             <List className="h-4 w-4" />
-            Exportar CSV
+            <span className="hidden sm:inline">Exportar CSV</span>
           </Button>
         </div>
       </div>

@@ -90,7 +90,7 @@ export function QuestionInput({ question, value, onChange }: { question: any; va
       return (
         <div className="flex items-center gap-4 flex-wrap">
           {question.settings?.minLabel && <span className="text-sm text-ink-subtle"><LatexRenderer text={question.settings.minLabel} /></span>}
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap justify-center">
             {Array.from({ length: max - min + 1 }, (_, i) => min + i).map((n: number) => (
               <button
                 key={n}

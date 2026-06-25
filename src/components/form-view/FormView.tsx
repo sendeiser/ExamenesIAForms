@@ -150,7 +150,7 @@ export function FormView({ form, questions, sections, respondent, onSubmit }: Fo
   const cardStyle = form.theme?.cardStyle ?? 'shadow';
 
   const content = (child: React.ReactNode) => (
-    <div className="theme-page max-w-2xl mx-auto space-y-4">
+    <div className="theme-page max-w-2xl mx-auto space-y-4 px-4 sm:px-0">
       {security && <SecurityBanner violations={violations} maxViolations={securityConfig.maxViolations} onStart={security ? startSecurity : undefined} started={securityStarted} />}
       <FormHeader title={form.title} description={form.description} theme={form.theme} />
       {child}
