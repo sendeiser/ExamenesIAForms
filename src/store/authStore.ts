@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { signInWithPopup, GoogleAuthProvider, signOut, type User } from 'firebase/auth';
+import { signInWithRedirect, GoogleAuthProvider, signOut, type User } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 
 interface AuthState {
@@ -22,7 +22,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       set({ error: null });
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      await signInWithRedirect(auth, provider);
     } catch (err: any) {
       set({ error: err?.message ?? 'Error al iniciar sesión' });
     }

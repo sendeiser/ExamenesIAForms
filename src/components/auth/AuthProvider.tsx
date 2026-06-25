@@ -1,5 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, getRedirectResult } from 'firebase/auth';
 import { auth } from '../../lib/firebase';
 import { useAuthStore } from '../../store/authStore';
 
@@ -8,6 +8,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const setLoading = useAuthStore((s) => s.setLoading);
 
   useEffect(() => {
+    getRedirectResult(auth).catch(() => {});
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
