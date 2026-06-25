@@ -282,6 +282,6 @@ async function callGeminiWithDocument(
   try {
     return JSON.parse(cleaned);
   } catch {
-    throw new Error('No se pudo procesar la respuesta de la IA. Intenta de nuevo.');
+    throw new Error(`No se pudo procesar la respuesta de la IA. Respuesta: ${text.slice(0, 300)}`);
   }
 }

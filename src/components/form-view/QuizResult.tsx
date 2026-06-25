@@ -148,6 +148,6 @@ Sin markdown, sin \`\`\`, sin explicaciones adicionales.`;
     });
     return map;
   } catch {
-    throw new Error('No se pudo procesar la retroalimentación. Intenta de nuevo.');
+    throw new Error(`No se pudo procesar la retroalimentación. Respuesta: ${text.slice(0, 300)}`);
   }
 }
