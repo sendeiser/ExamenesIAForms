@@ -96,7 +96,7 @@ export function HeaderCard() {
             type="color"
             value={bgColor}
             onChange={(e) => updateForm({ theme: { ...form.theme, headerBgColor: e.target.value } })}
-            className="w-6 h-6 rounded cursor-pointer border"
+            className="w-8 h-8 rounded cursor-pointer border"
           />
         </div>
 
@@ -106,7 +106,7 @@ export function HeaderCard() {
             type="color"
             value={textColor}
             onChange={(e) => updateForm({ theme: { ...form.theme, headerTextColor: e.target.value } })}
-            className="w-6 h-6 rounded cursor-pointer border"
+            className="w-8 h-8 rounded cursor-pointer border"
           />
         </div>
 
@@ -116,7 +116,7 @@ export function HeaderCard() {
             value={fontFamily}
             onChange={(e) => updateForm({ theme: { ...form.theme, headerFontFamily: e.target.value } })}
             options={FONT_OPTIONS}
-            className="text-xs h-7 min-w-[120px]"
+            className="text-xs h-8 min-w-[120px]"
           />
         </div>
 
@@ -126,7 +126,7 @@ export function HeaderCard() {
             value={fontSizeKey}
             onChange={(e) => updateForm({ theme: { ...form.theme, headerFontSize: e.target.value as 'sm' | 'md' | 'lg' | 'xl' } })}
             options={FONT_SIZE_OPTIONS}
-            className="text-xs h-7"
+            className="text-xs h-8"
           />
         </div>
 
@@ -142,12 +142,12 @@ export function HeaderCard() {
             <Button variant="ghost" onClick={() => setImageModalOpen(true)} className="text-xs">
               <ImagePlus className="h-3 w-3" /> Imagen
             </Button>
-            <div className="flex gap-1">
+            <div className="flex gap-1 w-full sm:w-auto">
               <Input
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
                 placeholder="URL de imagen..."
-                className="text-xs h-7 w-40"
+                className="text-xs h-8 flex-1 sm:w-40"
               />
               <Button
                 variant="ghost"

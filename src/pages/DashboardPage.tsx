@@ -28,9 +28,9 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Mis formularios</h1>
-        <Button onClick={() => setShowCreate(true)}>
+        <Button onClick={() => setShowCreate(true)} className="w-full sm:w-auto justify-center">
           <Plus className="h-4 w-4" />
           Nuevo formulario
         </Button>
@@ -57,14 +57,14 @@ export default function DashboardPage() {
                   {new Date(form.updatedAt).toLocaleDateString()}
                 </p>
               </div>
-              <div className="flex items-center gap-2 mt-4 pt-4 border-t">
-                <Button variant="ghost" onClick={() => togglePublish(form.id, !form.published)}>
+              <div className="flex items-center justify-around mt-4 pt-4 border-t">
+                <Button variant="ghost" onClick={() => togglePublish(form.id, !form.published)} className="p-3">
                   {form.published ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
-                <Button variant="ghost" onClick={() => navigate(`/form/${form.id}/analytics`)}>
+                <Button variant="ghost" onClick={() => navigate(`/form/${form.id}/analytics`)} className="p-3">
                   <BarChart3 className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" onClick={() => deleteForm(form.id)}>
+                <Button variant="ghost" onClick={() => deleteForm(form.id)} className="p-3">
                   <Trash2 className="h-4 w-4 text-red-500" />
                 </Button>
               </div>

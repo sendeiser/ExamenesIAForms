@@ -87,7 +87,7 @@ export function ThemeEditor() {
         <div className="mt-4 space-y-4">
           <div>
             <p className="text-xs text-gray-500 mb-2">Paletas rápidas</p>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
               {PRESETS.map((preset) => (
                 <button
                   key={preset.name}
