@@ -90,32 +90,34 @@ export function QuestionCard({ question }: QuestionCardProps) {
               </div>
             )}
             <QuestionTypeComponent question={question} />
-            <div className="flex items-center gap-4 pt-2 border-t">
+            <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
               <Toggle
                 label="Obligatoria"
                 checked={question.required}
                 onChange={(checked) => updateQuestion(question.id, { required: checked })}
               />
-              <div className="flex-1" />
+              <div className="flex-1 min-w-[8px]" />
               <select
                 value={question.sectionId ?? ''}
                 onChange={(e) => moveQuestionToSection(question.id, e.target.value || null)}
-                className="text-xs border rounded px-2 py-1 bg-white"
+                className="text-xs border rounded px-2 py-1 bg-white max-w-[160px]"
               >
                 <option value="">Sin sección</option>
                 {sections.map((s) => (
                   <option key={s.id} value={s.id}>{s.title}</option>
                 ))}
               </select>
-              <Button variant="ghost" onClick={() => setImageModalOpen(true)} title="Buscar imagen">
-                <ImagePlus className="h-4 w-4 text-gray-500" />
-              </Button>
-              <Button variant="ghost" onClick={() => setShowUrlInput(!showUrlInput)} title="Pegar URL de imagen">
-                <Link className={`h-4 w-4 ${showUrlInput ? 'text-indigo-500' : 'text-gray-500'}`} />
-              </Button>
-              <Button variant="ghost" onClick={() => removeQuestion(question.id)}>
-                <Trash2 className="h-4 w-4 text-red-500" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" onClick={() => setImageModalOpen(true)} title="Buscar imagen" className="p-2">
+                  <ImagePlus className="h-4 w-4 text-gray-500" />
+                </Button>
+                <Button variant="ghost" onClick={() => setShowUrlInput(!showUrlInput)} title="Pegar URL de imagen" className="p-2">
+                  <Link className={`h-4 w-4 ${showUrlInput ? 'text-indigo-500' : 'text-gray-500'}`} />
+                </Button>
+                <Button variant="ghost" onClick={() => removeQuestion(question.id)} className="p-2">
+                  <Trash2 className="h-4 w-4 text-red-500" />
+                </Button>
+              </div>
             </div>
             {showUrlInput && (
               <div className="flex gap-2">

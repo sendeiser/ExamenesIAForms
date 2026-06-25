@@ -240,7 +240,7 @@ export default function ExamResultsPage() {
       {/* ── Responses table ── */}
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[650px]">
             <thead>
               <tr className="bg-gray-50 border-b">
                 <th className="text-left px-4 py-3 font-medium text-gray-600 w-8 print:hidden" />
