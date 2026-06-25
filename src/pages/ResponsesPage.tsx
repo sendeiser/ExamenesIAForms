@@ -38,6 +38,7 @@ export default function ResponsesPage() {
               <thead>
                 <tr className="border-b text-left">
                   <th className="py-2 pr-4 font-medium">Fecha</th>
+                  <th className="py-2 pr-4 font-medium">Nombre</th>
                   <th className="py-2 pr-4 font-medium">Email</th>
                   <th className="py-2 font-medium">Respuesta</th>
                 </tr>
@@ -46,7 +47,8 @@ export default function ResponsesPage() {
                 {responses.map((r) => (
                   <tr key={r.id} className="border-b last:border-0">
                     <td className="py-2 pr-4 text-gray-500">{r.submittedAt?.toLocaleString()}</td>
-                    <td className="py-2 pr-4">{r.respondentEmail ?? '—'}</td>
+                    <td className="py-2 pr-4">{r.respondent?.name ?? '—'}</td>
+                    <td className="py-2 pr-4">{r.respondent?.email ?? r.respondentEmail ?? '—'}</td>
                     <td className="py-2 text-gray-600 truncate max-w-xs">
                       {Object.values(r.answers).filter(Boolean).join(', ')}
                     </td>

@@ -10,13 +10,13 @@ export default function LoginPage() {
   if (user) return <Navigate to="/" replace />;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-white">
+    <div className="min-h-screen flex items-center justify-center bg-surface-muted">
       <div className="text-center space-y-6 max-w-sm">
-        <div className="mx-auto h-16 w-16 bg-indigo-100 rounded-2xl flex items-center justify-center">
-          <FileText className="h-8 w-8 text-indigo-600" />
+        <div className="mx-auto h-16 w-16 bg-brand-100 rounded-2xl flex items-center justify-center">
+          <FileText className="h-8 w-8 text-brand-600" />
         </div>
         <h1 className="text-3xl font-bold text-gray-900">Exámenes</h1>
-        <p className="text-gray-500">Crea y comparte exámenes, encuestas y formularios</p>
+        <p className="text-gray-600">Crea y comparte exámenes, encuestas y formularios</p>
         <Button onClick={signInWithGoogle} className="w-full justify-center">
           <svg className="h-5 w-5" viewBox="0 0 24 24">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />

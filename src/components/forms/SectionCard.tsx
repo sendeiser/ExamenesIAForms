@@ -1,17 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from '@dnd-kit/core';
-import {
   SortableContext,
-  sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { useEditorStore } from '../../store/editorStore';
@@ -28,30 +18,9 @@ interface SectionCardProps {
 export function SectionCard({ section }: SectionCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: section.id });
   const questions = useEditorStore((s) => s.questions.filter((q) => q.sectionId === section.id));
-  const reorderQuestions = useEditorStore((s) => s.reorderQuestions);
   const updateSection = useEditorStore((s) => s.updateSection);
   const removeSection = useEditorStore((s) => s.removeSection);
   const addQuestion = useEditorStore((s) => s.addQuestion);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  );
-
-  function handleQuestionDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const oldIndex = questions.findIndex((q) => q.id === active.id);
-    const newIndex = questions.findIndex((q) => q.id === over.id);
-    const reordered = [...questions];
-    reordered.splice(newIndex, 0, reordered.splice(oldIndex, 1)[0]);
-    const allQuestions = useEditorStore.getState().questions;
-    const updatedAll = allQuestions.map((q) => {
-      const found = reordered.find((r) => r.id === q.id);
-      return found ? { ...found, order: reordered.indexOf(found) } : q;
-    });
-    reorderQuestions(updatedAll);
-  }
 
   const style = { transform: CSS.Transform.toString(transform), transition };
 
@@ -80,13 +49,11 @@ export function SectionCard({ section }: SectionCardProps) {
         </Button>
       </div>
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleQuestionDragEnd}>
-        <SortableContext items={questions.map((q) => q.id)} strategy={verticalListSortingStrategy}>
-          {questions.map((q) => (
-            <QuestionCard key={q.id} question={q} />
-          ))}
-        </SortableContext>
-      </DndContext>
+      <SortableContext items={questions.map((q) => q.id)} strategy={verticalListSortingStrategy}>
+        {questions.map((q) => (
+          <QuestionCard key={q.id} question={q} />
+        ))}
+      </SortableContext>
 
       <Button variant="secondary" onClick={() => addQuestion('text')} className="w-full">
         <Plus className="h-4 w-4" />

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useEditorStore } from '../store/editorStore';
 import { FormEditor } from '../components/forms/FormEditor';
@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { Toggle } from '../components/ui/Toggle';
 import { ThemeEditor } from '../components/forms/ThemeEditor';
+import { ShareModal } from '../components/forms/ShareModal';
 import { Eye, BarChart3, Share2 } from 'lucide-react';
 
 export default function FormBuilderPage() {
@@ -15,6 +16,7 @@ export default function FormBuilderPage() {
   const updateForm = useEditorStore((s) => s.updateForm);
   const loadForm = useEditorStore((s) => s.loadForm);
   const loading = useEditorStore((s) => s.loading);
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
     if (formId) loadForm(formId);
@@ -42,7 +44,7 @@ export default function FormBuilderPage() {
             <Eye className="h-4 w-4" />
             Vista previa
           </Button>
-          <Button variant="secondary" onClick={() => { navigator.clipboard.writeText(previewUrl); }}>
+          <Button variant="secondary" onClick={() => setShareOpen(true)}>
             <Share2 className="h-4 w-4" />
             Compartir
           </Button>
@@ -56,6 +58,12 @@ export default function FormBuilderPage() {
       </div>
       <ThemeEditor />
       <FormEditor />
+      <ShareModal
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        formId={form.id}
+        formTitle={form.title}
+      />
     </div>
   );
 }

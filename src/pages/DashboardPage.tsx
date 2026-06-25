@@ -40,7 +40,7 @@ export default function DashboardPage() {
         <Card className="p-12 text-center">
           <FileText className="h-12 w-12 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-1">No tienes formularios</h3>
-          <p className="text-gray-500 mb-4">Crea tu primer formulario para empezar</p>
+          <p className="text-gray-600 mb-4">Crea tu primer formulario para empezar</p>
           <Button onClick={() => setShowCreate(true)}>
             <Plus className="h-4 w-4" />
             Crear formulario
@@ -49,10 +49,10 @@ export default function DashboardPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {forms.map((form) => (
-            <Card key={form.id} className="p-5 hover:shadow-md transition-shadow cursor-pointer">
+            <Card key={form.id} className="p-5 card-hover cursor-pointer">
               <div onClick={() => navigate(`/form/${form.id}`)}>
                 <h3 className="font-semibold text-gray-900 truncate">{form.title}</h3>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-gray-600 mt-1">
                   {form.published ? 'Publicado' : 'Borrador'} ·{' '}
                   {new Date(form.updatedAt).toLocaleDateString()}
                 </p>

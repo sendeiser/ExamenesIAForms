@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { collection, addDoc, getDocs, query, orderBy, Timestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import type { FormResponse } from '../types/response';
+import type { FormResponse, RespondentInfo } from '../types/response';
 
 export function useResponses(formId: string) {
   const [responses, setResponses] = useState<FormResponse[]>([]);
@@ -14,9 +14,11 @@ export function useResponses(formId: string) {
     setLoading(false);
   }
 
-  async function submitResponse(answers: Record<string, any>, email?: string | null) {
+  async function submitResponse(answers: Record<string, any>, respondent?: RespondentInfo | null) {
     await addDoc(collection(db, 'forms', formId, 'responses'), {
-      respondentEmail: email || null,
+      respondentId: null,
+      respondentEmail: respondent?.email ?? null,
+      respondent: respondent ?? null,
       answers,
       submittedAt: Timestamp.now(),
     });

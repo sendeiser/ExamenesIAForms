@@ -34,15 +34,28 @@ export function scoreQuiz(
 
     if (correctAnswer !== null && correctAnswer !== undefined && userAnswer !== null && userAnswer !== undefined) {
       if (q.type === 'checkbox' && Array.isArray(correctAnswer) && Array.isArray(userAnswer)) {
-        const correctSet = new Set(correctAnswer);
-        const userSet = new Set(userAnswer);
+        const stripLatex = (s: string) => s.replace(/\$\$/g, '').replace(/\$/g, '').replace(/\\[\(\)]/g, '').replace(/\\[\[\]]/g, '');
+        const correctSet = new Set(correctAnswer.map(stripLatex));
+        const userSet = new Set(userAnswer.map(stripLatex));
         if (correctSet.size === userSet.size && [...correctSet].every((v) => userSet.has(v))) {
           isCorrect = true;
         }
       } else if (q.type === 'linearScale') {
         isCorrect = Number(userAnswer) === Number(correctAnswer);
+      } else if (q.type === 'paragraph') {
+        const normalize = (s: string) =>
+          s.toLowerCase().trim()
+            .replace(/\s+/g, ' ')
+            .replace(/[.,!¡¿?;:]+$/g, '').replace(/^[.,!¡¿?;:]+/g, '')
+            .replace(/\$\$/g, '').replace(/\$/g, '').replace(/\\[\(\)]/g, '').replace(/\\[\[\]]/g, '');
+        isCorrect = normalize(String(userAnswer)).includes(normalize(String(correctAnswer)));
       } else {
-        isCorrect = String(userAnswer).toLowerCase().trim() === String(correctAnswer).toLowerCase().trim();
+        const normalize = (s: string) =>
+          s.toLowerCase().trim()
+            .replace(/\s+/g, ' ')
+            .replace(/[.,!¡¿?;:]+$/g, '').replace(/^[.,!¡¿?;:]+/g, '')
+            .replace(/\$\$/g, '').replace(/\$/g, '').replace(/\\[\(\)]/g, '').replace(/\\[\[\]]/g, '');
+        isCorrect = normalize(String(userAnswer)) === normalize(String(correctAnswer));
       }
     }
 

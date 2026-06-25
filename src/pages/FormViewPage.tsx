@@ -4,9 +4,11 @@ import { doc, getDoc, getDocs, query, orderBy, collection } from 'firebase/fires
 import { db } from '../lib/firebase';
 import { useResponses } from '../hooks/useResponses';
 import { FormView } from '../components/form-view/FormView';
+import { RespondentForm } from '../components/form-view/RespondentForm';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import type { Form } from '../types/form';
 import type { Question, Section } from '../types/question';
+import type { RespondentInfo } from '../types/response';
 
 export default function FormViewPage() {
   const { formId } = useParams<{ formId: string }>();
@@ -14,6 +16,7 @@ export default function FormViewPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
+  const [respondent, setRespondent] = useState<RespondentInfo | null>(null);
   const { submitResponse } = useResponses(formId!);
 
   useEffect(() => {
@@ -35,11 +38,19 @@ export default function FormViewPage() {
   }, [formId]);
 
   if (loading) return <LoadingSpinner />;
-  if (!form) return <div className="text-center py-12 text-gray-500">Formulario no encontrado</div>;
+  if (!form) return <div className="text-center py-12 text-gray-600">Formulario no encontrado</div>;
+
+  if (!respondent) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white py-12 px-4">
+        <RespondentForm formTitle={form.title} onStart={setRespondent} />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white py-12 px-4">
-      <FormView form={form} questions={questions} sections={sections} onSubmit={(answers) => submitResponse(answers, null)} />
+      <FormView form={form} questions={questions} sections={sections} respondent={respondent} onSubmit={(answers) => submitResponse(answers, respondent)} />
     </div>
   );
 }

@@ -1,10 +1,12 @@
+import { useState, useRef } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useEditorStore } from '../../store/editorStore';
 import { Button } from '../ui/Button';
 import { Toggle } from '../ui/Toggle';
 import { Input } from '../ui/Input';
-import { GripVertical, Copy, Trash2 } from 'lucide-react';
+import { MathToolbar, useMathInsert } from '../ui/MathToolbar';
+import { GripVertical, Copy, Trash2, ImagePlus, Link, X } from 'lucide-react';
 import type { Question } from '../../types/question';
 import { TextQuestion } from './question-types/TextQuestion';
 import { MultipleChoiceQuestion } from './question-types/MultipleChoiceQuestion';
@@ -12,9 +14,9 @@ import { CheckboxQuestion } from './question-types/CheckboxQuestion';
 import { DropdownQuestion } from './question-types/DropdownQuestion';
 import { LinearScaleQuestion } from './question-types/LinearScaleQuestion';
 import { DateQuestion } from './question-types/DateQuestion';
-import { FileUploadQuestion } from './question-types/FileUploadQuestion';
 import { ConditionsEditor } from './ConditionsEditor';
 import { QuizSettings } from './QuizSettings';
+import { ImageSearchModal } from './ImageSearchModal';
 
 interface QuestionCardProps {
   question: Question;
@@ -33,7 +35,6 @@ function QuestionTypeComponent({ question }: { question: Question }) {
     case 'linearScale': return <LinearScaleQuestion {...props} />;
     case 'date': return <DateQuestion {...props} />;
     case 'time': return <DateQuestion {...props} time />;
-    case 'fileUpload': return <FileUploadQuestion />;
     default: return null;
   }
 }
@@ -43,6 +44,11 @@ export function QuestionCard({ question }: QuestionCardProps) {
   const form = useEditorStore((s) => s.form);
   const sections = useEditorStore((s) => s.sections);
   const moveQuestionToSection = useEditorStore((s) => s.moveQuestionToSection);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [urlValue, setUrlValue] = useState('');
+  const titleRef = useRef<HTMLInputElement>(null);
+  const insertTitle = useMathInsert(titleRef, question.title, (val) => updateQuestion(question.id, { title: val }));
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: question.id });
 
   const style = {
@@ -52,46 +58,105 @@ export function QuestionCard({ question }: QuestionCardProps) {
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <div className="flex items-start gap-4">
-        <button className="mt-2 cursor-grab text-gray-400 hover:text-gray-600" {...attributes} {...listeners}>
-          <GripVertical className="h-5 w-5" />
-        </button>
-        <div className="flex-1 space-y-4">
-          <Input
-            value={question.title}
-            onChange={(e) => updateQuestion(question.id, { title: e.target.value })}
-            placeholder="Pregunta sin título"
-            className="text-lg font-medium border-0 px-0 focus:ring-0"
-          />
-          <QuestionTypeComponent question={question} />
-          <div className="flex items-center gap-4 pt-2 border-t">
-            <Toggle
-              label="Obligatoria"
-              checked={question.required}
-              onChange={(checked) => updateQuestion(question.id, { required: checked })}
+    <>
+      <div ref={setNodeRef} style={style} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-start gap-4">
+          <button className="mt-2 cursor-grab text-gray-400 hover:text-gray-600" {...attributes} {...listeners}>
+            <GripVertical className="h-5 w-5" />
+          </button>
+          <div className="flex-1 space-y-4">
+            <Input
+              ref={titleRef}
+              value={question.title}
+              onChange={(e) => updateQuestion(question.id, { title: e.target.value })}
+              placeholder="Pregunta sin título"
+              className="text-lg font-medium border-0 px-0 focus:ring-0"
             />
-            <div className="flex-1" />
-            <select
-              value={question.sectionId ?? ''}
-              onChange={(e) => moveQuestionToSection(question.id, e.target.value || null)}
-              className="text-xs border rounded px-2 py-1 bg-white"
-            >
-              <option value="">Sin sección</option>
-              {sections.map((s) => (
-                <option key={s.id} value={s.id}>{s.title}</option>
-              ))}
-            </select>
-            <Button variant="ghost" onClick={() => removeQuestion(question.id)}>
-              <Trash2 className="h-4 w-4 text-red-500" />
-            </Button>
+            <MathToolbar onInsert={insertTitle} />
+            {question.settings?.imageUrl && (
+              <div className="relative group">
+                <img
+                  src={question.settings.imageUrl}
+                  alt=""
+                  className="w-full max-h-48 object-cover rounded-lg"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+                <button
+                  onClick={() => updateQuestion(question.id, { settings: { ...question.settings, imageUrl: undefined } })}
+                  className="absolute top-2 right-2 bg-white/80 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="h-4 w-4 text-red-500" />
+                </button>
+              </div>
+            )}
+            <QuestionTypeComponent question={question} />
+            <div className="flex items-center gap-4 pt-2 border-t">
+              <Toggle
+                label="Obligatoria"
+                checked={question.required}
+                onChange={(checked) => updateQuestion(question.id, { required: checked })}
+              />
+              <div className="flex-1" />
+              <select
+                value={question.sectionId ?? ''}
+                onChange={(e) => moveQuestionToSection(question.id, e.target.value || null)}
+                className="text-xs border rounded px-2 py-1 bg-white"
+              >
+                <option value="">Sin sección</option>
+                {sections.map((s) => (
+                  <option key={s.id} value={s.id}>{s.title}</option>
+                ))}
+              </select>
+              <Button variant="ghost" onClick={() => setImageModalOpen(true)} title="Buscar imagen">
+                <ImagePlus className="h-4 w-4 text-gray-500" />
+              </Button>
+              <Button variant="ghost" onClick={() => setShowUrlInput(!showUrlInput)} title="Pegar URL de imagen">
+                <Link className={`h-4 w-4 ${showUrlInput ? 'text-indigo-500' : 'text-gray-500'}`} />
+              </Button>
+              <Button variant="ghost" onClick={() => removeQuestion(question.id)}>
+                <Trash2 className="h-4 w-4 text-red-500" />
+              </Button>
+            </div>
+            {showUrlInput && (
+              <div className="flex gap-2">
+                <Input
+                  value={urlValue}
+                  onChange={(e) => setUrlValue(e.target.value)}
+                  placeholder="https://ejemplo.com/imagen.jpg"
+                  className="text-xs flex-1"
+                />
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    if (urlValue.trim()) {
+                      updateQuestion(question.id, { settings: { ...question.settings, imageUrl: urlValue.trim() } });
+                      setShowUrlInput(false);
+                      setUrlValue('');
+                    }
+                  }}
+                  disabled={!urlValue.trim()}
+                >
+                  Agregar
+                </Button>
+              </div>
+            )}
+            <ConditionsEditor question={question} />
+            {form?.settings?.isQuiz && (
+              <QuizSettings question={question} updateQuestion={updateQuestion} />
+            )}
           </div>
-          <ConditionsEditor question={question} />
-          {form?.settings?.isQuiz && (
-            <QuizSettings question={question} updateQuestion={updateQuestion} />
-          )}
         </div>
       </div>
-    </div>
+      <ImageSearchModal
+        open={imageModalOpen}
+        onClose={() => setImageModalOpen(false)}
+        onSelect={(url) => {
+          updateQuestion(question.id, {
+            settings: { ...question.settings, imageUrl: url },
+          });
+          setImageModalOpen(false);
+        }}
+      />
+    </>
   );
 }

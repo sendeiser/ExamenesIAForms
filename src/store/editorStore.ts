@@ -66,7 +66,8 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   updateForm: async (updates) => {
     const { form } = get();
     if (!form) return;
-    await updateDoc(doc(db, 'forms', form.id), { ...updates, updatedAt: Timestamp.now() });
+    const clean = JSON.parse(JSON.stringify(updates));
+    await updateDoc(doc(db, 'forms', form.id), { ...clean, updatedAt: Timestamp.now() });
     set({ form: { ...form, ...updates } });
   },
 

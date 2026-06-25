@@ -11,6 +11,13 @@ export interface FormTheme {
   backgroundColor: string;
   fontFamily: string;
   showProgressBar: boolean;
+  borderRadius?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
+  cardStyle?: 'shadow' | 'bordered' | 'flat';
+  headerBgColor?: string;
+  headerImageUrl?: string | null;
+  headerFontFamily?: string;
+  headerTextColor?: string;
+  headerFontSize?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
 export interface Form {

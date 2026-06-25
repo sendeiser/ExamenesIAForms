@@ -5,6 +5,7 @@ import FormBuilderPage from './pages/FormBuilderPage';
 import FormViewPage from './pages/FormViewPage';
 import ResponsesPage from './pages/ResponsesPage';
 import AnalyticsPage from './pages/AnalyticsPage';
+import ExamResultsPage from './pages/ExamResultsPage';
 import LoginPage from './pages/LoginPage';
 
 export default function App() {
@@ -17,6 +18,7 @@ export default function App() {
         <Route path="/form/:formId" element={<FormBuilderPage />} />
         <Route path="/form/:formId/responses" element={<ResponsesPage />} />
         <Route path="/form/:formId/analytics" element={<AnalyticsPage />} />
+        <Route path="/form/:formId/exam-results" element={<ExamResultsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

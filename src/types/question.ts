@@ -6,8 +6,7 @@ export type QuestionType =
   | 'dropdown'
   | 'linearScale'
   | 'date'
-  | 'time'
-  | 'fileUpload';
+  | 'time';
 
 export interface QuestionCondition {
   enabled: boolean;
@@ -23,8 +22,7 @@ export interface QuestionSettings {
   step?: number;
   minLabel?: string;
   maxLabel?: string;
-  accept?: string;
-  maxSize?: number;
+  imageUrl?: string;
 }
 
 export interface QuizQuestionSettings {

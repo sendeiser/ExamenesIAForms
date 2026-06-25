@@ -4,4 +4,152 @@
 
 body {
   @apply bg-gray-50 text-gray-900 antialiased;
+  transition: background-color 0.3s;
+}
+
+.theme-page {
+  min-height: 100vh;
+  transition: all 0.3s;
+}
+
+/* ── Background & text ── */
+.theme-page {
+  background-color: var(--form-bg, #ffffff);
+  font-family: var(--form-font, Inter, system-ui, sans-serif);
+  color: var(--form-text, #111827);
+}
+
+/* ── Cards ── */
+.theme-page .card {
+  background: var(--form-bg, #ffffff) !important;
+  border-color: color-mix(in srgb, var(--form-primary, #6366f1) 25%, transparent) !important;
+  border-radius: var(--form-radius, 0.75rem) !important;
+  box-shadow: var(--form-shadow, 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)) !important;
+  transition: all 0.3s;
+}
+
+.theme-page .card[data-style="bordered"] {
+  box-shadow: none !important;
+  border-width: 2px !important;
+}
+
+.theme-page .card[data-style="flat"] {
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* ── Buttons ── */
+.theme-page .btn-primary {
+  background-color: var(--form-primary, #6366f1) !important;
+  border-color: var(--form-primary, #6366f1) !important;
+  border-radius: var(--form-radius, 0.5rem) !important;
+}
+.theme-page .btn-primary:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--form-primary, #6366f1) 40%, transparent);
+}
+.theme-page .btn-primary:focus {
+  --tw-ring-color: var(--form-primary, #6366f1) !important;
+}
+
+.theme-page .btn-secondary {
+  border-radius: var(--form-radius, 0.5rem) !important;
+}
+
+/* ── Inputs & textareas ── */
+.theme-page input[type="text"],
+.theme-page input[type="email"],
+.theme-page input[type="date"],
+.theme-page input[type="time"],
+.theme-page textarea,
+.theme-page select {
+  border-radius: var(--form-radius, 0.5rem) !important;
+  border-color: color-mix(in srgb, var(--form-primary, #6366f1) 30%, #d1d5db) !important;
+  transition: border-color 0.2s;
+}
+.theme-page input:focus,
+.theme-page textarea:focus,
+.theme-page select:focus {
+  border-color: var(--form-primary, #6366f1) !important;
+  --tw-ring-color: color-mix(in srgb, var(--form-primary, #6366f1) 30%, transparent) !important;
+}
+
+/* ── Radio & Checkbox ── */
+.theme-page input[type="radio"] {
+  accent-color: var(--form-primary, #6366f1);
+}
+.theme-page input[type="checkbox"] {
+  accent-color: var(--form-primary, #6366f1);
+  border-radius: var(--form-radius, 0.25rem) !important;
+}
+
+/* ── Progress bar ── */
+.theme-page .progress-bar {
+  background-color: var(--form-primary, #6366f1);
+  border-radius: var(--form-radius, 9999px);
+}
+
+/* ── Headings ── */
+.theme-page h1,
+.theme-page h2,
+.theme-page h3 {
+  color: color-mix(in srgb, var(--form-primary, #6366f1) 85%, #111827);
+}
+
+/* ── Images ── */
+.theme-page img {
+  border-radius: var(--form-radius, 0.5rem);
+  border: 1px solid color-mix(in srgb, var(--form-primary, #6366f1) 15%, transparent);
+}
+
+/* ── Section separators ── */
+.theme-page hr {
+  border-color: color-mix(in srgb, var(--form-primary, #6366f1) 20%, transparent);
+}
+
+/* ── Links ── */
+.theme-page a {
+  color: var(--form-primary, #6366f1);
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Focus outline ── */
+:focus-visible {
+  outline: 2px solid var(--form-primary, #6366f1);
+  outline-offset: 2px;
+}
+
+/* ── Subtle card hover on dashboard ── */
+.card-hover {
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.card-hover:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transform: translateY(-1px);
+}
+
+/* ── Image loading placeholder ── */
+.img-loading {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .img-loading {
+    animation: none;
+    background: #f0f0f0;
+  }
 }

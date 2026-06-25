@@ -5,7 +5,8 @@ import { useResponses } from '../hooks/useResponses';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { ArrowLeft, BarChart3, List } from 'lucide-react';
+import { LatexRenderer } from '../components/ui/LatexRenderer';
+import { ArrowLeft, BarChart3, List, GraduationCap } from 'lucide-react';
 import { exportToCsv } from '../utils/export-csv';
 
 export default function AnalyticsPage() {
@@ -20,9 +21,11 @@ export default function AnalyticsPage() {
   if (loading) return <LoadingSpinner />;
 
   function handleExport() {
-    const headers = ['Fecha', ...questions.map((q) => q.title)];
+    const headers = ['Fecha', 'Nombre', 'Email', ...questions.map((q) => q.title)];
     const rows = responses.map((r) => [
       r.submittedAt?.toLocaleString() ?? '',
+      r.respondent?.name ?? '',
+      r.respondent?.email ?? r.respondentEmail ?? '',
       ...questions.map((q) => String(r.answers[q.id] ?? '')),
     ]);
     exportToCsv(`${form?.title ?? 'respuestas'}.csv`, [headers, ...rows]);
@@ -59,10 +62,18 @@ export default function AnalyticsPage() {
           </Link>
           <h1 className="text-xl font-bold">{form?.title ?? 'Análisis'}</h1>
         </div>
-        <Button variant="secondary" onClick={handleExport}>
-          <List className="h-4 w-4" />
-          Exportar CSV
-        </Button>
+        <div className="flex items-center gap-2">
+          <Link to={`/form/${formId}/exam-results`}>
+            <Button variant="secondary">
+              <GraduationCap className="h-4 w-4" />
+              Calificaciones
+            </Button>
+          </Link>
+          <Button variant="secondary" onClick={handleExport}>
+            <List className="h-4 w-4" />
+            Exportar CSV
+          </Button>
+        </div>
       </div>
 
       <Card className="p-4">
@@ -78,7 +89,7 @@ export default function AnalyticsPage() {
 
         return (
           <Card key={q.id} className="p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">{q.title}</h3>
+            <h3 className="font-semibold text-gray-900 mb-4"><LatexRenderer text={q.title} /></h3>
 
             {summary.type === 'choice' && (
               <div className="space-y-2">
@@ -88,7 +99,7 @@ export default function AnalyticsPage() {
                   return (
                     <div key={opt}>
                       <div className="flex justify-between text-sm mb-1">
-                        <span>{opt}</span>
+                        <span><LatexRenderer text={opt} /></span>
                         <span className="text-gray-500">{count} ({Math.round(pct)}%)</span>
                       </div>
                       <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -114,7 +125,7 @@ export default function AnalyticsPage() {
                   <p className="text-gray-400 text-sm">Sin respuestas</p>
                 ) : (
                   summary.answers.map((a: any, i: number) => (
-                    <p key={i} className="text-sm bg-gray-50 rounded-lg p-3">{String(a)}</p>
+                    <p key={i} className="text-sm bg-gray-50 rounded-lg p-3"><LatexRenderer text={String(a)} /></p>
                   ))
                 )}
               </div>

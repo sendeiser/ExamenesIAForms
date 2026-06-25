@@ -1,22 +1,64 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { QuestionInput } from './QuestionInput';
 import { SectionPage } from './SectionPage';
+import { FormHeader } from './FormHeader';
 import { QuizResult } from './QuizResult';
+import { LatexRenderer } from '../ui/LatexRenderer';
 import { scoreQuiz } from '../../lib/quizScoring';
 import type { Form } from '../../types/form';
 import type { Question, Section } from '../../types/question';
+import type { RespondentInfo } from '../../types/response';
 import type { QuizScore } from '../../lib/quizScoring';
+
+const RADIUS_MAP: Record<string, string> = {
+  none: '0',
+  sm: '0.25rem',
+  md: '0.5rem',
+  lg: '0.75rem',
+  xl: '1rem',
+};
+
+function useGlobalTheme(form: Form) {
+  useEffect(() => {
+    const theme = form.theme ?? {};
+    const root = document.documentElement;
+    const prev: [string, string][] = [];
+
+    function setVar(name: string, value: string) {
+      const old = root.style.getPropertyValue(name);
+      prev.push([name, old]);
+      root.style.setProperty(name, value);
+    }
+
+    setVar('--form-primary', theme.primaryColor ?? '#6366f1');
+    setVar('--form-bg', theme.backgroundColor ?? '#ffffff');
+    setVar('--form-font', theme.fontFamily ?? 'Inter, system-ui, sans-serif');
+    setVar('--form-text', '#111827');
+
+    const radius = RADIUS_MAP[theme.borderRadius ?? ''] ?? '0.75rem';
+    setVar('--form-radius', radius);
+
+    return () => {
+      prev.forEach(([name, val]) => {
+        if (val) root.style.setProperty(name, val);
+        else root.style.removeProperty(name);
+      });
+    };
+  }, [form.theme?.primaryColor, form.theme?.backgroundColor, form.theme?.fontFamily, form.theme?.borderRadius]);
+}
 
 interface FormViewProps {
   form: Form;
   questions: Question[];
   sections: Section[];
-  onSubmit: (answers: Record<string, any>) => Promise<void>;
+  respondent?: RespondentInfo;
+  onSubmit: (answers: Record<string, any>, respondent?: RespondentInfo) => Promise<void>;
 }
 
-export function FormView({ form, questions, sections, onSubmit }: FormViewProps) {
+export function FormView({ form, questions, sections, respondent, onSubmit }: FormViewProps) {
+  useGlobalTheme(form);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -59,7 +101,7 @@ export function FormView({ form, questions, sections, onSubmit }: FormViewProps)
   async function handleSubmit() {
     setSaving(true);
     try {
-      await onSubmit(answers);
+      await onSubmit(answers, respondent);
       setSubmitted(true);
       if (form.settings?.isQuiz) {
         setQuizScore(scoreQuiz(questions, answers));
@@ -80,31 +122,29 @@ export function FormView({ form, questions, sections, onSubmit }: FormViewProps)
           <Card className="p-8 text-center max-w-lg mx-auto">
             <div className="text-4xl mb-4">&#127881;</div>
             <h2 className="text-xl font-semibold mb-2">{form.settings.confirmationMessage}</h2>
-            <p className="text-gray-500">Tu respuesta ha sido registrada.</p>
+            <p className="text-gray-600">Tu respuesta ha sido registrada.</p>
           </Card>
         )}
       </div>
     );
   }
 
+  const cardStyle = form.theme?.cardStyle ?? 'shadow';
+
   // No sections: single page mode
   if (!hasSections) {
     return (
-      <div
-        className="max-w-2xl mx-auto space-y-4"
-        style={{
-          '--form-primary': form.theme?.primaryColor ?? '#6366f1',
-          '--form-bg': form.theme?.backgroundColor ?? '#ffffff',
-        } as React.CSSProperties}
-      >
-        <Card className="p-8">
-          <h1 className="text-2xl font-bold text-gray-900">{form.title}</h1>
-          {form.description && <p className="text-gray-500 mt-2">{form.description}</p>}
-        </Card>
+      <div className="theme-page max-w-2xl mx-auto space-y-4">
+        <FormHeader title={form.title} description={form.description} theme={form.theme} />
         {questions.filter(isQuestionVisible).map((q) => (
-          <Card key={q.id} className="p-6">
+          <Card key={q.id} className="p-6" data-style={cardStyle}>
+            {q.settings?.imageUrl && (
+              <img src={q.settings.imageUrl} alt="" className="w-full max-h-48 object-cover mb-3"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+            )}
             <label className="block mb-3">
-              <span className="text-sm font-medium text-gray-900">{q.title}</span>
+              <span className="text-sm font-medium"><LatexRenderer text={q.title} /></span>
               {q.required && <span className="text-red-500 ml-1">*</span>}
             </label>
             <QuestionInput question={q} value={answers[q.id]} onChange={(v) => setAnswer(q.id, v)} />
@@ -119,28 +159,16 @@ export function FormView({ form, questions, sections, onSubmit }: FormViewProps)
 
   // Sections: multi-page mode
   return (
-    <div
-      className="max-w-2xl mx-auto space-y-4"
-      style={{
-        '--form-primary': form.theme?.primaryColor ?? '#6366f1',
-        '--form-bg': form.theme?.backgroundColor ?? '#ffffff',
-      } as React.CSSProperties}
-    >
+    <div className="theme-page max-w-2xl mx-auto space-y-4">
       {form.theme.showProgressBar && (
         <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
           <div
-            className="h-full transition-all duration-300"
-            style={{
-              width: `${((currentSectionIndex + 1) / totalPages) * 100}%`,
-              backgroundColor: 'var(--form-primary, #6366f1)',
-            }}
+            className="progress-bar h-full transition-all duration-300"
+            style={{ width: `${((currentSectionIndex + 1) / totalPages) * 100}%` }}
           />
         </div>
       )}
-      <Card className="p-8" style={{ backgroundColor: 'var(--form-bg, #ffffff)' }}>
-        <h1 className="text-2xl font-bold text-gray-900">{form.title}</h1>
-        {form.description && <p className="text-gray-500 mt-2">{form.description}</p>}
-      </Card>
+      <FormHeader title={form.title} description={form.description} theme={form.theme} />
 
       {currentSection && (
         <SectionPage
@@ -154,6 +182,7 @@ export function FormView({ form, questions, sections, onSubmit }: FormViewProps)
           onPrev={() => setCurrentSectionIndex((i) => Math.max(i - 1, 0))}
           onSubmit={handleSubmit}
           saving={saving}
+          cardStyle={cardStyle}
         />
       )}
     </div>

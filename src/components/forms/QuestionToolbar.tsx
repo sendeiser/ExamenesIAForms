@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useEditorStore } from '../../store/editorStore';
 import { Button } from '../ui/Button';
-import { Type, AlignLeft, List, CheckSquare, ChevronDown, Minus, Calendar, Clock, Upload, Layers, Sparkles } from 'lucide-react';
+import { Type, AlignLeft, List, CheckSquare, ChevronDown, Minus, Calendar, Clock, Layers, Sparkles } from 'lucide-react';
 import { AiGenerateModal } from './AiGenerateModal';
 
 const questionTypes = [
@@ -13,7 +13,6 @@ const questionTypes = [
   { type: 'linearScale' as const, icon: Minus, label: 'Escala lineal' },
   { type: 'date' as const, icon: Calendar, label: 'Fecha' },
   { type: 'time' as const, icon: Clock, label: 'Hora' },
-  { type: 'fileUpload' as const, icon: Upload, label: 'Archivo' },
 ];
 
 export function QuestionToolbar() {
