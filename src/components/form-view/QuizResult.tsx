@@ -156,7 +156,8 @@ Sin markdown, sin \`\`\`, sin explicaciones adicionales.`;
       if (q) map[q.questionId] = item.feedback;
     });
     return map;
-  } catch {
-    throw new Error(`No se pudo procesar la retroalimentación. Respuesta: ${text.slice(0, 600)}`);
+  } catch (e) {
+    const msg = e instanceof SyntaxError ? e.message : 'Error desconocido';
+    throw new Error(`Error de JSON: ${msg}. Respuesta: ${text.slice(0, 300)}`);
   }
 }

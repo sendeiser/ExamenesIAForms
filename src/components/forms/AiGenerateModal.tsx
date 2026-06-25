@@ -393,7 +393,10 @@ async function callGeminiWithDocument(
 
   try {
     return JSON.parse(jsonStr);
-  } catch {
-    throw new Error(`No se pudo procesar la respuesta de la IA. Respuesta: ${text.slice(0, 600)}`);
+  } catch (e) {
+    const msg = e instanceof SyntaxError ? e.message : 'Error desconocido';
+    const pos = parseInt(msg.match(/position\s+(\d+)/)?.[1] ?? '0', 10);
+    const around = jsonStr.slice(Math.max(0, pos - 40), pos + 40);
+    throw new Error(`Error de JSON en posición ${pos}: ${msg}. Alrededor: ...${around}...`);
   }
 }
