@@ -82,7 +82,10 @@ export function QuestionCard({ question }: QuestionCardProps) {
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                 />
                 <button
-                  onClick={() => updateQuestion(question.id, { settings: { ...question.settings, imageUrl: undefined } })}
+                  onClick={() => {
+                    const { imageUrl: _, ...rest } = question.settings ?? {};
+                    updateQuestion(question.id, { settings: rest });
+                  }}
                   className="absolute top-2 right-2 bg-white/80 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <X className="h-4 w-4 text-red-500" />
