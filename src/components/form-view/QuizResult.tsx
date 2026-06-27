@@ -18,13 +18,14 @@ export function QuizResult({ score }: QuizResultProps) {
 
   const gradeColor = score.percentage >= 70 ? 'text-green-600' : score.percentage >= 50 ? 'text-yellow-600' : 'text-red-600';
   const wrongResults = score.results.filter((r) => !r.isCorrect);
+  const textWrongResults = wrongResults.filter((r) => r.type === 'text' || r.type === 'paragraph');
   const hasWrong = wrongResults.length > 0;
 
   async function handleGetFeedback() {
     setLoadingFeedback(true);
     setFeedbackError('');
     try {
-      const result = await callGeminiForFeedback(wrongResults);
+      const result = await callGeminiForFeedback(textWrongResults);
       setFeedback(result);
     } catch (err) {
       setFeedbackError(err instanceof Error ? err.message : 'Error al obtener retroalimentación');

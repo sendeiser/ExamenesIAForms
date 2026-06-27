@@ -7,6 +7,7 @@ export interface QuizScore {
   results: Array<{
     questionId: string;
     questionTitle: string;
+    type: string;
     correctAnswer: string | string[] | null;
     userAnswer: string | string[] | null;
     points: number;
@@ -68,6 +69,7 @@ export function scoreQuiz(
     results.push({
       questionId: q.id,
       questionTitle: q.title || q.type,
+      type: q.type,
       correctAnswer,
       userAnswer,
       points,
