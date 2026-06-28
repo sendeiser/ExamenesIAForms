@@ -18,14 +18,14 @@ export function QuizResult({ score }: QuizResultProps) {
 
   const gradeColor = score.percentage >= 70 ? 'text-green-600' : score.percentage >= 50 ? 'text-yellow-600' : 'text-red-600';
   const wrongResults = score.results.filter((r) => !r.isCorrect);
-  const textWrongResults = wrongResults.filter((r) => r.type === 'text' || r.type === 'paragraph');
+  const textResults = score.results.filter((r) => r.type === 'text' || r.type === 'paragraph');
   const hasWrong = wrongResults.length > 0;
 
   async function handleGetFeedback() {
     setLoadingFeedback(true);
     setFeedbackError('');
     try {
-      const result = await callGeminiForFeedback(textWrongResults);
+      const result = await callGeminiForFeedback(textResults);
       setFeedback(result);
     } catch (err) {
       setFeedbackError(err instanceof Error ? err.message : 'Error al obtener retroalimentación');
@@ -42,7 +42,7 @@ export function QuizResult({ score }: QuizResultProps) {
         <p className="text-gray-500">{score.percentage.toFixed(1)}%</p>
       </Card>
 
-      {hasWrong && !feedback && (
+      {hasWrong && textResults.length > 0 && !feedback && (
         <div className="text-center">
           <Button onClick={handleGetFeedback} disabled={loadingFeedback}>
             {loadingFeedback ? (
@@ -78,7 +78,7 @@ export function QuizResult({ score }: QuizResultProps) {
                       </span></p>
                     )}
                   </div>
-                  {feedback && feedback[r.questionId] && !r.isCorrect && (
+                  {feedback && feedback[r.questionId] && (r.type === 'text' || r.type === 'paragraph') && (
                     <div className="mt-2 p-3 bg-indigo-50 rounded-lg text-xs text-gray-700 leading-relaxed">
                       {feedback[r.questionId]}
                     </div>
@@ -108,14 +108,14 @@ async function callGeminiForFeedback(
     )
     .join('\n\n');
 
-  const prompt = `Eres un profesor. Un estudiante respondió un examen y tuvo errores en las siguientes preguntas. Para cada pregunta, da una breve retroalimentación educativa en español que explique por qué su respuesta fue incorrecta y cuál es el concepto correcto.
+  const prompt = `Eres un profesor con un tono cercano y alentador. Un estudiante respondió las siguientes preguntas abiertas en un examen. Para cada una, evalúa si su respuesta es correcta o incorrecta y da una breve retroalimentación en español que sea útil, motivadora y con un toque personal. Si la respuesta está bien, felicítalo y explícale por qué es correcta. Si no, explícale con amabilidad en qué se equivocó y cómo mejorarlo.
 
 ${questionsText}
 
 Responde ÚNICAMENTE con un array JSON donde cada elemento tenga:
 {
   "index": número de pregunta (1-based),
-  "feedback": "explicación clara y breve en español (2-3 oraciones)"
+  "feedback": "retroalimentación cálida y educativa en español (2-3 oraciones)"
 }
 
 Sin markdown, sin \`\`\`, sin explicaciones adicionales.`;
