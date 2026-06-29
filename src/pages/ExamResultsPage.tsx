@@ -44,7 +44,7 @@ export default function ExamResultsPage() {
   const sorted = scored ? [...scored].sort((a, b) => b.score.earnedPoints - a.score.earnedPoints) : [];
   const highestEarned = sorted[0]?.score.earnedPoints ?? 0;
   const lowestEarned = sorted[sorted.length - 1]?.score.earnedPoints ?? 0;
-  const passed = scored ? scored.filter((r) => r.score.percentage >= 70).length : 0;
+  const passed = scored ? scored.filter((r) => r.score.percentage >= 60).length : 0;
   const passRate = scored && scored.length > 0 ? (passed / scored.length) * 100 : 0;
 
   function toggleRow(id: string) {
@@ -83,7 +83,7 @@ export default function ExamResultsPage() {
       String(s.earnedPoints),
       String(s.totalPoints),
       `${s.percentage}%`,
-      s.percentage >= 70 ? 'Sí' : 'No',
+      s.percentage >= 60 ? 'Sí' : 'No',
       ...s.results.flatMap((res) => [
         Array.isArray(res.userAnswer) ? res.userAnswer.join('; ') : String(res.userAnswer ?? ''),
         Array.isArray(res.correctAnswer) ? res.correctAnswer.join('; ') : String(res.correctAnswer ?? ''),
@@ -281,7 +281,7 @@ export default function ExamResultsPage() {
                         <td className="px-4 py-3 text-center">{s.earnedPoints}/{s.totalPoints}</td>
                         <td className="px-4 py-3 text-center font-mono">{s.percentage}%</td>
                         <td className="px-4 py-3 text-center">
-                          {s.percentage >= 70 ? (
+                          {s.percentage >= 60 ? (
                             <span className="text-green-600 font-medium">Aprobado</span>
                           ) : (
                             <span className="text-red-600 font-medium">Reprobado</span>
@@ -372,8 +372,8 @@ export default function ExamResultsPage() {
                           Puntaje: <strong>{s.earnedPoints}/{s.totalPoints}</strong>
                         </span>
                         <span className="font-mono">{s.percentage}%</span>
-                        <span className={s.percentage >= 70 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
-                          {s.percentage >= 70 ? 'Aprobado' : 'Reprobado'}
+                        <span className={s.percentage >= 60 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                          {s.percentage >= 60 ? 'Aprobado' : 'Reprobado'}
                         </span>
                       </>
                     )}

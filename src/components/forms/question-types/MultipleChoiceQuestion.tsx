@@ -60,7 +60,7 @@ export function MultipleChoiceQuestion({ question, updateQuestion }: Props) {
           </div>
         </div>
       ))}
-      <Button variant="ghost" onClick={addOption}>
+      <Button variant="secondary" onClick={addOption} className="w-full">
         <Plus className="h-4 w-4" />
         Agregar opción
       </Button>

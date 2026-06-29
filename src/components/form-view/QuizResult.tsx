@@ -16,7 +16,7 @@ export function QuizResult({ score }: QuizResultProps) {
   const [loadingFeedback, setLoadingFeedback] = useState(false);
   const [feedbackError, setFeedbackError] = useState('');
 
-  const gradeColor = score.percentage >= 70 ? 'text-green-600' : score.percentage >= 50 ? 'text-yellow-600' : 'text-red-600';
+  const gradeColor = score.percentage >= 60 ? 'text-green-600' : score.percentage >= 40 ? 'text-yellow-600' : 'text-red-600';
   const wrongResults = score.results.filter((r) => !r.isCorrect);
   const textResults = score.results.filter((r) => r.type === 'text' || r.type === 'paragraph');
   const hasWrong = wrongResults.length > 0;
