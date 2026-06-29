@@ -6,7 +6,7 @@ import { Button } from '../ui/Button';
 import { Toggle } from '../ui/Toggle';
 import { Input } from '../ui/Input';
 import { MathToolbar, useMathInsert } from '../ui/MathToolbar';
-import { GripVertical, Copy, Trash2, ImagePlus, Link, X } from 'lucide-react';
+import { GripVertical, Copy, Trash2, ImagePlus, Link, X, Sparkles } from 'lucide-react';
 import type { Question } from '../../types/question';
 import { TextQuestion } from './question-types/TextQuestion';
 import { MultipleChoiceQuestion } from './question-types/MultipleChoiceQuestion';
@@ -17,6 +17,7 @@ import { DateQuestion } from './question-types/DateQuestion';
 import { ConditionsEditor } from './ConditionsEditor';
 import { QuizSettings } from './QuizSettings';
 import { ImageSearchModal } from './ImageSearchModal';
+import { AiModifyModal } from './AiModifyModal';
 
 interface QuestionCardProps {
   question: Question;
@@ -47,6 +48,7 @@ export function QuestionCard({ question }: QuestionCardProps) {
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [urlValue, setUrlValue] = useState('');
+  const [aiModalOpen, setAiModalOpen] = useState(false);
   const titleRef = useRef<HTMLInputElement>(null);
   const insertTitle = useMathInsert(titleRef, question.title, (val) => updateQuestion(question.id, { title: val }));
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: question.id });
@@ -111,6 +113,9 @@ export function QuestionCard({ question }: QuestionCardProps) {
                 ))}
               </select>
               <div className="flex items-center gap-1">
+                <Button variant="ghost" onClick={() => setAiModalOpen(true)} title="Modificar con IA" className="p-2">
+                  <Sparkles className="h-4 w-4 text-indigo-500" />
+                </Button>
                 <Button variant="ghost" onClick={() => setImageModalOpen(true)} title="Buscar imagen" className="p-2">
                   <ImagePlus className="h-4 w-4 text-gray-500" />
                 </Button>
@@ -161,6 +166,12 @@ export function QuestionCard({ question }: QuestionCardProps) {
           });
           setImageModalOpen(false);
         }}
+      />
+      <AiModifyModal
+        open={aiModalOpen}
+        onClose={() => setAiModalOpen(false)}
+        question={question}
+        onUpdate={updateQuestion}
       />
     </>
   );
