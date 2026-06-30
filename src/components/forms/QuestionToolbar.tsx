@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useEditorStore } from '../../store/editorStore';
 import { Button } from '../ui/Button';
-import { Type, AlignLeft, List, CheckSquare, ChevronDown, Minus, Calendar, Clock, Layers, Sparkles } from 'lucide-react';
+import { Type, AlignLeft, List, CheckSquare, ChevronDown, Minus, Calendar, Clock, Layers, Sparkles, WandSparkles } from 'lucide-react';
 import { AiGenerateModal } from './AiGenerateModal';
+import { AiModifyAllModal } from './AiModifyAllModal';
 
 const questionTypes = [
   { type: 'text' as const, icon: Type, label: 'Texto' },
@@ -17,6 +18,7 @@ const questionTypes = [
 
 export function QuestionToolbar() {
   const [aiOpen, setAiOpen] = useState(false);
+  const [modifyAllOpen, setModifyAllOpen] = useState(false);
   const addQuestion = useEditorStore((s) => s.addQuestion);
   const addSection = useEditorStore((s) => s.addSection);
 
@@ -35,10 +37,15 @@ export function QuestionToolbar() {
         </Button>
         <Button variant="secondary" onClick={() => setAiOpen(true)} className="shrink-0 sm:shrink">
           <Sparkles className="h-4 w-4" />
-          <span className="hidden sm:inline">IA</span>
+          <span className="hidden sm:inline">Generar con IA</span>
+        </Button>
+        <Button variant="secondary" onClick={() => setModifyAllOpen(true)} className="shrink-0 sm:shrink">
+          <WandSparkles className="h-4 w-4" />
+          <span className="hidden sm:inline">Modificar todo</span>
         </Button>
       </div>
       <AiGenerateModal open={aiOpen} onClose={() => setAiOpen(false)} />
+      <AiModifyAllModal open={modifyAllOpen} onClose={() => setModifyAllOpen(false)} />
     </>
   );
 }
