@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { doc, getDoc, getDocs, query, orderBy, collection } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -19,6 +19,9 @@ export default function FormViewPage() {
   const [respondent, setRespondent] = useState<RespondentInfo | null>(null);
   const { submitResponse } = useResponses(formId!);
 
+  const params = new URLSearchParams(window.location.search);
+  const isAuto = params.has('auto');
+
   useEffect(() => {
     if (!formId) return;
     (async () => {
@@ -37,8 +40,34 @@ export default function FormViewPage() {
     })();
   }, [formId]);
 
+  const initialAnswers = useMemo(() => {
+    if (!isAuto) return undefined;
+    const acc: Record<string, any> = {};
+    questions.forEach((q) => {
+      if (q.quizSettings?.correctAnswer !== null && q.quizSettings?.correctAnswer !== undefined) {
+        acc[q.id] = q.quizSettings.correctAnswer;
+      }
+    });
+    return acc;
+  }, [isAuto, questions]);
+
   if (loading) return <LoadingSpinner />;
   if (!form) return <div className="text-center py-12 text-gray-600">Formulario no encontrado</div>;
+
+  if (isAuto) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white py-12 px-4">
+        <FormView
+          form={form}
+          questions={questions}
+          sections={sections}
+          respondent={{ name: 'Test', email: '' }}
+          onSubmit={async () => {}}
+          initialAnswers={initialAnswers}
+        />
+      </div>
+    );
+  }
 
   if (!respondent) {
     return (

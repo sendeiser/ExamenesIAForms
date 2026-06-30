@@ -8,7 +8,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { Toggle } from '../components/ui/Toggle';
 import { ThemeEditor } from '../components/forms/ThemeEditor';
 import { ShareModal } from '../components/forms/ShareModal';
-import { Eye, BarChart3, Share2 } from 'lucide-react';
+import { Eye, BarChart3, Share2, BugPlay } from 'lucide-react';
 
 export default function FormBuilderPage() {
   const { formId } = useParams<{ formId: string }>();
@@ -43,6 +43,10 @@ export default function FormBuilderPage() {
           <Button variant="secondary" onClick={() => window.open(previewUrl, '_blank')} className="shrink-0">
             <Eye className="h-4 w-4" />
             <span className="hidden sm:inline">Vista previa</span>
+          </Button>
+          <Button variant="secondary" onClick={() => window.open(`${previewUrl}?auto=true`, '_blank')} className="shrink-0">
+            <BugPlay className="h-4 w-4" />
+            <span className="hidden sm:inline">Test auto</span>
           </Button>
           <Button variant="secondary" onClick={() => setShareOpen(true)} className="shrink-0">
             <Share2 className="h-4 w-4" />

@@ -57,11 +57,12 @@ interface FormViewProps {
   sections: Section[];
   respondent?: RespondentInfo;
   onSubmit: (answers: Record<string, any>, respondent?: RespondentInfo) => Promise<void>;
+  initialAnswers?: Record<string, any>;
 }
 
-export function FormView({ form, questions, sections, respondent, onSubmit }: FormViewProps) {
+export function FormView({ form, questions, sections, respondent, onSubmit, initialAnswers }: FormViewProps) {
   useGlobalTheme(form);
-  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [answers, setAnswers] = useState<Record<string, any>>(initialAnswers ?? {});
   const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [quizScore, setQuizScore] = useState<QuizScore | null>(null);
