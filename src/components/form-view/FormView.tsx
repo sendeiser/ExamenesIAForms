@@ -58,9 +58,10 @@ interface FormViewProps {
   respondent?: RespondentInfo;
   onSubmit: (answers: Record<string, any>, respondent?: RespondentInfo) => Promise<void>;
   initialAnswers?: Record<string, any>;
+  autoSubmit?: boolean;
 }
 
-export function FormView({ form, questions, sections, respondent, onSubmit, initialAnswers }: FormViewProps) {
+export function FormView({ form, questions, sections, respondent, onSubmit, initialAnswers, autoSubmit }: FormViewProps) {
   useGlobalTheme(form);
   const [answers, setAnswers] = useState<Record<string, any>>(initialAnswers ?? {});
   const [submitted, setSubmitted] = useState(false);
@@ -103,6 +104,12 @@ export function FormView({ form, questions, sections, respondent, onSubmit, init
   }, [answers, respondent, onSubmit, form.settings?.isQuiz, questions, stopSecurity]);
 
   handleSubmitRef.current = handleSubmit;
+
+  useEffect(() => {
+    if (!autoSubmit) return;
+    const t = setTimeout(() => handleSubmitRef.current?.(), 500);
+    return () => clearTimeout(t);
+  }, [autoSubmit]);
 
   const unassigned = useMemo(() => questions.filter((q) => !q.sectionId), [questions]);
   const sectionQuestions = useMemo(() => {

@@ -64,6 +64,7 @@ export default function FormViewPage() {
           respondent={{ name: 'Test', email: '' }}
           onSubmit={async () => {}}
           initialAnswers={initialAnswers}
+          autoSubmit
         />
       </div>
     );
