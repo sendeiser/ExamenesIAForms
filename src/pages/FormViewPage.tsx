@@ -94,7 +94,10 @@ export default function FormViewPage() {
   if (!respondent) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white py-12 px-4">
-        <RespondentForm formTitle={form.title} onStart={setRespondent} />
+        <RespondentForm formTitle={form.title} onStart={(data) => {
+          try { document.documentElement.requestFullscreen(); } catch {}
+          setRespondent(data);
+        }} />
       </div>
     );
   }
