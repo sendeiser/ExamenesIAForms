@@ -96,7 +96,11 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
     set((s) => ({
       questions: s.questions.map((q) => (q.id === questionId ? { ...q, ...updates } : q)),
     }));
-    await updateDoc(doc(db, 'forms', form.id, 'questions', questionId), updates);
+    try {
+      await updateDoc(doc(db, 'forms', form.id, 'questions', questionId), JSON.parse(JSON.stringify(updates)));
+    } catch (e: any) {
+      console.error('Error saving question:', e);
+    }
   },
 
   removeQuestion: async (questionId) => {

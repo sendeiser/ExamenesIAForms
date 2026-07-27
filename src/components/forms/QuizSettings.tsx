@@ -9,12 +9,13 @@ interface QuizSettingsProps {
 }
 
 export function QuizSettings({ question, updateQuestion }: QuizSettingsProps) {
-  const quizSettings = question.quizSettings ?? { correctAnswer: null, points: 1 };
+  const correctAnswer = question.quizSettings?.correctAnswer ?? null;
+  const points = question.quizSettings?.points ?? 1;
   const options = (question.options ?? []).map(toOptionItem);
 
   function update(field: string, value: any) {
     updateQuestion(question.id, {
-      quizSettings: { ...quizSettings, [field]: value },
+      quizSettings: { correctAnswer, points, [field]: value },
     });
   }
 
@@ -26,7 +27,7 @@ export function QuizSettings({ question, updateQuestion }: QuizSettingsProps) {
 
           {(question.type === 'multipleChoice' || question.type === 'dropdown') && (
             <Select
-              value={quizSettings.correctAnswer as string ?? ''}
+              value={correctAnswer as string ?? ''}
               onChange={(e) => update('correctAnswer', e.target.value || null)}
               options={[
                 { value: '', label: 'Sin respuesta' },
@@ -38,15 +39,14 @@ export function QuizSettings({ question, updateQuestion }: QuizSettingsProps) {
           {question.type === 'checkbox' && (
             <div className="space-y-1">
               {options.map((opt, idx) => {
-                const correct = quizSettings.correctAnswer;
-                const checked = Array.isArray(correct) && correct.includes(opt.label);
+                const checked = Array.isArray(correctAnswer) && correctAnswer.includes(opt.label);
                 return (
                   <label key={`${opt.label}-${idx}`} className="flex items-center gap-2 text-sm">
                     <input
                       type="checkbox"
                       checked={checked}
                       onChange={(e) => {
-                        const current = Array.isArray(correct) ? correct : [];
+                        const current = Array.isArray(correctAnswer) ? correctAnswer : [];
                         const next = e.target.checked ? [...current, opt.label] : current.filter((v) => v !== opt.label);
                         update('correctAnswer', next.length > 0 ? next : null);
                       }}
@@ -61,7 +61,7 @@ export function QuizSettings({ question, updateQuestion }: QuizSettingsProps) {
 
           {(question.type === 'text' || question.type === 'paragraph') && (
             <Input
-              value={quizSettings.correctAnswer as string ?? ''}
+              value={correctAnswer as string ?? ''}
               onChange={(e) => update('correctAnswer', e.target.value || null)}
               placeholder="Respuesta exacta"
             />
@@ -69,7 +69,7 @@ export function QuizSettings({ question, updateQuestion }: QuizSettingsProps) {
 
           {question.type === 'linearScale' && (
             <Select
-              value={String(quizSettings.correctAnswer ?? '')}
+              value={String(correctAnswer ?? '')}
               onChange={(e) => update('correctAnswer', e.target.value ? Number(e.target.value) : null)}
               options={[
                 { value: '', label: 'Sin respuesta' },
@@ -84,7 +84,7 @@ export function QuizSettings({ question, updateQuestion }: QuizSettingsProps) {
           {question.type === 'date' && (
             <Input
               type="date"
-              value={quizSettings.correctAnswer as string ?? ''}
+              value={correctAnswer as string ?? ''}
               onChange={(e) => update('correctAnswer', e.target.value || null)}
             />
           )}
@@ -92,7 +92,7 @@ export function QuizSettings({ question, updateQuestion }: QuizSettingsProps) {
           {question.type === 'time' && (
             <Input
               type="time"
-              value={quizSettings.correctAnswer as string ?? ''}
+              value={correctAnswer as string ?? ''}
               onChange={(e) => update('correctAnswer', e.target.value || null)}
             />
           )}
@@ -103,7 +103,7 @@ export function QuizSettings({ question, updateQuestion }: QuizSettingsProps) {
           <Input
             type="number"
             min={0}
-            value={quizSettings.points}
+            value={points}
             onChange={(e) => update('points', Math.max(0, Number(e.target.value)))}
           />
         </div>
