@@ -6,7 +6,7 @@ import { Button } from '../ui/Button';
 import { Toggle } from '../ui/Toggle';
 import { Input } from '../ui/Input';
 import { MathToolbar, useMathInsert } from '../ui/MathToolbar';
-import { GripVertical, Copy, Trash2, ImagePlus, Link, X, Sparkles } from 'lucide-react';
+import { GripVertical, Copy, Trash2, ImagePlus, Link, X, Sparkles, ChevronUp, ChevronDown } from 'lucide-react';
 import type { Question } from '../../types/question';
 import { TextQuestion } from './question-types/TextQuestion';
 import { MultipleChoiceQuestion } from './question-types/MultipleChoiceQuestion';
@@ -43,6 +43,8 @@ function QuestionTypeComponent({ question }: { question: Question }) {
 export function QuestionCard({ question }: QuestionCardProps) {
   const updateQuestion = useEditorStore((s) => s.updateQuestion);
   const removeQuestion = useEditorStore((s) => s.removeQuestion);
+  const allQuestions = useEditorStore((s) => s.questions);
+  const reorderQuestions = useEditorStore((s) => s.reorderQuestions);
   const form = useEditorStore((s) => s.form);
   const sections = useEditorStore((s) => s.sections);
   const moveQuestionToSection = useEditorStore((s) => s.moveQuestionToSection);
@@ -54,6 +56,31 @@ export function QuestionCard({ question }: QuestionCardProps) {
   const insertTitle = useMathInsert(titleRef, question.title, (val) => updateQuestion(question.id, { title: val }));
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: question.id });
 
+  const siblings = allQuestions.filter((q) => q.sectionId === question.sectionId).sort((a, b) => a.order - b.order);
+  const idx = siblings.findIndex((q) => q.id === question.id);
+
+  function moveUp() {
+    if (idx <= 0) return;
+    const reordered = [...siblings];
+    [reordered[idx - 1], reordered[idx]] = [reordered[idx], reordered[idx - 1]];
+    const updatedAll = allQuestions.map((q) => {
+      const found = reordered.findIndex((r) => r.id === q.id);
+      return found !== -1 ? { ...q, order: found } : q;
+    });
+    reorderQuestions(updatedAll);
+  }
+
+  function moveDown() {
+    if (idx === -1 || idx >= siblings.length - 1) return;
+    const reordered = [...siblings];
+    [reordered[idx], reordered[idx + 1]] = [reordered[idx + 1], reordered[idx]];
+    const updatedAll = allQuestions.map((q) => {
+      const found = reordered.findIndex((r) => r.id === q.id);
+      return found !== -1 ? { ...q, order: found } : q;
+    });
+    reorderQuestions(updatedAll);
+  }
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -64,9 +91,17 @@ export function QuestionCard({ question }: QuestionCardProps) {
     <>
       <div ref={setNodeRef} style={style} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-start gap-4">
-          <button className="mt-2 cursor-grab text-gray-400 hover:text-gray-600" {...attributes} {...listeners}>
-            <GripVertical className="h-5 w-5" />
-          </button>
+          <div className="flex flex-col items-center gap-0.5 mt-1">
+            <button onClick={moveUp} disabled={idx <= 0} className="text-gray-400 hover:text-gray-600 disabled:opacity-20 disabled:cursor-not-allowed p-0.5">
+              <ChevronUp className="h-3.5 w-3.5" />
+            </button>
+            <button className="cursor-grab text-gray-400 hover:text-gray-600" {...attributes} {...listeners}>
+              <GripVertical className="h-5 w-5" />
+            </button>
+            <button onClick={moveDown} disabled={idx === -1 || idx >= siblings.length - 1} className="text-gray-400 hover:text-gray-600 disabled:opacity-20 disabled:cursor-not-allowed p-0.5">
+              <ChevronDown className="h-3.5 w-3.5" />
+            </button>
+          </div>
           <div className="flex-1 space-y-4">
             <Input
               ref={titleRef}
