@@ -74,7 +74,7 @@ IMPORTANTE:
       const updates: Partial<Question> = {
         title: q.title,
         description: q.description ?? '',
-        options: q.options ?? [],
+        options: (q.options ?? []).map((o: any) => typeof o === 'string' ? { label: o } : o),
         settings: q.settings ?? {},
         quizSettings: {
           correctAnswer: q.correctAnswer ?? null,

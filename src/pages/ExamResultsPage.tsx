@@ -10,6 +10,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { exportToCsv } from '../utils/export-csv';
 import { ArrowLeft, Download, ChevronDown, ChevronRight, CheckCircle2, XCircle, Trash2, Edit3, Save, Printer, X } from 'lucide-react';
 import { LatexRenderer } from '../components/ui/LatexRenderer';
+import { toOptionItem } from '../types/question';
 import type { FormResponse } from '../types/response';
 import type { Question } from '../types/question';
 
@@ -133,30 +134,32 @@ export default function ExamResultsPage() {
         return (
           <select value={String(value ?? '')} onChange={(e) => onChange(e.target.value)} className="text-xs border rounded px-2 py-1">
             <option value="">—</option>
-            {(q.options ?? []).map((opt, i) => (
-              <option key={i} value={opt}>{opt}</option>
-            ))}
+            {(q.options ?? []).map((opt: any, i: number) => {
+              const item = toOptionItem(opt);
+              return <option key={i} value={item.label}>{item.label}</option>;
+            })}
           </select>
         );
       case 'checkbox': {
         const selected: string[] = Array.isArray(value) ? value : [];
         return (
           <div className="flex flex-wrap gap-1">
-            {(q.options ?? []).map((opt, i) => {
-              const checked = selected.includes(opt);
+            {(q.options ?? []).map((opt: any, i: number) => {
+              const item = toOptionItem(opt);
+              const checked = selected.includes(item.label);
               return (
                 <label key={i} className="flex items-center gap-1 text-xs cursor-pointer">
                   <input
                     type="checkbox"
                     checked={checked}
                     onChange={() => {
-                      const next = selected.includes(opt)
-                        ? selected.filter((s) => s !== opt)
-                        : [...selected, opt];
+                      const next = selected.includes(item.label)
+                        ? selected.filter((s) => s !== item.label)
+                        : [...selected, item.label];
                       onChange(next);
                     }}
                   />
-                  {opt}
+                  {item.label}
                 </label>
               );
             })}
@@ -167,9 +170,10 @@ export default function ExamResultsPage() {
         return (
           <select value={String(value ?? '')} onChange={(e) => onChange(e.target.value)} className="text-xs border rounded px-2 py-1">
             <option value="">—</option>
-            {(q.options ?? []).map((opt, i) => (
-              <option key={i} value={opt}>{opt}</option>
-            ))}
+            {(q.options ?? []).map((opt: any, i: number) => {
+              const item = toOptionItem(opt);
+              return <option key={i} value={item.label}>{item.label}</option>;
+            })}
           </select>
         );
       default:

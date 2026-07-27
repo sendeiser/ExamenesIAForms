@@ -14,7 +14,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import type { Form } from '../types/form';
-import type { Question, Section, QuestionType } from '../types/question';
+import type { Question, Section, QuestionType, OptionItem } from '../types/question';
 
 interface EditorStore {
   form: Form | null;
@@ -81,7 +81,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       description: '',
       required: false,
       order: questions.length,
-      options: type === 'multipleChoice' || type === 'checkbox' || type === 'dropdown' ? ['Opción 1'] : [],
+      options: type === 'multipleChoice' || type === 'checkbox' || type === 'dropdown' ? [{ label: 'Opción 1' }] : [],
       settings: {},
       conditions: null,
       sectionId: null,

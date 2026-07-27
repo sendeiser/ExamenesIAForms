@@ -125,7 +125,7 @@ export function AiGenerateModal({ open, onClose }: AiGenerateModalProps) {
         if (newQuestion) {
           const updates: Record<string, any> = {
             title: q.title,
-            options: q.options ?? [],
+            options: (q.options ?? []).map((o: any) => typeof o === 'string' ? { label: o } : o),
             order: currentLen,
             sectionId: sections.length > 0 ? sections[0].id : null,
             settings: q.settings ?? {},

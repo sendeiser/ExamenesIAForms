@@ -6,6 +6,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { LatexRenderer } from '../components/ui/LatexRenderer';
+import { toOptionItem } from '../types/question';
 import { ArrowLeft, BarChart3, List, GraduationCap } from 'lucide-react';
 import { exportToCsv } from '../utils/export-csv';
 
@@ -93,13 +94,14 @@ export default function AnalyticsPage() {
 
             {summary.type === 'choice' && (
               <div className="space-y-2">
-                {summary.options.map((opt) => {
-                  const count = summary.counts[opt] ?? 0;
+                {summary.options.map((opt: any) => {
+                  const item = toOptionItem(opt);
+                  const count = summary.counts[item.label] ?? 0;
                   const pct = summary.total > 0 ? (count / summary.total) * 100 : 0;
                   return (
-                    <div key={opt}>
+                    <div key={item.label}>
                       <div className="flex justify-between text-sm mb-1">
-                        <span><LatexRenderer text={opt} /></span>
+                        <span><LatexRenderer text={item.label} /></span>
                         <span className="text-gray-500">{count} ({Math.round(pct)}%)</span>
                       </div>
                       <div className="h-2 bg-gray-100 rounded-full overflow-hidden">

@@ -1,6 +1,7 @@
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import type { Question } from '../../types/question';
+import { toOptionItem } from '../../types/question';
 
 interface QuizSettingsProps {
   question: Question;
@@ -9,6 +10,7 @@ interface QuizSettingsProps {
 
 export function QuizSettings({ question, updateQuestion }: QuizSettingsProps) {
   const quizSettings = question.quizSettings ?? { correctAnswer: null, points: 1 };
+  const options = (question.options ?? []).map(toOptionItem);
 
   function update(field: string, value: any) {
     updateQuestion(question.id, {
@@ -28,26 +30,26 @@ export function QuizSettings({ question, updateQuestion }: QuizSettingsProps) {
               onChange={(e) => update('correctAnswer', e.target.value || null)}
               options={[
                 { value: '', label: 'Sin respuesta' },
-                ...question.options.map((o) => ({ value: o, label: o })),
+                ...options.map((o) => ({ value: o.label, label: o.label })),
               ]}
             />
           )}
 
           {question.type === 'checkbox' && (
             <div className="space-y-1">
-              {question.options.map((opt) => (
-                <label key={opt} className="flex items-center gap-2 text-sm">
+              {options.map((opt) => (
+                <label key={opt.label} className="flex items-center gap-2 text-sm">
                   <input
                     type="checkbox"
-                    checked={(quizSettings.correctAnswer as string[] ?? []).includes(opt)}
+                    checked={(quizSettings.correctAnswer as string[] ?? []).includes(opt.label)}
                     onChange={(e) => {
                       const current = (quizSettings.correctAnswer as string[]) ?? [];
-                      const next = e.target.checked ? [...current, opt] : current.filter((v) => v !== opt);
+                      const next = e.target.checked ? [...current, opt.label] : current.filter((v) => v !== opt.label);
                       update('correctAnswer', next.length > 0 ? next : null);
                     }}
                     className="rounded text-indigo-600"
                   />
-                  {opt}
+                  {opt.label}
                 </label>
               ))}
             </div>

@@ -8,6 +8,15 @@ export type QuestionType =
   | 'date'
   | 'time';
 
+export interface OptionItem {
+  label: string;
+  imageUrl?: string;
+}
+
+export function toOptionItem(opt: string | OptionItem): OptionItem {
+  return typeof opt === 'string' ? { label: opt } : opt;
+}
+
 export interface QuestionCondition {
   enabled: boolean;
   questionId: string | null;
@@ -38,7 +47,7 @@ export interface Question {
   description: string;
   required: boolean;
   order: number;
-  options: string[];
+  options: OptionItem[];
   settings: QuestionSettings;
   conditions: QuestionCondition | null;
   sectionId: string | null;

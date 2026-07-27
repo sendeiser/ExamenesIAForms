@@ -3,6 +3,12 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { LatexRenderer } from '../ui/LatexRenderer';
 import { MathToolbar, useMathInsert } from '../ui/MathToolbar';
+import { toOptionItem } from '../../types/question';
+
+function normalizeOpt(opt: any) {
+  const item = toOptionItem(opt);
+  return item;
+}
 
 export function QuestionInput({ question, value, onChange }: { question: any; value: any; onChange: (v: any) => void }) {
   const textRef = useRef<HTMLInputElement>(null);
@@ -35,39 +41,51 @@ export function QuestionInput({ question, value, onChange }: { question: any; va
     case 'multipleChoice':
       return (
         <div className="space-y-2">
-          {question.options.map((opt: string, i: number) => (
-            <label key={i} className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-brand-50 transition-colors">
-              <input
-                type="radio"
-                name={question.id}
-                value={opt}
-                checked={value === opt}
-                onChange={() => onChange(opt)}
-                className="text-brand-600 focus:ring-brand-500"
-              />
-              <span className="text-sm"><LatexRenderer text={opt} /></span>
-            </label>
-          ))}
+          {(question.options ?? []).map((opt: any, i: number) => {
+            const item = normalizeOpt(opt);
+            return (
+              <label key={i} className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-brand-50 transition-colors">
+                <input
+                  type="radio"
+                  name={question.id}
+                  value={item.label}
+                  checked={value === item.label}
+                  onChange={() => onChange(item.label)}
+                  className="text-brand-600 focus:ring-brand-500"
+                />
+                {item.imageUrl && (
+                  <img src={item.imageUrl} alt="" className="h-8 w-8 object-cover rounded" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                )}
+                <span className="text-sm"><LatexRenderer text={item.label} /></span>
+              </label>
+            );
+          })}
         </div>
       );
     case 'checkbox':
       return (
         <div className="space-y-2">
-          {question.options.map((opt: string, i: number) => (
-            <label key={i} className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-brand-50 transition-colors">
-              <input
-                type="checkbox"
-                value={opt}
-                checked={(value ?? []).includes(opt)}
-                onChange={(e) => {
-                  const current = value ?? [];
-                  onChange(e.target.checked ? [...current, opt] : current.filter((v: string) => v !== opt));
-                }}
-                className="rounded text-brand-600 focus:ring-brand-500"
-              />
-              <span className="text-sm"><LatexRenderer text={opt} /></span>
-            </label>
-          ))}
+          {(question.options ?? []).map((opt: any, i: number) => {
+            const item = normalizeOpt(opt);
+            return (
+              <label key={i} className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-brand-50 transition-colors">
+                <input
+                  type="checkbox"
+                  value={item.label}
+                  checked={(value ?? []).includes(item.label)}
+                  onChange={(e) => {
+                    const current = value ?? [];
+                    onChange(e.target.checked ? [...current, item.label] : current.filter((v: string) => v !== item.label));
+                  }}
+                  className="rounded text-brand-600 focus:ring-brand-500"
+                />
+                {item.imageUrl && (
+                  <img src={item.imageUrl} alt="" className="h-8 w-8 object-cover rounded" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                )}
+                <span className="text-sm"><LatexRenderer text={item.label} /></span>
+              </label>
+            );
+          })}
         </div>
       );
     case 'dropdown':
@@ -77,10 +95,13 @@ export function QuestionInput({ question, value, onChange }: { question: any; va
           onChange={(e) => onChange(e.target.value)}
           options={[
             { value: '', label: 'Seleccionar' },
-            ...question.options.map((opt: string) => ({
-              value: opt,
-              label: opt.replace(/\$|\\[\(\)\[\]]/g, ''),
-            })),
+            ...(question.options ?? []).map((opt: any) => {
+              const item = normalizeOpt(opt);
+              return {
+                value: item.label,
+                label: item.label.replace(/\$|\\[\(\)\[\]]/g, ''),
+              };
+            }),
           ]}
         />
       );

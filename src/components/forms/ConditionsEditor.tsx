@@ -4,6 +4,7 @@ import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { Toggle } from '../ui/Toggle';
 import type { Question } from '../../types/question';
+import { toOptionItem } from '../../types/question';
 
 interface ConditionsEditorProps {
   question: Question;
@@ -41,7 +42,7 @@ export function ConditionsEditor({ question }: ConditionsEditorProps) {
   }
 
   const targetQuestion = priorQuestions.find((q) => q.id === condition?.questionId);
-  const targetOptions = targetQuestion?.options ?? [];
+  const targetOptions = (targetQuestion?.options ?? []).map(toOptionItem);
 
   return (
     <div className="space-y-3 pt-3 border-t">
@@ -75,7 +76,7 @@ export function ConditionsEditor({ question }: ConditionsEditorProps) {
             <Select
               value={condition.value}
               onChange={(e) => update('value', e.target.value)}
-              options={targetOptions.map((o) => ({ value: o, label: o }))}
+              options={targetOptions.map((o) => ({ value: o.label, label: o.label }))}
             />
           ) : (
             <Input

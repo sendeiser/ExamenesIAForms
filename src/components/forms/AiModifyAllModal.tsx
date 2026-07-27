@@ -81,7 +81,7 @@ IMPORTANTE:
         const updates: Record<string, any> = {
           title: q.title,
           description: q.description ?? '',
-          options: q.options ?? [],
+          options: (q.options ?? []).map((o: any) => typeof o === 'string' ? { label: o } : o),
           settings: q.settings ?? {},
           quizSettings: {
             correctAnswer: q.correctAnswer ?? null,
