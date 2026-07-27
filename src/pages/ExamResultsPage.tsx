@@ -148,7 +148,7 @@ export default function ExamResultsPage() {
               const item = toOptionItem(opt);
               const checked = selected.includes(item.label);
               return (
-                <label key={i} className="flex items-center gap-1 text-xs cursor-pointer">
+                <label key={`${item.label}-${i}`} className="flex items-center gap-1 text-xs cursor-pointer">
                   <input
                     type="checkbox"
                     checked={checked}

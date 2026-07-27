@@ -37,21 +37,25 @@ export function QuizSettings({ question, updateQuestion }: QuizSettingsProps) {
 
           {question.type === 'checkbox' && (
             <div className="space-y-1">
-              {options.map((opt) => (
-                <label key={opt.label} className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={(quizSettings.correctAnswer as string[] ?? []).includes(opt.label)}
-                    onChange={(e) => {
-                      const current = (quizSettings.correctAnswer as string[]) ?? [];
-                      const next = e.target.checked ? [...current, opt.label] : current.filter((v) => v !== opt.label);
-                      update('correctAnswer', next.length > 0 ? next : null);
-                    }}
-                    className="rounded text-indigo-600"
-                  />
-                  {opt.label}
-                </label>
-              ))}
+              {options.map((opt, idx) => {
+                const correct = quizSettings.correctAnswer;
+                const checked = Array.isArray(correct) && correct.includes(opt.label);
+                return (
+                  <label key={`${opt.label}-${idx}`} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => {
+                        const current = Array.isArray(correct) ? correct : [];
+                        const next = e.target.checked ? [...current, opt.label] : current.filter((v) => v !== opt.label);
+                        update('correctAnswer', next.length > 0 ? next : null);
+                      }}
+                      className="rounded text-indigo-600"
+                    />
+                    {opt.label}
+                  </label>
+                );
+              })}
             </div>
           )}
 

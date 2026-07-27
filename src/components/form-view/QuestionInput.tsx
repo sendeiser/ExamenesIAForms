@@ -67,14 +67,13 @@ export function QuestionInput({ question, value, onChange }: { question: any; va
         <div className="space-y-2">
           {(question.options ?? []).map((opt: any, i: number) => {
             const item = normalizeOpt(opt);
+            const current = Array.isArray(value) ? value : [];
             return (
-              <label key={i} className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-brand-50 transition-colors">
+              <label key={`${item.label}-${i}`} className="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-brand-50 transition-colors">
                 <input
                   type="checkbox"
-                  value={item.label}
-                  checked={(value ?? []).includes(item.label)}
+                  checked={current.includes(item.label)}
                   onChange={(e) => {
-                    const current = value ?? [];
                     onChange(e.target.checked ? [...current, item.label] : current.filter((v: string) => v !== item.label));
                   }}
                   className="rounded text-brand-600 focus:ring-brand-500"
