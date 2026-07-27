@@ -17,11 +17,15 @@ export function useResponses(formId: string) {
   }, [formId]);
 
   async function submitResponse(answers: Record<string, any>, respondent?: RespondentInfo | null) {
+    const clean: Record<string, any> = {};
+    for (const [k, v] of Object.entries(answers)) {
+      if (v !== undefined) clean[k] = v;
+    }
     await addDoc(collection(db, 'forms', formId, 'responses'), {
       respondentId: null,
       respondentEmail: respondent?.email ?? null,
       respondent: respondent ?? null,
-      answers,
+      answers: clean,
       submittedAt: Timestamp.now(),
     });
   }

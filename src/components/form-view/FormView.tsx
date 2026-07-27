@@ -98,8 +98,18 @@ export function FormView({ form, questions, sections, respondent, onSubmit, init
       if (form.settings?.isQuiz) {
         setQuizScore(scoreQuiz(questions, answers));
       }
-    } catch {
-      setError('Error al enviar. Revisa tu conexión e intenta de nuevo.');
+    } catch (e: any) {
+      console.error('Submit error:', e);
+      const code = e?.code || e?.message || '';
+      if (code.includes('permission-denied')) {
+        setError('Error de permisos. El formulario no acepta más respuestas.');
+      } else if (code.includes('unavailable') || code.includes('network')) {
+        setError('Error de red. Revisa tu conexión e intenta de nuevo.');
+      } else if (code.includes('invalid-argument')) {
+        setError('Error en los datos. Intenta recargar la página.');
+      } else {
+        setError('Error al enviar. Revisa tu conexión e intenta de nuevo.');
+      }
     } finally {
       setSaving(false);
     }
