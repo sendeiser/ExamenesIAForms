@@ -26,7 +26,7 @@ export function QuestionToolbar() {
     <>
       <div className="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible">
         {questionTypes.map(({ type, icon: Icon, label }) => (
-          <Button key={type} variant="secondary" className="shrink-0 sm:shrink">
+          <Button key={type} variant="secondary" onClick={() => addQuestion(type)} className="shrink-0 sm:shrink">
             <Icon className="h-4 w-4" />
             <span className="hidden sm:inline">{label}</span>
           </Button>
