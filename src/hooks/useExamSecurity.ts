@@ -128,8 +128,15 @@ export function useExamSecurity({ config, onViolation, onMaxViolations, onStart 
     window.addEventListener('beforeunload', handleBeforeUnload);
 
     if (config.disableCopy) {
-      document.body.style.userSelect = 'none';
-      document.body.style.webkitUserSelect = 'none';
+      const style = document.createElement('style');
+      style.id = 'exam-security-user-select';
+      style.textContent = `
+        .theme-page *:not(input):not(textarea):not(button):not([contenteditable]) {
+          -webkit-user-select: none !important;
+          user-select: none !important;
+        }
+      `;
+      document.head.appendChild(style);
     }
 
     return () => {
@@ -141,8 +148,8 @@ export function useExamSecurity({ config, onViolation, onMaxViolations, onStart 
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('contextmenu', handleContextMenu);
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      document.body.style.userSelect = '';
-      document.body.style.webkitUserSelect = '';
+      const styleEl = document.getElementById('exam-security-user-select');
+      if (styleEl) styleEl.remove();
       if (document.fullscreenElement) document.exitFullscreen();
     };
   }, [config.enabled, config.maxViolations, config.fullscreen, config.disableCopy, config.preventTabSwitch, started]);

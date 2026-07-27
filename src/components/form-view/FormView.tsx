@@ -66,6 +66,7 @@ export function FormView({ form, questions, sections, respondent, onSubmit, init
   const [answers, setAnswers] = useState<Record<string, any>>(initialAnswers ?? {});
   const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
   const [quizScore, setQuizScore] = useState<QuizScore | null>(null);
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [violations, setViolations] = useState(0);
@@ -88,6 +89,7 @@ export function FormView({ form, questions, sections, respondent, onSubmit, init
   });
 
   const handleSubmit = useCallback(async (auto?: boolean) => {
+    setError('');
     setSaving(true);
     try {
       await onSubmit(answers, respondent);
@@ -97,7 +99,7 @@ export function FormView({ form, questions, sections, respondent, onSubmit, init
         setQuizScore(scoreQuiz(questions, answers));
       }
     } catch {
-      //
+      setError('Error al enviar. Revisa tu conexión e intenta de nuevo.');
     } finally {
       setSaving(false);
     }
@@ -188,6 +190,7 @@ export function FormView({ form, questions, sections, respondent, onSubmit, init
             <QuestionInput question={q} value={answers[q.id]} onChange={(v) => setAnswer(q.id, v)} />
           </Card>
         ))}
+        {error && <p className="text-sm text-red-600 text-center">{error}</p>}
         <div className="flex justify-end">
           <Button onClick={() => handleSubmit()} loading={saving} disabled={saving}>Enviar</Button>
         </div>
@@ -219,6 +222,7 @@ export function FormView({ form, questions, sections, respondent, onSubmit, init
           onPrev={() => setCurrentSectionIndex((i) => Math.max(i - 1, 0))}
           onSubmit={() => handleSubmit()}
           saving={saving}
+          error={error}
           cardStyle={cardStyle}
         />
       )}

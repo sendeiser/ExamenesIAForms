@@ -16,10 +16,11 @@ interface SectionPageProps {
   onPrev: () => void;
   onSubmit: () => void;
   saving: boolean;
+  error?: string;
   cardStyle?: string;
 }
 
-export function SectionPage({ section, questions, answers, onAnswer, isFirst, isLast, onNext, onPrev, onSubmit, saving, cardStyle }: SectionPageProps) {
+export function SectionPage({ section, questions, answers, onAnswer, isFirst, isLast, onNext, onPrev, onSubmit, saving, error, cardStyle }: SectionPageProps) {
   return (
     <div className="space-y-4">
       <Card className="p-6" data-style={cardStyle}>
@@ -42,6 +43,7 @@ export function SectionPage({ section, questions, answers, onAnswer, isFirst, is
         </Card>
       ))}
 
+      {error && <p className="text-sm text-red-600 text-center">{error}</p>}
       <div className="flex justify-between">
         <Button variant="secondary" onClick={onPrev} disabled={isFirst}>
           Anterior
