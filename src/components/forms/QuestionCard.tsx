@@ -64,10 +64,14 @@ export function QuestionCard({ question }: QuestionCardProps) {
     const reordered = [...siblings];
     [reordered[idx - 1], reordered[idx]] = [reordered[idx], reordered[idx - 1]];
     const updatedAll = allQuestions.map((q) => {
-      const found = reordered.findIndex((r) => r.id === q.id);
-      return found !== -1 ? { ...q, order: found } : q;
+      const pos = reordered.findIndex((r) => r.id === q.id);
+      return pos !== -1 ? { ...q, order: pos } : q;
     });
-    reorderQuestions(updatedAll);
+    const sorted = [...updatedAll].sort((a, b) => {
+      if (a.sectionId !== b.sectionId) return (a.sectionId ?? '').localeCompare(b.sectionId ?? '');
+      return a.order - b.order;
+    });
+    reorderQuestions(sorted);
   }
 
   function moveDown() {
@@ -75,10 +79,14 @@ export function QuestionCard({ question }: QuestionCardProps) {
     const reordered = [...siblings];
     [reordered[idx], reordered[idx + 1]] = [reordered[idx + 1], reordered[idx]];
     const updatedAll = allQuestions.map((q) => {
-      const found = reordered.findIndex((r) => r.id === q.id);
-      return found !== -1 ? { ...q, order: found } : q;
+      const pos = reordered.findIndex((r) => r.id === q.id);
+      return pos !== -1 ? { ...q, order: pos } : q;
     });
-    reorderQuestions(updatedAll);
+    const sorted = [...updatedAll].sort((a, b) => {
+      if (a.sectionId !== b.sectionId) return (a.sectionId ?? '').localeCompare(b.sectionId ?? '');
+      return a.order - b.order;
+    });
+    reorderQuestions(sorted);
   }
 
   const style = {
