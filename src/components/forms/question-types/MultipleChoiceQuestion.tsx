@@ -5,7 +5,7 @@ import { LatexRenderer } from '../../ui/LatexRenderer';
 import { MathToolbar, useMathInsert } from '../../ui/MathToolbar';
 import { Plus, X, Circle, ImagePlus, X as XIcon } from 'lucide-react';
 import type { Question, OptionItem } from '../../../types/question';
-import { toOptionItem } from '../../../types/question';
+import { toOptionItem, cleanQuizSettingsOnOptionRemove } from '../../../types/question';
 
 interface Props {
   question: Question;
@@ -46,7 +46,10 @@ export function MultipleChoiceQuestion({ question, updateQuestion }: Props) {
 
   function removeOption(index: number) {
     if (options.length <= 1) return;
-    setOptions(options.filter((_, i) => i !== index));
+    const removedLabel = options[index].label;
+    const nextOptions = options.filter((_, i) => i !== index);
+    const qs = cleanQuizSettingsOnOptionRemove(question.quizSettings, removedLabel);
+    updateQuestion(question.id, { options: nextOptions, ...(qs ? { quizSettings: qs } : {}) });
   }
 
   const insert = useMathInsert(
