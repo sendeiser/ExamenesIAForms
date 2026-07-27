@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { signInAnonymously } from 'firebase/auth';
 import { doc, getDoc, getDocs, query, orderBy, collection } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { auth, db } from '../lib/firebase';
 import { useResponses } from '../hooks/useResponses';
 import { FormView } from '../components/form-view/FormView';
 import { RespondentForm } from '../components/form-view/RespondentForm';
@@ -16,6 +17,7 @@ export default function FormViewPage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState('');
   const [respondent, setRespondent] = useState<RespondentInfo | null>(null);
   const { submitResponse } = useResponses(formId!);
 
@@ -25,6 +27,15 @@ export default function FormViewPage() {
   useEffect(() => {
     if (!formId) return;
     (async () => {
+      try {
+        await signInAnonymously(auth);
+      } catch {
+        setAuthError(
+          'Error de configuración. El administrador debe habilitar "Autenticación anónima" en Firebase Console > Authentication > Sign-in method, '
+          + 'y actualizar las reglas de Firestore para permitir escritura a usuarios autenticados.'
+        );
+      }
+
       const formSnap = await getDoc(doc(db, 'forms', formId));
       if (!formSnap.exists()) { setLoading(false); return; }
       const data = formSnap.data();
@@ -50,6 +61,16 @@ export default function FormViewPage() {
     });
     return acc;
   }, [isAuto, questions]);
+
+  if (authError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white py-12 px-4 flex items-start justify-center">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 max-w-lg text-center space-y-3">
+          <p className="text-red-700 text-sm">{authError}</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) return <LoadingSpinner />;
   if (!form) return <div className="text-center py-12 text-gray-600">Formulario no encontrado</div>;
