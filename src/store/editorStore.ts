@@ -66,9 +66,9 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   updateForm: async (updates) => {
     const { form } = get();
     if (!form) return;
+    set({ form: { ...form, ...updates } });
     const clean = JSON.parse(JSON.stringify(updates));
     await updateDoc(doc(db, 'forms', form.id), { ...clean, updatedAt: Timestamp.now() });
-    set({ form: { ...form, ...updates } });
   },
 
   addQuestion: async (type) => {
@@ -93,10 +93,10 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   updateQuestion: async (questionId, updates) => {
     const { form } = get();
     if (!form) return;
-    await updateDoc(doc(db, 'forms', form.id, 'questions', questionId), updates);
     set((s) => ({
       questions: s.questions.map((q) => (q.id === questionId ? { ...q, ...updates } : q)),
     }));
+    await updateDoc(doc(db, 'forms', form.id, 'questions', questionId), updates);
   },
 
   removeQuestion: async (questionId) => {
@@ -142,8 +142,8 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   updateSection: async (sectionId, updates) => {
     const { form } = get();
     if (!form) return;
-    await updateDoc(doc(db, 'forms', form.id, 'sections', sectionId), updates);
     set((s) => ({ sections: s.sections.map((sec) => (sec.id === sectionId ? { ...sec, ...updates } : sec)) }));
+    await updateDoc(doc(db, 'forms', form.id, 'sections', sectionId), updates);
   },
 
   removeSection: async (sectionId) => {

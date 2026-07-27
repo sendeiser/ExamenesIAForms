@@ -41,7 +41,8 @@ function QuestionTypeComponent({ question }: { question: Question }) {
 }
 
 export function QuestionCard({ question }: QuestionCardProps) {
-  const { updateQuestion, removeQuestion } = useEditorStore();
+  const updateQuestion = useEditorStore((s) => s.updateQuestion);
+  const removeQuestion = useEditorStore((s) => s.removeQuestion);
   const form = useEditorStore((s) => s.form);
   const sections = useEditorStore((s) => s.sections);
   const moveQuestionToSection = useEditorStore((s) => s.moveQuestionToSection);
