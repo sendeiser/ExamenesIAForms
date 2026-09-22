@@ -7,12 +7,12 @@ import { Card } from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { Modal } from '../components/ui/Modal';
 import { Input } from '../components/ui/Input';
-import { Plus, FileText, Trash2, Eye, EyeOff, BarChart3 } from 'lucide-react';
+import { Plus, FileText, Trash2, Eye, EyeOff, BarChart3, Copy } from 'lucide-react';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
-  const { forms, loading, createForm, deleteForm, togglePublish } = useForms();
+  const { forms, loading, createForm, deleteForm, togglePublish, duplicateForm, fetchForms } = useForms();
   const [showCreate, setShowCreate] = useState(false);
   const [title, setTitle] = useState('');
 
@@ -22,6 +22,12 @@ export default function DashboardPage() {
     setTitle('');
     setShowCreate(false);
     navigate(`/form/${id}`);
+  };
+
+  const handleDuplicate = async (formId: string) => {
+    if (!user) return;
+    const newId = await duplicateForm(formId);
+    navigate(`/form/${newId}`);
   };
 
   if (loading) return <LoadingSpinner />;
@@ -63,6 +69,9 @@ export default function DashboardPage() {
                 </Button>
                 <Button variant="ghost" onClick={() => navigate(`/form/${form.id}/analytics`)} className="p-3">
                   <BarChart3 className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" onClick={() => handleDuplicate(form.id)} className="p-3">
+                  <Copy className="h-4 w-4" />
                 </Button>
                 <Button variant="ghost" onClick={() => deleteForm(form.id)} className="p-3">
                   <Trash2 className="h-4 w-4 text-red-500" />

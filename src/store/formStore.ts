@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { collection, query, where, orderBy, addDoc, deleteDoc, getDocs, updateDoc, doc, Timestamp } from 'firebase/firestore';
+import { collection, query, where, orderBy, addDoc, deleteDoc, getDocs, getDoc, updateDoc, doc, Timestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import type { Form } from '../types/form';
 
@@ -10,6 +10,7 @@ interface FormStore {
   createForm: (ownerId: string, title: string) => Promise<string>;
   deleteForm: (formId: string) => Promise<void>;
   togglePublish: (formId: string, published: boolean) => Promise<void>;
+  duplicateForm: (formId: string) => Promise<string>;
 }
 
 const defaultTheme = {
@@ -69,5 +70,36 @@ export const useFormStore = create<FormStore>((set) => ({
     set((s) => ({
       forms: s.forms.map((f) => (f.id === formId ? { ...f, published } : f)),
     }));
+  },
+
+  duplicateForm: async (formId) => {
+    const formSnap = await getDoc(doc(db, 'forms', formId));
+    if (!formSnap.exists()) throw new Error('Formulario no encontrado');
+    const formData = formSnap.data();
+
+    const questionsSnap = await getDocs(query(collection(db, 'forms', formId, 'questions'), orderBy('order', 'asc')));
+    const sectionsSnap = await getDocs(query(collection(db, 'forms', formId, 'sections'), orderBy('order', 'asc')));
+
+    const now = Timestamp.now();
+    const newFormRef = await addDoc(collection(db, 'forms'), {
+      ...formData,
+      title: `${formData.title} (copia)`,
+      published: false,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    const batch = questionsSnap.docs.map((d) => {
+      const { id, ...data } = d.data();
+      return addDoc(collection(db, 'forms', newFormRef.id, 'questions'), { ...data, formId: newFormRef.id });
+    });
+
+    const sectionBatch = sectionsSnap.docs.map((d) => {
+      const { id, ...data } = d.data();
+      return addDoc(collection(db, 'forms', newFormRef.id, 'sections'), { ...data, formId: newFormRef.id });
+    });
+
+    await Promise.all([...batch, ...sectionBatch]);
+    return newFormRef.id;
   },
 }));

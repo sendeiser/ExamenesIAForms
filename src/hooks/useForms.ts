@@ -10,10 +10,11 @@ export function useForms() {
   const createForm = useFormStore((s) => s.createForm);
   const deleteForm = useFormStore((s) => s.deleteForm);
   const togglePublish = useFormStore((s) => s.togglePublish);
+  const duplicateForm = useFormStore((s) => s.duplicateForm);
 
   useEffect(() => {
     if (user) fetchForms(user.uid);
   }, [user]);
 
-  return { forms, loading, createForm, deleteForm, togglePublish };
+  return { forms, loading, createForm, deleteForm, togglePublish, duplicateForm, fetchForms };
 }
