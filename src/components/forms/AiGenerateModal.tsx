@@ -7,11 +7,12 @@ import { Loader2, Sparkles, Upload, FileText, X, BookOpen, Beaker, ScrollText, M
 import { useEditorStore } from '../../store/editorStore';
 import type { QuestionType } from '../../types/question';
 import {
-  callOpenRouter,
+  callAi,
   parseJsonArrayFromAi,
-  type OpenRouterContentPart,
+  type AiContentPart,
   type OpenRouterPlugin,
-} from '../../lib/openrouter';
+} from '../../lib/aiClient';
+import { getEffectiveAiConfig } from '../../store/aiSettingsStore';
 import { parseDocumentForAi } from '../../lib/documentParser';
 import { AiStatusBar } from './AiStatusBar';
 
@@ -121,7 +122,7 @@ export function AiGenerateModal({ open, onClose }: AiGenerateModalProps) {
     setError('');
 
     try {
-      const questionsData = await generateQuestionsWithOpenRouter(topic, count, type, file, customInstructions);
+      const questionsData = await generateQuestionsWithAi(topic, count, type, file, customInstructions);
       for (let i = 0; i < questionsData.length; i++) {
         const q = questionsData[i];
         const currentLen = useEditorStore.getState().questions.length;
@@ -318,7 +319,7 @@ IMPORTANTE:
 - Las preguntas deben ser variadas, claras y apropiadas para el tema.`;
 }
 
-async function generateQuestionsWithOpenRouter(
+async function generateQuestionsWithAi(
   topic: string,
   count: number,
   type: QuestionType | 'mixed',
@@ -327,12 +328,13 @@ async function generateQuestionsWithOpenRouter(
 ): Promise<AiQuestion[]> {
   const effectiveTopic = topic.trim() || file?.name || 'el documento adjunto';
   const textPrompt = buildPrompt(effectiveTopic, count, type, customInstructions);
+  const { provider } = getEffectiveAiConfig();
 
-  const content: OpenRouterContentPart[] = [];
+  const content: AiContentPart[] = [];
   const plugins: OpenRouterPlugin[] = [];
 
   if (file) {
-    const parsed = await parseDocumentForAi(file);
+    const parsed = await parseDocumentForAi(file, provider);
     if (parsed.kind === 'text') {
       content.push({
         type: 'text',
@@ -352,7 +354,7 @@ async function generateQuestionsWithOpenRouter(
 
   content.push({ type: 'text', text: textPrompt });
 
-  const text = await callOpenRouter({
+  const text = await callAi({
     content,
     plugins,
     temperature: 0.7,

@@ -1,25 +1,27 @@
 import { KeyRound, Settings2 } from 'lucide-react';
 import {
-  DEFAULT_OPENROUTER_MODEL,
-  getEnvOpenRouterApiKey,
-  getEnvOpenRouterModel,
+  PROVIDER_META,
+  getEffectiveAiConfig,
   useAiSettingsStore,
 } from '../../store/aiSettingsStore';
 
 export function AiStatusBar() {
-  const customApiKey = useAiSettingsStore((s) => s.customApiKey);
-  const customModel = useAiSettingsStore((s) => s.customModel);
+  const customProvider = useAiSettingsStore((s) => s.customProvider);
+  const providers = useAiSettingsStore((s) => s.providers);
   const openSettingsModal = useAiSettingsStore((s) => s.openSettingsModal);
 
-  const hasApiKey = Boolean(customApiKey || getEnvOpenRouterApiKey());
-  const activeModel = customModel || getEnvOpenRouterModel() || DEFAULT_OPENROUTER_MODEL;
+  const { provider, apiKey, model } = getEffectiveAiConfig({
+    customProvider,
+    providers,
+  });
+  const providerLabel = PROVIDER_META[provider].label;
 
-  if (!hasApiKey) {
+  if (!apiKey) {
     return (
       <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800">
         <div className="flex items-center gap-2">
           <KeyRound className="h-4 w-4 shrink-0 text-amber-600" />
-          <span>Falta configurar la API key de OpenRouter.</span>
+          <span>Falta configurar la API key de {providerLabel}.</span>
         </div>
         <button
           type="button"
@@ -35,7 +37,8 @@ export function AiStatusBar() {
   return (
     <div className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-xs text-gray-600">
       <div className="truncate">
-        Modelo: <span className="font-mono font-medium text-gray-800">{activeModel}</span>
+        <span className="font-medium text-gray-800">{providerLabel}</span> ·{' '}
+        <span className="font-mono text-gray-700">{model}</span>
       </div>
       <button
         type="button"

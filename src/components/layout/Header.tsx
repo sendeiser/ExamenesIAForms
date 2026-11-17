@@ -2,13 +2,20 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { Button } from '../ui/Button';
 import { FileText, KeyRound, LogOut } from 'lucide-react';
-import { getEnvOpenRouterApiKey, useAiSettingsStore } from '../../store/aiSettingsStore';
+import {
+  PROVIDER_META,
+  getEffectiveAiConfig,
+  useAiSettingsStore,
+} from '../../store/aiSettingsStore';
 
 export function Header() {
   const { user, logout } = useAuth();
-  const customApiKey = useAiSettingsStore((s) => s.customApiKey);
+  const customProvider = useAiSettingsStore((s) => s.customProvider);
+  const providers = useAiSettingsStore((s) => s.providers);
   const openSettingsModal = useAiSettingsStore((s) => s.openSettingsModal);
-  const hasApiKey = Boolean(customApiKey || getEnvOpenRouterApiKey());
+  const { provider, apiKey } = getEffectiveAiConfig({ customProvider, providers });
+  const hasApiKey = Boolean(apiKey);
+  const providerLabel = PROVIDER_META[provider].label;
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
@@ -24,7 +31,7 @@ export function Header() {
                 variant="secondary"
                 className="px-3 py-1.5 text-xs"
                 onClick={openSettingsModal}
-                title="Configurar API key y modelo de OpenRouter"
+                title={`Configurar API key y modelo de IA (actual: ${providerLabel})`}
                 aria-label="Configurar IA"
               >
                 <span className="relative flex items-center">
@@ -35,7 +42,7 @@ export function Header() {
                     }`}
                   />
                 </span>
-                <span className="hidden sm:inline">API IA</span>
+                <span className="hidden sm:inline">API IA ({providerLabel})</span>
               </Button>
               <span className="text-sm text-gray-600 hidden sm:block">{user.displayName || user.email}</span>
               <Button variant="ghost" onClick={logout}>

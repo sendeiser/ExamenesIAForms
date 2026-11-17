@@ -3,7 +3,7 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Loader2, Sparkles } from 'lucide-react';
-import { callOpenRouter, parseJsonArrayFromAi } from '../../lib/openrouter';
+import { callAi, parseJsonArrayFromAi } from '../../lib/aiClient';
 import { AiStatusBar } from './AiStatusBar';
 import { useEditorStore } from '../../store/editorStore';
 
@@ -70,7 +70,7 @@ IMPORTANTE:
 - Para linearScale incluye "settings": { "min": 1, "max": 5, "minLabel": "", "maxLabel": "" }`;
 
     try {
-      const text = await callOpenRouter({ prompt });
+      const text = await callAi({ prompt });
       const modified = parseJsonArrayFromAi(text, { escapeLatex: true });
 
       if (!Array.isArray(modified) || modified.length !== questions.length) {

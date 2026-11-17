@@ -14,81 +14,120 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import {
-  DEFAULT_OPENROUTER_MODEL,
-  OPENROUTER_PRESET_MODELS,
-  getEffectiveOpenRouterConfig,
-  getEnvOpenRouterApiKey,
-  getEnvOpenRouterModel,
+  PROVIDER_META,
+  getDefaultProvider,
+  getEffectiveAiConfig,
+  getEnvProviderConfig,
+  resolveProviderConfig,
   useAiSettingsStore,
+  type AiProvider,
+  type ProviderCredentials,
 } from '../../store/aiSettingsStore';
-import { testOpenRouterConnection } from '../../lib/openrouter';
+import { testAiConnection } from '../../lib/aiClient';
 
 const CUSTOM_MODEL_OPTION = '__custom__';
 
-function isPresetModel(modelId: string): boolean {
-  return OPENROUTER_PRESET_MODELS.some((m) => m.value === modelId);
+interface ProviderDraft {
+  apiKey: string;
+  selectedPreset: string;
+  customModel: string;
+}
+
+function buildDraft(
+  provider: AiProvider,
+  custom: ProviderCredentials,
+  extraModelIds: string[] = []
+): ProviderDraft {
+  const meta = PROVIDER_META[provider];
+  const env = getEnvProviderConfig(provider);
+  const activeModel = custom.model || env.model || meta.defaultModel;
+  const knownIds = new Set([
+    ...meta.presets.map((p) => p.value),
+    ...extraModelIds,
+  ]);
+
+  if (knownIds.has(activeModel)) {
+    return {
+      apiKey: custom.apiKey,
+      selectedPreset: activeModel,
+      customModel: '',
+    };
+  }
+  return {
+    apiKey: custom.apiKey,
+    selectedPreset: CUSTOM_MODEL_OPTION,
+    customModel: activeModel,
+  };
 }
 
 export function AiSettingsModal() {
   const open = useAiSettingsStore((s) => s.settingsModalOpen);
   const close = useAiSettingsStore((s) => s.closeSettingsModal);
-  const customApiKey = useAiSettingsStore((s) => s.customApiKey);
-  const customModel = useAiSettingsStore((s) => s.customModel);
-  const saveSettings = useAiSettingsStore((s) => s.saveSettings);
+  const customProvider = useAiSettingsStore((s) => s.customProvider);
+  const customProviders = useAiSettingsStore((s) => s.providers);
+  const saveAllSettings = useAiSettingsStore((s) => s.saveAllSettings);
   const clearCustomSettings = useAiSettingsStore((s) => s.clearCustomSettings);
 
-  const [draftKey, setDraftKey] = useState('');
+  const [draftProvider, setDraftProvider] = useState<AiProvider>('openrouter');
+  const [drafts, setDrafts] = useState<Record<AiProvider, ProviderDraft>>({
+    openrouter: buildDraft('openrouter', { apiKey: '', model: '' }),
+    groq: buildDraft('groq', { apiKey: '', model: '' }),
+  });
+  const [liveGroqModels, setLiveGroqModels] = useState<string[]>([]);
   const [showKey, setShowKey] = useState(false);
-  const [selectedPreset, setSelectedPreset] = useState<string>(DEFAULT_OPENROUTER_MODEL);
-  const [customModelInput, setCustomModelInput] = useState('');
 
   const [testing, setTesting] = useState(false);
   const [testSuccess, setTestSuccess] = useState('');
   const [testError, setTestError] = useState('');
 
-  const envKey = getEnvOpenRouterApiKey();
-  const envModel = getEnvOpenRouterModel();
-  const effectiveConfig = getEffectiveOpenRouterConfig();
-
   useEffect(() => {
     if (!open) return;
-    const activeModel = customModel || envModel || DEFAULT_OPENROUTER_MODEL;
-    setDraftKey(customApiKey);
+    const effective = getEffectiveAiConfig();
+    setDraftProvider(effective.provider);
+    setDrafts({
+      openrouter: buildDraft('openrouter', customProviders.openrouter),
+      groq: buildDraft('groq', customProviders.groq, liveGroqModels),
+    });
     setShowKey(false);
     setTestSuccess('');
     setTestError('');
+  }, [open, customProvider, customProviders]);
 
-    if (isPresetModel(activeModel)) {
-      setSelectedPreset(activeModel);
-      setCustomModelInput('');
-    } else {
-      setSelectedPreset(CUSTOM_MODEL_OPTION);
-      setCustomModelInput(activeModel);
-    }
-  }, [open, customApiKey, customModel, envModel]);
+  const currentMeta = PROVIDER_META[draftProvider];
+  const currentEnv = getEnvProviderConfig(draftProvider);
+  const currentDraft = drafts[draftProvider];
+  const currentEffective = resolveProviderConfig(draftProvider, customProviders);
 
-  const resolvedDraftModel =
-    selectedPreset === CUSTOM_MODEL_OPTION
-      ? customModelInput.trim() || DEFAULT_OPENROUTER_MODEL
-      : selectedPreset;
+  const presetIds = new Set(currentMeta.presets.map((p) => p.value));
+  const extraModels =
+    draftProvider === 'groq'
+      ? liveGroqModels.filter((id) => !presetIds.has(id))
+      : [];
+
+  const modelOptions = [
+    ...currentMeta.presets.map((m) => ({ value: m.value, label: m.label })),
+    ...extraModels.map((id) => ({ value: id, label: `${id} (disponible en cuenta)` })),
+    { value: CUSTOM_MODEL_OPTION, label: 'Otro modelo (ingresar ID manualmente)...' },
+  ];
+
+  function updateCurrentDraft(patch: Partial<ProviderDraft>) {
+    setDrafts((prev) => ({
+      ...prev,
+      [draftProvider]: { ...prev[draftProvider], ...patch },
+    }));
+  }
 
   async function handleTestConnection() {
-    const keyToTest = draftKey.trim() || envKey;
+    const keyToTest = currentDraft.apiKey.trim() || currentEnv.apiKey;
     setTesting(true);
     setTestSuccess('');
     setTestError('');
     try {
-      const status = await testOpenRouterConnection(keyToTest);
-      const details: string[] = [];
-      if (status.label) details.push(`Clave: ${status.label}`);
-      if (status.limitRemaining !== null) {
-        details.push(`Saldo restante: $${status.limitRemaining.toFixed(4)}`);
-      } else if (status.isFreeTier) {
-        details.push('Plan gratuito activo');
+      const result = await testAiConnection(draftProvider, keyToTest);
+      if (draftProvider === 'groq' && result.availableModels?.length) {
+        setLiveGroqModels(result.availableModels);
       }
-      setTestSuccess(
-        details.length > 0 ? `Conexión exitosa (${details.join(' · ')})` : 'API key válida y activa.'
-      );
+      setTestSuccess(result.summary);
     } catch (err) {
       setTestError(err instanceof Error ? err.message : 'No se pudo verificar la API key');
     } finally {
@@ -96,55 +135,112 @@ export function AiSettingsModal() {
     }
   }
 
+  function resolveModelToSave(provider: AiProvider, draft: ProviderDraft): string {
+    const meta = PROVIDER_META[provider];
+    const env = getEnvProviderConfig(provider);
+    const defaultModel = env.model || meta.defaultModel;
+    const chosen =
+      draft.selectedPreset === CUSTOM_MODEL_OPTION
+        ? draft.customModel.trim() || defaultModel
+        : draft.selectedPreset;
+    return chosen === defaultModel ? '' : chosen;
+  }
+
   function handleSave() {
-    const defaultModel = envModel || DEFAULT_OPENROUTER_MODEL;
-    const modelToSave = resolvedDraftModel === defaultModel ? '' : resolvedDraftModel;
-    saveSettings(draftKey, modelToSave);
+    saveAllSettings(draftProvider, {
+      openrouter: {
+        apiKey: drafts.openrouter.apiKey.trim(),
+        model: resolveModelToSave('openrouter', drafts.openrouter),
+      },
+      groq: {
+        apiKey: drafts.groq.apiKey.trim(),
+        model: resolveModelToSave('groq', drafts.groq),
+      },
+    });
     close();
   }
 
   function handleResetToEnv() {
     clearCustomSettings();
-    setDraftKey('');
-    const fallbackModel = envModel || DEFAULT_OPENROUTER_MODEL;
-    if (isPresetModel(fallbackModel)) {
-      setSelectedPreset(fallbackModel);
-      setCustomModelInput('');
-    } else {
-      setSelectedPreset(CUSTOM_MODEL_OPTION);
-      setCustomModelInput(fallbackModel);
-    }
+    const fallbackProvider = getDefaultProvider();
+    setDraftProvider(fallbackProvider);
+    setDrafts({
+      openrouter: buildDraft('openrouter', { apiKey: '', model: '' }),
+      groq: buildDraft('groq', { apiKey: '', model: '' }, liveGroqModels),
+    });
     setTestSuccess('');
     setTestError('');
   }
 
+  const hasAnyCustomSetting = Boolean(
+    customProvider ||
+      customProviders.openrouter.apiKey ||
+      customProviders.openrouter.model ||
+      customProviders.groq.apiKey ||
+      customProviders.groq.model
+  );
+
   const keyBadge =
-    effectiveConfig.apiKeySource === 'local'
+    currentEffective.apiKeySource === 'local'
       ? { text: 'Clave personalizada (este navegador)', classes: 'bg-indigo-50 text-indigo-700 border-indigo-200' }
-      : effectiveConfig.apiKeySource === 'env'
+      : currentEffective.apiKeySource === 'env'
         ? { text: 'Clave configurada desde .env', classes: 'bg-green-50 text-green-700 border-green-200' }
-        : { text: 'Sin API key configurada', classes: 'bg-amber-50 text-amber-800 border-amber-200' };
+        : { text: `Sin API key de ${currentMeta.label}`, classes: 'bg-amber-50 text-amber-800 border-amber-200' };
 
   return (
-    <Modal open={open} onClose={close} title="Configuración de IA (OpenRouter)" zIndexClass="z-[60]">
+    <Modal open={open} onClose={close} title="Configuración de IA" zIndexClass="z-[60]">
       <div className="space-y-4">
+        <div className="space-y-1.5">
+          <label className="block text-sm font-medium text-gray-700">Proveedor de IA</label>
+          <div className="grid grid-cols-2 gap-2">
+            {(['openrouter', 'groq'] as AiProvider[]).map((p) => {
+              const meta = PROVIDER_META[p];
+              const isSelected = draftProvider === p;
+              const hasKey = Boolean(drafts[p].apiKey.trim() || getEnvProviderConfig(p).apiKey);
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => {
+                    setDraftProvider(p);
+                    setTestSuccess('');
+                    setTestError('');
+                    setShowKey(false);
+                  }}
+                  className={`flex items-center justify-between px-3 py-2.5 rounded-lg border text-sm font-medium transition-colors ${
+                    isSelected
+                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <span>{meta.label}</span>
+                  <span
+                    className={`h-2 w-2 rounded-full ${hasKey ? 'bg-green-500' : 'bg-gray-300'}`}
+                    title={hasKey ? 'API key configurada' : 'Sin API key'}
+                  />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <div className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border text-xs ${keyBadge.classes}`}>
           <div className="flex items-center gap-2 font-medium">
             <KeyRound className="h-4 w-4 shrink-0" />
             <span>{keyBadge.text}</span>
           </div>
           <span className="font-mono text-[11px] opacity-80 truncate max-w-[180px]">
-            {effectiveConfig.model}
+            {currentEffective.model}
           </span>
         </div>
 
         <div className="space-y-1">
           <div className="flex items-center justify-between">
-            <label htmlFor="openrouter-api-key" className="block text-sm font-medium text-gray-700">
-              API Key de OpenRouter
+            <label htmlFor="ai-provider-api-key" className="block text-sm font-medium text-gray-700">
+              API Key de {currentMeta.label}
             </label>
             <a
-              href="https://openrouter.ai/keys"
+              href={currentMeta.keysUrl}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 hover:underline"
@@ -155,18 +251,18 @@ export function AiSettingsModal() {
           </div>
           <div className="relative">
             <input
-              id="openrouter-api-key"
+              id="ai-provider-api-key"
               type={showKey ? 'text' : 'password'}
-              value={draftKey}
+              value={currentDraft.apiKey}
               onChange={(e) => {
-                setDraftKey(e.target.value);
+                updateCurrentDraft({ apiKey: e.target.value });
                 setTestSuccess('');
                 setTestError('');
               }}
               placeholder={
-                envKey
-                  ? 'Usando VITE_OPENROUTER_API_KEY de .env (escribe aquí para sobrescribir)'
-                  : 'sk-or-v1-...'
+                currentEnv.apiKey
+                  ? `Usando ${currentMeta.envKeyName} de .env (escribe aquí para sobrescribir)`
+                  : currentMeta.keyPlaceholder
               }
               autoComplete="off"
               className="block w-full rounded-lg border border-gray-300 pl-3 pr-10 py-2 text-sm shadow-sm transition-colors placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono"
@@ -182,28 +278,29 @@ export function AiSettingsModal() {
           </div>
           <p className="text-xs text-gray-500">
             Se guarda localmente en este navegador. Si lo dejas vacío, se usará{' '}
-            <code className="px-1 py-0.5 bg-gray-100 rounded text-[11px]">VITE_OPENROUTER_API_KEY</code> del entorno.
+            <code className="px-1 py-0.5 bg-gray-100 rounded text-[11px]">{currentMeta.envKeyName}</code> del entorno.
           </p>
         </div>
 
         <Select
-          id="openrouter-model-preset"
-          label="Modelo de IA"
-          value={selectedPreset}
-          onChange={(e) => setSelectedPreset(e.target.value)}
-          options={[
-            ...OPENROUTER_PRESET_MODELS.map((m) => ({ value: m.value, label: m.label })),
-            { value: CUSTOM_MODEL_OPTION, label: 'Otro modelo (ingresar ID manualmente)...' },
-          ]}
+          id="ai-provider-model-preset"
+          label={`Modelo de ${currentMeta.label}`}
+          value={currentDraft.selectedPreset}
+          onChange={(e) => updateCurrentDraft({ selectedPreset: e.target.value })}
+          options={modelOptions}
         />
 
-        {selectedPreset === CUSTOM_MODEL_OPTION && (
+        {currentDraft.selectedPreset === CUSTOM_MODEL_OPTION && (
           <Input
-            id="openrouter-custom-model"
-            label="ID del modelo en OpenRouter"
-            value={customModelInput}
-            onChange={(e) => setCustomModelInput(e.target.value)}
-            placeholder="Ej: meta-llama/llama-3.3-70b-instruct:free"
+            id="ai-provider-custom-model"
+            label={`ID del modelo en ${currentMeta.label}`}
+            value={currentDraft.customModel}
+            onChange={(e) => updateCurrentDraft({ customModel: e.target.value })}
+            placeholder={
+              draftProvider === 'groq'
+                ? 'Ej: openai/gpt-oss-120b'
+                : 'Ej: meta-llama/llama-3.3-70b-instruct:free'
+            }
           />
         )}
 
@@ -213,13 +310,13 @@ export function AiSettingsModal() {
             variant="secondary"
             className="px-3 py-1.5 text-xs"
             onClick={handleTestConnection}
-            disabled={testing || !(draftKey.trim() || envKey)}
+            disabled={testing || !(currentDraft.apiKey.trim() || currentEnv.apiKey)}
           >
             {testing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
             {testing ? 'Verificando...' : 'Probar conexión'}
           </Button>
 
-          {(customApiKey || customModel) && (
+          {hasAnyCustomSetting && (
             <Button type="button" variant="ghost" className="px-3 py-1.5 text-xs" onClick={handleResetToEnv}>
               <RotateCcw className="h-3.5 w-3.5" />
               Restablecer valores por defecto
@@ -246,7 +343,7 @@ export function AiSettingsModal() {
             Cancelar
           </Button>
           <Button type="button" onClick={handleSave}>
-            Guardar configuración
+            Guardar y usar {currentMeta.label}
           </Button>
         </div>
       </div>

@@ -4,7 +4,7 @@ import { Button } from '../ui/Button';
 import { LatexRenderer } from '../ui/LatexRenderer';
 import { CheckCircle2, XCircle, Sparkles, Loader2 } from 'lucide-react';
 import type { QuizScore } from '../../lib/quizScoring';
-import { callOpenRouter, parseJsonArrayFromAi } from '../../lib/openrouter';
+import { callAi, parseJsonArrayFromAi } from '../../lib/aiClient';
 
 interface QuizResultProps {
   score: QuizScore;
@@ -24,7 +24,7 @@ export function QuizResult({ score }: QuizResultProps) {
     setLoadingFeedback(true);
     setFeedbackError('');
     try {
-      const result = await callOpenRouterForFeedback(textResults);
+      const result = await callAiForFeedback(textResults);
       setFeedback(result);
     } catch (err) {
       setFeedbackError(err instanceof Error ? err.message : 'Error al obtener retroalimentación');
@@ -95,7 +95,7 @@ export function QuizResult({ score }: QuizResultProps) {
   );
 }
 
-async function callOpenRouterForFeedback(
+async function callAiForFeedback(
   wrongResults: QuizScore['results']
 ): Promise<Record<string, string>> {
   const questionsText = wrongResults
@@ -119,7 +119,7 @@ Responde ÚNICAMENTE con un array JSON donde cada elemento tenga:
 
 Sin markdown, sin \`\`\`, sin explicaciones adicionales.`;
 
-  const text = await callOpenRouter({
+  const text = await callAi({
     prompt,
     temperature: 0.5,
     maxTokens: 8192,

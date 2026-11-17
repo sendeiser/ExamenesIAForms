@@ -3,7 +3,7 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Loader2, Sparkles } from 'lucide-react';
-import { callOpenRouter, parseJsonArrayFromAi } from '../../lib/openrouter';
+import { callAi, parseJsonArrayFromAi } from '../../lib/aiClient';
 import { AiStatusBar } from './AiStatusBar';
 import type { Question } from '../../types/question';
 
@@ -63,7 +63,7 @@ IMPORTANTE:
 - Mantén todo lo que no se deba modificar igual que la pregunta original`;
 
     try {
-      const text = await callOpenRouter({ prompt });
+      const text = await callAi({ prompt });
       const modified = parseJsonArrayFromAi(text, { escapeLatex: true });
 
       if (!Array.isArray(modified) || modified.length === 0) {

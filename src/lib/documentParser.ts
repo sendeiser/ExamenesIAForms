@@ -1,6 +1,40 @@
+import type { AiProvider } from '../store/aiSettingsStore';
+
 export type ParsedDocument =
   | { kind: 'text'; filename: string; text: string }
   | { kind: 'pdf'; filename: string; dataUrl: string };
+
+async function extractPdfText(file: File): Promise<string> {
+  const [pdfjsLib, workerModule] = await Promise.all([
+    import('pdfjs-dist'),
+    import('pdfjs-dist/build/pdf.worker.min.mjs?url'),
+  ]);
+  pdfjsLib.GlobalWorkerOptions.workerSrc = workerModule.default;
+
+  const buffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buffer) }).promise;
+  const pages: string[] = [];
+
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
+    const pageText = textContent.items
+      .map((item) => ('str' in item ? item.str : ''))
+      .join(' ')
+      .trim();
+    if (pageText) {
+      pages.push(pageText);
+    }
+  }
+
+  const fullText = pages.join('\n\n');
+  if (!fullText.trim()) {
+    throw new Error(
+      'No se pudo extraer texto del PDF (puede estar escaneado como imagen). Prueba con OpenRouter o sube un archivo TXT/DOCX.'
+    );
+  }
+  return fullText;
+}
 
 function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -123,8 +157,11 @@ export async function extractDocxText(buffer: ArrayBuffer): Promise<string> {
   throw new Error('No se encontró contenido de texto en el archivo DOCX.');
 }
 
-/** Prepara un documento (.txt, .pdf o .docx) para enviarlo a OpenRouter. */
-export async function parseDocumentForAi(file: File): Promise<ParsedDocument> {
+/** Prepara un documento (.txt, .pdf o .docx) según el proveedor de IA seleccionado. */
+export async function parseDocumentForAi(
+  file: File,
+  provider: AiProvider = 'openrouter'
+): Promise<ParsedDocument> {
   const ext = file.name.split('.').pop()?.toLowerCase();
 
   if (ext === 'txt') {
@@ -133,6 +170,10 @@ export async function parseDocumentForAi(file: File): Promise<ParsedDocument> {
   }
 
   if (ext === 'pdf') {
+    if (provider === 'groq') {
+      const text = await extractPdfText(file);
+      return { kind: 'text', filename: file.name, text };
+    }
     const dataUrl = await readFileAsDataUrl(file);
     return { kind: 'pdf', filename: file.name, dataUrl };
   }
