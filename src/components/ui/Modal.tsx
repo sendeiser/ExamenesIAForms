@@ -8,9 +8,10 @@ interface ModalProps {
   title: string;
   children: ReactNode;
   size?: 'sm' | 'md' | 'lg';
+  zIndexClass?: string;
 }
 
-export function Modal({ open, onClose, title, children, size = 'md' }: ModalProps) {
+export function Modal({ open, onClose, title, children, size = 'md', zIndexClass = 'z-50' }: ModalProps) {
   const titleId = `modal-title-${Math.random().toString(36).slice(2, 9)}`;
   const overlayRef = useRef<HTMLDivElement>(null);
 
@@ -42,7 +43,7 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      className={clsx('fixed inset-0 flex items-center justify-center', zIndexClass)}
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}

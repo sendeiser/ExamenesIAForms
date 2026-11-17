@@ -4,8 +4,7 @@ import { Button } from '../ui/Button';
 import { LatexRenderer } from '../ui/LatexRenderer';
 import { CheckCircle2, XCircle, Sparkles, Loader2 } from 'lucide-react';
 import type { QuizScore } from '../../lib/quizScoring';
-
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
+import { callOpenRouter, parseJsonArrayFromAi } from '../../lib/openrouter';
 
 interface QuizResultProps {
   score: QuizScore;
@@ -25,7 +24,7 @@ export function QuizResult({ score }: QuizResultProps) {
     setLoadingFeedback(true);
     setFeedbackError('');
     try {
-      const result = await callGeminiForFeedback(textResults);
+      const result = await callOpenRouterForFeedback(textResults);
       setFeedback(result);
     } catch (err) {
       setFeedbackError(err instanceof Error ? err.message : 'Error al obtener retroalimentación');
@@ -96,7 +95,7 @@ export function QuizResult({ score }: QuizResultProps) {
   );
 }
 
-async function callGeminiForFeedback(
+async function callOpenRouterForFeedback(
   wrongResults: QuizScore['results']
 ): Promise<Record<string, string>> {
   const questionsText = wrongResults
@@ -120,45 +119,17 @@ Responde ÚNICAMENTE con un array JSON donde cada elemento tenga:
 
 Sin markdown, sin \`\`\`, sin explicaciones adicionales.`;
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1/models/gemini-3.1-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.5, maxOutputTokens: 8192 },
-      }),
-    }
-  );
+  const text = await callOpenRouter({
+    prompt,
+    temperature: 0.5,
+    maxTokens: 8192,
+  });
 
-  if (!response.ok) {
-    throw new Error(`Error de API: ${response.status}`);
-  }
-
-  const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-  const cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-
-  const arrayStart = cleaned.indexOf('[');
-  const arrayEnd = cleaned.lastIndexOf(']');
-
-  if (arrayEnd === -1 || arrayEnd < arrayStart) {
-    throw new Error(`La IA no completó la respuesta (JSON truncado). Respuesta: ${text.slice(0, 600)}`);
-  }
-
-  const jsonStr = cleaned.slice(arrayStart, arrayEnd + 1);
-
-  try {
-    const items: Array<{ index: number; feedback: string }> = JSON.parse(jsonStr);
-    const map: Record<string, string> = {};
-    items.forEach((item) => {
-      const q = wrongResults[item.index - 1];
-      if (q) map[q.questionId] = item.feedback;
-    });
-    return map;
-  } catch (e) {
-    const msg = e instanceof SyntaxError ? e.message : 'Error desconocido';
-    throw new Error(`Error de JSON: ${msg}. Respuesta: ${text.slice(0, 300)}`);
-  }
+  const items = parseJsonArrayFromAi<{ index: number; feedback: string }>(text);
+  const map: Record<string, string> = {};
+  items.forEach((item) => {
+    const q = wrongResults[item.index - 1];
+    if (q) map[q.questionId] = item.feedback;
+  });
+  return map;
 }

@@ -6,8 +6,14 @@ import { Select } from '../ui/Select';
 import { Loader2, Sparkles, Upload, FileText, X, BookOpen, Beaker, ScrollText, MessageSquare, PenLine } from 'lucide-react';
 import { useEditorStore } from '../../store/editorStore';
 import type { QuestionType } from '../../types/question';
-
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
+import {
+  callOpenRouter,
+  parseJsonArrayFromAi,
+  type OpenRouterContentPart,
+  type OpenRouterPlugin,
+} from '../../lib/openrouter';
+import { parseDocumentForAi } from '../../lib/documentParser';
+import { AiStatusBar } from './AiStatusBar';
 
 interface AiGenerateModalProps {
   open: boolean;
@@ -115,7 +121,7 @@ export function AiGenerateModal({ open, onClose }: AiGenerateModalProps) {
     setError('');
 
     try {
-      const questionsData = await callGeminiWithDocument(topic, count, type, file, customInstructions);
+      const questionsData = await generateQuestionsWithOpenRouter(topic, count, type, file, customInstructions);
       for (let i = 0; i < questionsData.length; i++) {
         const q = questionsData[i];
         const currentLen = useEditorStore.getState().questions.length;
@@ -172,6 +178,7 @@ export function AiGenerateModal({ open, onClose }: AiGenerateModalProps) {
   return (
     <Modal open={open} onClose={onClose} title="Generar preguntas con IA">
       <div className="space-y-4">
+        <AiStatusBar />
         <div>
           <p className="text-xs text-gray-500 mb-2">Plantillas rápidas</p>
           <div className="grid grid-cols-4 gap-1.5">
@@ -311,94 +318,46 @@ IMPORTANTE:
 - Las preguntas deben ser variadas, claras y apropiadas para el tema.`;
 }
 
-async function readFileAsBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      const base64 = result.split(',')[1];
-      resolve(base64);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-async function readFileAsText(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsText(file);
-  });
-}
-
-async function callGeminiWithDocument(
+async function generateQuestionsWithOpenRouter(
   topic: string,
   count: number,
   type: QuestionType | 'mixed',
   file: File | null,
   customInstructions: string
 ): Promise<AiQuestion[]> {
-  const textPrompt = buildPrompt(topic, count, type, customInstructions);
+  const effectiveTopic = topic.trim() || file?.name || 'el documento adjunto';
+  const textPrompt = buildPrompt(effectiveTopic, count, type, customInstructions);
 
-  const parts: Array<Record<string, any>> = [];
+  const content: OpenRouterContentPart[] = [];
+  const plugins: OpenRouterPlugin[] = [];
 
   if (file) {
-    const ext = file.name.split('.').pop()?.toLowerCase();
-    if (ext === 'txt') {
-      const content = await readFileAsText(file);
-      parts.push({ text: `Documento de referencia:\n\n${content}\n\n---\n\n` });
-    } else if (ext === 'pdf') {
-      const base64 = await readFileAsBase64(file);
-      parts.push({ inline_data: { mime_type: 'application/pdf', data: base64 } });
-    } else if (ext === 'docx') {
-      const base64 = await readFileAsBase64(file);
-      parts.push({ inline_data: { mime_type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', data: base64 } });
+    const parsed = await parseDocumentForAi(file);
+    if (parsed.kind === 'text') {
+      content.push({
+        type: 'text',
+        text: `Documento de referencia (${parsed.filename}):\n\n${parsed.text}\n\n---\n\n`,
+      });
+    } else {
+      content.push({
+        type: 'file',
+        file: {
+          filename: parsed.filename,
+          file_data: parsed.dataUrl,
+        },
+      });
+      plugins.push({ id: 'file-parser', pdf: { engine: 'cloudflare-ai' } });
     }
   }
 
-  parts.push({ text: textPrompt });
+  content.push({ type: 'text', text: textPrompt });
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1/models/gemini-3.1-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
-      }),
-    }
-  );
+  const text = await callOpenRouter({
+    content,
+    plugins,
+    temperature: 0.7,
+    maxTokens: 8192,
+  });
 
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`Error de API: ${response.status} ${err}`);
-  }
-
-  const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-
-  const cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
-
-  const arrayStart = cleaned.indexOf('[');
-  const arrayEnd = cleaned.lastIndexOf(']');
-
-  if (arrayEnd === -1 || arrayEnd < arrayStart) {
-    throw new Error(`La IA no completó la respuesta (el JSON está truncado). Respuesta: ${text.slice(0, 600)}`);
-  }
-
-  let jsonStr = cleaned.slice(arrayStart, arrayEnd + 1);
-
-  jsonStr = jsonStr.replace(/(?<!\\)\\([a-zA-Z])/g, '\\\\$1');
-
-  try {
-    return JSON.parse(jsonStr);
-  } catch (e) {
-    const msg = e instanceof SyntaxError ? e.message : 'Error desconocido';
-    const pos = parseInt(msg.match(/position\s+(\d+)/)?.[1] ?? '0', 10);
-    const around = jsonStr.slice(Math.max(0, pos - 40), pos + 40);
-    throw new Error(`Error de JSON en posición ${pos}: ${msg}. Alrededor: ...${around}...`);
-  }
+  return parseJsonArrayFromAi<AiQuestion>(text, { escapeLatex: true });
 }

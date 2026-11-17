@@ -3,7 +3,8 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Loader2, Sparkles } from 'lucide-react';
-import { callGemini, extractJsonArray } from '../../lib/gemini';
+import { callOpenRouter, parseJsonArrayFromAi } from '../../lib/openrouter';
+import { AiStatusBar } from './AiStatusBar';
 import { useEditorStore } from '../../store/editorStore';
 
 interface AiModifyAllModalProps {
@@ -69,9 +70,8 @@ IMPORTANTE:
 - Para linearScale incluye "settings": { "min": 1, "max": 5, "minLabel": "", "maxLabel": "" }`;
 
     try {
-      const text = await callGemini(prompt);
-      const jsonStr = extractJsonArray(text);
-      const modified = JSON.parse(jsonStr);
+      const text = await callOpenRouter({ prompt });
+      const modified = parseJsonArrayFromAi(text, { escapeLatex: true });
 
       if (!Array.isArray(modified) || modified.length !== questions.length) {
         throw new Error(`La IA devolvió ${modified?.length ?? 0} preguntas, se esperaban ${questions.length}`);
@@ -103,6 +103,7 @@ IMPORTANTE:
   return (
     <Modal open={open} onClose={onClose} title="Modificar todas con IA" size="sm">
       <div className="space-y-4">
+        <AiStatusBar />
         <p className="text-sm text-gray-600">
           Describe qué quieres cambiar en todas las preguntas. Por ejemplo: "cambia los números de todos los cálculos",
           "haz todas las preguntas más difíciles", "cambia el tema a geografía".

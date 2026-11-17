@@ -3,8 +3,9 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Loader2, Sparkles } from 'lucide-react';
-import { callGemini, extractJsonArray } from '../../lib/gemini';
-import type { Question, QuestionType } from '../../types/question';
+import { callOpenRouter, parseJsonArrayFromAi } from '../../lib/openrouter';
+import { AiStatusBar } from './AiStatusBar';
+import type { Question } from '../../types/question';
 
 interface AiModifyModalProps {
   open: boolean;
@@ -62,9 +63,8 @@ IMPORTANTE:
 - Mantén todo lo que no se deba modificar igual que la pregunta original`;
 
     try {
-      const text = await callGemini(prompt);
-      const jsonStr = extractJsonArray(text);
-      const modified = JSON.parse(jsonStr);
+      const text = await callOpenRouter({ prompt });
+      const modified = parseJsonArrayFromAi(text, { escapeLatex: true });
 
       if (!Array.isArray(modified) || modified.length === 0) {
         throw new Error('La IA no devolvió una pregunta válida');
@@ -95,6 +95,7 @@ IMPORTANTE:
   return (
     <Modal open={open} onClose={onClose} title="Modificar con IA" size="sm">
       <div className="space-y-4">
+        <AiStatusBar />
         <p className="text-sm text-gray-600">
           Describe qué quieres cambiar de esta pregunta. Por ejemplo: "cambia los números", "hazlo más difícil", "conviértelo en opción múltiple".
         </p>
