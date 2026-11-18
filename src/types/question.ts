@@ -55,6 +55,7 @@ export interface QuestionSettings {
   maxLabel?: string;
   imageUrl?: string;
   table?: QuestionTable;
+  requireProcedurePhoto?: boolean;
 }
 
 export interface QuizQuestionSettings {

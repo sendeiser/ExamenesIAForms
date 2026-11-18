@@ -82,7 +82,14 @@ export function QuizResult({ score, gradeRounding = 'quarter' }: QuizResultProps
                   <XCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm"><LatexRenderer text={r.questionTitle} /></p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-medium text-sm"><LatexRenderer text={r.questionTitle} /></p>
+                    {r.requireProcedurePhoto && r.procedureStatus === 'pending' && (
+                      <span className="rounded-full bg-amber-100 border border-amber-200 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+                        Pendiente de validación docente
+                      </span>
+                    )}
+                  </div>
                   <div className="text-xs text-gray-600 mt-1 space-y-0.5">
                     {r.userAnswer !== null && (
                       <p>Tu respuesta: <span className="font-mono"><LatexRenderer text={Array.isArray(r.userAnswer) ? r.userAnswer.join(', ') : String(r.userAnswer)} /></span></p>

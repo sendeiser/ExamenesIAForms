@@ -215,11 +215,20 @@ export function QuestionCard({ question }: QuestionCardProps) {
               />
             )}
             {!hideRedundantTextInput && <QuestionTypeComponent question={question} />}
-            <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
+            <div className="flex flex-wrap items-center gap-4 pt-2 border-t">
               <Toggle
                 label="Obligatoria"
                 checked={question.required}
                 onChange={(checked) => updateQuestion(question.id, { required: checked })}
+              />
+              <Toggle
+                label="Exigir foto del procedimiento"
+                checked={Boolean(question.settings?.requireProcedurePhoto)}
+                onChange={(checked) =>
+                  updateQuestion(question.id, {
+                    settings: { ...question.settings, requireProcedurePhoto: checked },
+                  })
+                }
               />
               <div className="flex-1 min-w-[8px]" />
               <select

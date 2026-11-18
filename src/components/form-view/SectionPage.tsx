@@ -2,6 +2,7 @@ import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { QuestionInput } from './QuestionInput';
 import { QuestionTableView } from './QuestionTableView';
+import { ProcedurePhotoUploader } from './ProcedurePhotoUploader';
 import { LatexRenderer } from '../ui/LatexRenderer';
 import type { Section } from '../../types/question';
 import type { Question } from '../../types/question';
@@ -11,6 +12,9 @@ interface SectionPageProps {
   questions: Question[];
   answers: Record<string, any>;
   onAnswer: (questionId: string, value: any) => void;
+  procedurePhotos: Record<string, string[]>;
+  onProcedurePhotosChange: (questionId: string, photos: string[]) => void;
+  showPhotoValidationError?: boolean;
   isFirst: boolean;
   isLast: boolean;
   onNext: () => void;
@@ -21,7 +25,23 @@ interface SectionPageProps {
   cardStyle?: string;
 }
 
-export function SectionPage({ section, questions, answers, onAnswer, isFirst, isLast, onNext, onPrev, onSubmit, saving, error, cardStyle }: SectionPageProps) {
+export function SectionPage({
+  section,
+  questions,
+  answers,
+  onAnswer,
+  procedurePhotos,
+  onProcedurePhotosChange,
+  showPhotoValidationError = false,
+  isFirst,
+  isLast,
+  onNext,
+  onPrev,
+  onSubmit,
+  saving,
+  error,
+  cardStyle,
+}: SectionPageProps) {
   return (
     <div className="space-y-4">
       <Card className="p-6" data-style={cardStyle}>
@@ -50,6 +70,13 @@ export function SectionPage({ section, questions, answers, onAnswer, isFirst, is
             </div>
           )}
           <QuestionInput question={q} value={answers[q.id]} onChange={(v) => onAnswer(q.id, v)} />
+          {q.settings?.requireProcedurePhoto && (
+            <ProcedurePhotoUploader
+              photos={procedurePhotos[q.id] ?? []}
+              onChange={(next) => onProcedurePhotosChange(q.id, next)}
+              missingHighlight={showPhotoValidationError}
+            />
+          )}
         </Card>
       ))}
 

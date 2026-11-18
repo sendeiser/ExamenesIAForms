@@ -3,6 +3,7 @@ import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { QuestionInput } from './QuestionInput';
 import { QuestionTableView } from './QuestionTableView';
+import { ProcedurePhotoUploader } from './ProcedurePhotoUploader';
 import { SectionPage } from './SectionPage';
 import { FormHeader } from './FormHeader';
 import { QuizResult } from './QuizResult';
@@ -90,7 +91,11 @@ interface FormViewProps {
   questions: Question[];
   sections: Section[];
   respondent?: RespondentInfo;
-  onSubmit: (answers: Record<string, any>, respondent?: RespondentInfo) => Promise<void>;
+  onSubmit: (
+    answers: Record<string, any>,
+    respondent?: RespondentInfo,
+    procedurePhotos?: Record<string, string[]>
+  ) => Promise<void>;
   initialAnswers?: Record<string, any>;
   autoSubmit?: boolean;
   previewMode?: boolean;
@@ -109,6 +114,8 @@ export function FormView({
   useGlobalTheme(form, !previewMode);
   const scopedThemeStyle = useMemo(() => (previewMode ? buildThemeVars(form) : undefined), [previewMode, form]);
   const [answers, setAnswers] = useState<Record<string, any>>(initialAnswers ?? {});
+  const [procedurePhotos, setProcedurePhotos] = useState<Record<string, string[]>>({});
+  const [showPhotoValidationError, setShowPhotoValidationError] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -134,11 +141,45 @@ export function FormView({
     onMaxViolations: () => handleSubmitRef.current?.(true),
   });
 
+  function getMissingPhotoQuestions(list: Question[]): Array<{ idx: number; question: Question }> {
+    const missing: Array<{ idx: number; question: Question }> = [];
+    list.forEach((q, idx) => {
+      if (!isQuestionVisible(q)) return;
+      if (q.settings?.requireProcedurePhoto && (procedurePhotos[q.id]?.length ?? 0) === 0) {
+        missing.push({ idx: idx + 1, question: q });
+      }
+    });
+    return missing;
+  }
+
   const handleSubmit = useCallback(async (auto?: boolean) => {
     setError('');
+
+    if (!auto) {
+      const visibleList =
+        sections.length > 0
+          ? sections.flatMap((s) => questions.filter((q) => q.sectionId === s.id))
+          : questions;
+      const missing = getMissingPhotoQuestions(visibleList);
+      if (missing.length > 0) {
+        setShowPhotoValidationError(true);
+        const firstSectionIdx =
+          sections.length > 0
+            ? sections.findIndex((s) => s.id === missing[0].question.sectionId)
+            : -1;
+        if (firstSectionIdx !== -1 && firstSectionIdx !== currentSectionIndex) {
+          setCurrentSectionIndex(firstSectionIdx);
+        }
+        setError(
+          `Debes adjuntar al menos una foto del procedimiento en la${missing.length === 1 ? '' : 's'} actividad${missing.length === 1 ? '' : 'es'} marcada${missing.length === 1 ? '' : 's'} antes de enviar.`
+        );
+        return;
+      }
+    }
+
     setSaving(true);
     try {
-      await onSubmit(answers, respondent);
+      await onSubmit(answers, respondent, procedurePhotos);
       setSubmitted(true);
       stopSecurity();
       if (form.settings?.isQuiz) {
@@ -159,7 +200,7 @@ export function FormView({
     } finally {
       setSaving(false);
     }
-  }, [answers, respondent, onSubmit, form.settings?.isQuiz, questions, stopSecurity]);
+  }, [answers, procedurePhotos, respondent, onSubmit, form.settings?.isQuiz, questions, sections, currentSectionIndex, stopSecurity]);
 
   handleSubmitRef.current = handleSubmit;
 
@@ -171,7 +212,7 @@ export function FormView({
 
   useEffect(() => {
     if (!autoSubmit) return;
-    const t = setTimeout(() => handleSubmitRef.current?.(), 500);
+    const t = setTimeout(() => handleSubmitRef.current?.(true), 500);
     return () => clearTimeout(t);
   }, [autoSubmit]);
 
@@ -215,8 +256,26 @@ export function FormView({
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   }
 
+  function setQuestionPhotos(questionId: string, photos: string[]) {
+    setProcedurePhotos((prev) => ({ ...prev, [questionId]: photos }));
+    setError('');
+  }
+
+  function handleNextSection() {
+    setError('');
+    const missing = getMissingPhotoQuestions(currentQuestions);
+    if (missing.length > 0) {
+      setShowPhotoValidationError(true);
+      setError('Debes adjuntar al menos una foto del procedimiento en las actividades requeridas de esta sección antes de continuar.');
+      return;
+    }
+    setCurrentSectionIndex((i) => Math.min(i + 1, totalPages - 1));
+  }
+
   function resetPreview() {
     setAnswers(initialAnswers ?? {});
+    setProcedurePhotos({});
+    setShowPhotoValidationError(false);
     setSubmitted(false);
     setQuizScore(null);
     setError('');
@@ -302,9 +361,16 @@ export function FormView({
               </div>
             )}
             <QuestionInput question={q} value={answers[q.id]} onChange={(v) => setAnswer(q.id, v)} />
+            {q.settings?.requireProcedurePhoto && (
+              <ProcedurePhotoUploader
+                photos={procedurePhotos[q.id] ?? []}
+                onChange={(next) => setQuestionPhotos(q.id, next)}
+                missingHighlight={showPhotoValidationError}
+              />
+            )}
           </Card>
         ))}
-        {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+        {error && <p className="text-sm text-red-600 text-center font-medium">{error}</p>}
         <div className="flex justify-end">
           <Button onClick={() => handleSubmit()} loading={saving} disabled={saving}>Enviar</Button>
         </div>
@@ -330,9 +396,12 @@ export function FormView({
           questions={currentQuestions.filter(isQuestionVisible)}
           answers={answers}
           onAnswer={setAnswer}
+          procedurePhotos={procedurePhotos}
+          onProcedurePhotosChange={setQuestionPhotos}
+          showPhotoValidationError={showPhotoValidationError}
           isFirst={safeSectionIndex === 0}
           isLast={safeSectionIndex === totalPages - 1}
-          onNext={() => setCurrentSectionIndex((i) => Math.min(i + 1, totalPages - 1))}
+          onNext={handleNextSection}
           onPrev={() => setCurrentSectionIndex((i) => Math.max(i - 1, 0))}
           onSubmit={() => handleSubmit()}
           saving={saving}

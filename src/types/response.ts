@@ -3,6 +3,8 @@ export interface RespondentInfo {
   email: string;
 }
 
+export type ProcedureValidationStatus = 'validated' | 'rejected';
+
 export interface FormResponse {
   id: string;
   formId: string;
@@ -10,5 +12,7 @@ export interface FormResponse {
   respondentEmail: string | null;
   respondent?: RespondentInfo;
   answers: Record<string, any>;
+  procedurePhotos?: Record<string, string[]>;
+  procedureValidations?: Record<string, ProcedureValidationStatus>;
   submittedAt: Date;
 }

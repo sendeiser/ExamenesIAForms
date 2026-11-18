@@ -1,4 +1,5 @@
 import type { Question } from '../types/question';
+import type { ProcedureValidationStatus } from '../types/response';
 
 export type GradeRoundingMode = 'quarter' | 'integer';
 
@@ -57,23 +58,27 @@ export interface QuizScore {
     points: number;
     earned: number;
     isCorrect: boolean;
+    requireProcedurePhoto?: boolean;
+    procedureStatus?: 'pending' | 'validated' | 'rejected';
   }>;
 }
 
 export function scoreQuiz(
   questions: Question[],
-  answers: Record<string, string | string[] | null>
+  answers: Record<string, string | string[] | null>,
+  procedureValidations?: Record<string, ProcedureValidationStatus>
 ): QuizScore {
-  const quizQuestions = questions.filter((q) => q.quizSettings);
+  const quizQuestions = questions.filter((q) => q.quizSettings || q.settings?.requireProcedurePhoto);
   let totalPoints = 0;
   let earnedPoints = 0;
   const results: QuizScore['results'] = [];
 
   for (const q of quizQuestions) {
-    const settings = q.quizSettings!;
+    const settings = q.quizSettings;
     const userAnswer = answers[q.id] ?? null;
-    const correctAnswer = settings.correctAnswer;
-    const points = settings.points ?? 1;
+    const correctAnswer = settings?.correctAnswer ?? null;
+    const points = settings?.points ?? 1;
+    const requireProcedurePhoto = Boolean(q.settings?.requireProcedurePhoto);
     let isCorrect = false;
     let earned = 0;
 
@@ -107,6 +112,23 @@ export function scoreQuiz(
     if (isCorrect) {
       earned = points;
     }
+
+    let procedureStatus: 'pending' | 'validated' | 'rejected' | undefined;
+    if (requireProcedurePhoto) {
+      const validation = procedureValidations?.[q.id];
+      if (validation === 'validated') {
+        isCorrect = true;
+        earned = points;
+        procedureStatus = 'validated';
+      } else if (validation === 'rejected') {
+        isCorrect = false;
+        earned = 0;
+        procedureStatus = 'rejected';
+      } else {
+        procedureStatus = 'pending';
+      }
+    }
+
     totalPoints += points;
     earnedPoints += earned;
 
@@ -119,6 +141,7 @@ export function scoreQuiz(
       points,
       earned,
       isCorrect,
+      ...(requireProcedurePhoto ? { requireProcedurePhoto: true, procedureStatus } : {}),
     });
   }
 

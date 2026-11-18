@@ -104,7 +104,15 @@ export default function FormViewPage() {
 
   return (
     <div className="min-h-screen bg-paper-grid py-10 px-4">
-      <FormView form={form} questions={questions} sections={sections} respondent={respondent} onSubmit={(answers) => submitResponse(answers, respondent)} />
+      <FormView
+        form={form}
+        questions={questions}
+        sections={sections}
+        respondent={respondent}
+        onSubmit={(answers, resp, procedurePhotos) =>
+          submitResponse(answers, resp ?? respondent, procedurePhotos)
+        }
+      />
     </div>
   );
 }

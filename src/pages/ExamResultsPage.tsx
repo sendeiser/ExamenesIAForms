@@ -19,12 +19,40 @@ import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { exportToCsv } from '../utils/export-csv';
-import { ArrowLeft, Download, CheckCircle2, XCircle, Trash2, Edit3, Save, X, Users, FileDown, Eye } from 'lucide-react';
+import { ArrowLeft, Download, CheckCircle2, XCircle, Trash2, Edit3, Save, X, Users, FileDown, Eye, Camera, ZoomIn, Clock, RotateCcw } from 'lucide-react';
 import { LatexRenderer } from '../components/ui/LatexRenderer';
 import { QuestionTableView } from '../components/form-view/QuestionTableView';
 import { toOptionItem } from '../types/question';
-import type { FormResponse } from '../types/response';
+import type { FormResponse, ProcedureValidationStatus } from '../types/response';
 import type { Question } from '../types/question';
+
+function buildSimulatedProcedurePhoto(studentName: string, activityTitle: string): string {
+  const safeName = studentName.replace(/[<>&"]/g, '');
+  const safeTitle = activityTitle.slice(0, 42).replace(/[<>&"]/g, '');
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420">
+    <rect width="640" height="420" fill="#fffdf7"/>
+    <g stroke="#dbeafe" stroke-width="1">
+      <line x1="0" y1="60" x2="640" y2="60"/>
+      <line x1="0" y1="100" x2="640" y2="100"/>
+      <line x1="0" y1="140" x2="640" y2="140"/>
+      <line x1="0" y1="180" x2="640" y2="180"/>
+      <line x1="0" y1="220" x2="640" y2="220"/>
+      <line x1="0" y1="260" x2="640" y2="260"/>
+      <line x1="0" y1="300" x2="640" y2="300"/>
+      <line x1="0" y1="340" x2="640" y2="340"/>
+    </g>
+    <line x1="64" y1="0" x2="64" y2="420" stroke="#fca5a5" stroke-width="2"/>
+    <text x="82" y="42" font-family="Georgia, serif" font-size="18" font-weight="bold" fill="#1e3a8a">Hoja de procedimiento (simulada)</text>
+    <text x="82" y="88" font-family="monospace" font-size="15" fill="#334155">Alumno: ${safeName}</text>
+    <text x="82" y="128" font-family="monospace" font-size="14" fill="#475569">Actividad: ${safeTitle}</text>
+    <text x="82" y="172" font-family="Georgia, serif" font-size="17" fill="#0f172a">1) Planteo:   2x + 4 = 12</text>
+    <text x="82" y="214" font-family="Georgia, serif" font-size="17" fill="#0f172a">2) Despeje:   2x = 12 - 4 = 8</text>
+    <text x="82" y="256" font-family="Georgia, serif" font-size="17" fill="#0f172a">3) Solucion:  x = 8 / 2 = 4</text>
+    <rect x="78" y="280" width="160" height="44" rx="8" fill="none" stroke="#1d4ed8" stroke-width="2"/>
+    <text x="94" y="308" font-family="Georgia, serif" font-size="17" font-weight="bold" fill="#1d4ed8">Rta verificada</text>
+  </svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
 
 export default function ExamResultsPage() {
   const { formId } = useParams<{ formId: string }>();
@@ -56,6 +84,8 @@ export default function ExamResultsPage() {
   const [scoreOverrides, setScoreOverrides] = useState<Record<string, number>>({});
   const [gradeOverrides, setGradeOverrides] = useState<Record<string, number>>({});
   const [gradeRounding, setGradeRounding] = useState<GradeRoundingMode>('quarter');
+  const [validatingKey, setValidatingKey] = useState<string | null>(null);
+  const [zoomedProcedurePhoto, setZoomedProcedurePhoto] = useState<{ src: string; title: string } | null>(null);
 
   useEffect(() => { if (formId) loadForm(formId); }, [formId]);
 
@@ -76,7 +106,7 @@ export default function ExamResultsPage() {
     if (!form?.settings?.isQuiz) return null;
     return responses.map((r) => ({
       response: r,
-      score: scoreQuiz(questions, r.answers),
+      score: scoreQuiz(questions, r.answers, r.procedureValidations),
     }));
   }, [responses, questions, form]);
 
@@ -108,6 +138,42 @@ export default function ExamResultsPage() {
   }, [selectedStudentId, displayScores, scored, responses]);
 
   if (loading) return <LoadingSpinner />;
+
+  function getStudentProcedureSummary(r: FormResponse) {
+    const photoQs = questions.filter((q) => q.settings?.requireProcedurePhoto);
+    if (photoQs.length === 0) return { total: 0, pending: 0, validated: 0, rejected: 0 };
+    let pending = 0;
+    let validated = 0;
+    let rejected = 0;
+    for (const q of photoQs) {
+      const status = r.procedureValidations?.[q.id];
+      if (status === 'validated') validated++;
+      else if (status === 'rejected') rejected++;
+      else pending++;
+    }
+    return { total: photoQs.length, pending, validated, rejected };
+  }
+
+  async function handleValidateProcedure(
+    response: FormResponse,
+    questionId: string,
+    nextStatus: ProcedureValidationStatus | null
+  ) {
+    setValidatingKey(`${response.id}:${questionId}`);
+    try {
+      const nextValidations: Record<string, ProcedureValidationStatus> = {
+        ...(response.procedureValidations ?? {}),
+      };
+      if (nextStatus === null) {
+        delete nextValidations[questionId];
+      } else {
+        nextValidations[questionId] = nextStatus;
+      }
+      await updateResponse(response.id, { procedureValidations: nextValidations });
+    } finally {
+      setValidatingKey(null);
+    }
+  }
 
   function getStudentGrade(responseId: string, earned: number, total: number): number {
     const manualGrade = gradeOverrides[responseId];
@@ -357,7 +423,7 @@ export default function ExamResultsPage() {
   async function handleSimulate() {
     if (!formId || !form?.settings?.isQuiz) return;
     setSimulating(true);
-    const quizQuestions = questions.filter((q) => q.quizSettings);
+    const quizQuestions = questions.filter((q) => q.quizSettings || q.settings?.requireProcedurePhoto);
 
     // Determine which students pass/fail
     const passCount = Math.min(simConfig.pass, simConfig.total);
@@ -370,18 +436,24 @@ export default function ExamResultsPage() {
 
     const submissions = students.map((student) => {
       const answers: Record<string, any> = {};
+      const procedurePhotos: Record<string, string[]> = {};
       for (const q of quizQuestions) {
-        if (!q.quizSettings) continue;
-        // Determine if this specific question should be correct
-        // Pass students: 90% chance correct; Fail students: 10% chance correct
-        const shouldBeCorrect = student.pass ? Math.random() < 0.9 : Math.random() < 0.1;
-        answers[q.id] = shouldBeCorrect ? generateCorrectAnswer(q) : generateWrongAnswer(q);
+        if (q.quizSettings) {
+          // Determine if this specific question should be correct
+          // Pass students: 90% chance correct; Fail students: 10% chance correct
+          const shouldBeCorrect = student.pass ? Math.random() < 0.9 : Math.random() < 0.1;
+          answers[q.id] = shouldBeCorrect ? generateCorrectAnswer(q) : generateWrongAnswer(q);
+        }
+        if (q.settings?.requireProcedurePhoto) {
+          procedurePhotos[q.id] = [buildSimulatedProcedurePhoto(student.name, q.title || 'Actividad')];
+        }
       }
       return {
         respondentId: null,
         respondentEmail: `${student.name.toLowerCase().replace(/\s+/g, '.')}@email.com`,
         respondent: { name: student.name, email: `${student.name.toLowerCase().replace(/\s+/g, '.')}@email.com` },
         answers,
+        ...(Object.keys(procedurePhotos).length > 0 ? { procedurePhotos } : {}),
         submittedAt: Timestamp.now(),
       };
     });
@@ -582,6 +654,7 @@ export default function ExamResultsPage() {
                   const pctVal = s && s.totalPoints > 0 ? (earnedVal / s.totalPoints) * 100 : 0;
                   const studentGrade = s ? getStudentGrade(r.id, earnedVal, s.totalPoints) : 1;
                   const gradeEdited = gradeOverrides[r.id] !== undefined;
+                  const procSummary = getStudentProcedureSummary(r);
 
                 return (
                   <tr
@@ -595,7 +668,23 @@ export default function ExamResultsPage() {
                     <td className="px-4 py-3 text-gray-400 print:hidden">
                       <Eye className={`h-4 w-4 transition-colors ${isSelected ? 'text-brand-600' : 'text-gray-400 group-hover:text-brand-600'}`} />
                     </td>
-                    <td className="px-4 py-3 font-medium text-gray-900">{r.respondent?.name || '—'}</td>
+                    <td className="px-4 py-3 font-medium text-gray-900">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span>{r.respondent?.name || '—'}</span>
+                        {procSummary.pending > 0 && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-200 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+                            <Clock className="h-3 w-3" />
+                            Falta validar procedimiento ({procSummary.pending})
+                          </span>
+                        )}
+                        {procSummary.total > 0 && procSummary.pending === 0 && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-green-100 border border-green-200 px-2 py-0.5 text-[10px] font-semibold text-green-800">
+                            <Camera className="h-3 w-3" />
+                            Procedimiento validado
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-4 py-3 text-gray-500">{r.respondent?.email || r.respondentEmail || '—'}</td>
                     {s && (
                       <>
@@ -718,6 +807,7 @@ export default function ExamResultsPage() {
               const earnedVal = s ? (scoreOverrides[r.id] ?? s.earnedPoints) : 0;
               const pctVal = s && s.totalPoints > 0 ? (earnedVal / s.totalPoints) * 100 : 0;
               const studentGrade = s ? getStudentGrade(r.id, earnedVal, s.totalPoints) : 1;
+              const procSummary = getStudentProcedureSummary(r);
 
               return (
                 <div
@@ -727,10 +817,22 @@ export default function ExamResultsPage() {
                     isSelected ? 'bg-brand-50/70' : 'hover:bg-brand-50/40'
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Eye className={`h-4 w-4 -ml-1 ${isSelected ? 'text-brand-600' : 'text-gray-400'}`} />
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-wrap min-w-0">
+                      <Eye className={`h-4 w-4 -ml-1 shrink-0 ${isSelected ? 'text-brand-600' : 'text-gray-400'}`} />
                       <span className="font-medium text-sm">{r.respondent?.name || '—'}</span>
+                      {procSummary.pending > 0 && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-200 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+                          <Clock className="h-3 w-3" />
+                          Falta validar ({procSummary.pending})
+                        </span>
+                      )}
+                      {procSummary.total > 0 && procSummary.pending === 0 && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-green-100 border border-green-200 px-2 py-0.5 text-[10px] font-semibold text-green-800">
+                          <Camera className="h-3 w-3" />
+                          Validado
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-1 print:hidden" onClick={(e) => e.stopPropagation()}>
                       {editing ? (
@@ -998,6 +1100,115 @@ export default function ExamResultsPage() {
                             </span>
                           </div>
                         )}
+
+                        {(q.settings?.requireProcedurePhoto || (r.procedurePhotos?.[q.id]?.length ?? 0) > 0) && (() => {
+                          const photos = r.procedurePhotos?.[q.id] ?? [];
+                          const procStatus = r.procedureValidations?.[q.id];
+                          const isSavingProc = validatingKey === `${r.id}:${q.id}`;
+
+                          return (
+                            <div className="rounded-xl border border-sand-300 bg-sand-50/60 p-3 space-y-2.5">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink">
+                                  <Camera className="h-3.5 w-3.5 text-brand-700" />
+                                  Procedimiento del estudiante
+                                </span>
+                                {procStatus === 'validated' ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-green-100 border border-green-200 px-2 py-0.5 text-[11px] font-semibold text-green-800">
+                                    <CheckCircle2 className="h-3 w-3" />
+                                    Procedimiento validado
+                                  </span>
+                                ) : procStatus === 'rejected' ? (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-red-100 border border-red-200 px-2 py-0.5 text-[11px] font-semibold text-red-700">
+                                    <XCircle className="h-3 w-3" />
+                                    Procedimiento rechazado (0 pts)
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-200 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                                    <Clock className="h-3 w-3" />
+                                    Falta validar procedimiento
+                                  </span>
+                                )}
+                              </div>
+
+                              {photos.length > 0 ? (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                  {photos.map((photoSrc, pIdx) => (
+                                    <button
+                                      key={pIdx}
+                                      type="button"
+                                      onClick={() =>
+                                        setZoomedProcedurePhoto({
+                                          src: photoSrc,
+                                          title: `Actividad ${qIdx + 1} · Foto ${pIdx + 1} — ${r.respondent?.name || 'Estudiante'}`,
+                                        })
+                                      }
+                                      className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-sand-300 bg-white hover:border-brand-500 transition-colors"
+                                    >
+                                      <img
+                                        src={photoSrc}
+                                        alt={`Procedimiento ${pIdx + 1}`}
+                                        className="h-full w-full object-cover"
+                                      />
+                                      <span className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
+                                        <span className="opacity-0 group-hover:opacity-100 rounded-full bg-white/90 px-2 py-1 text-[10px] font-semibold text-ink inline-flex items-center gap-1 shadow">
+                                          <ZoomIn className="h-3 w-3" />
+                                          Ampliar
+                                        </span>
+                                      </span>
+                                    </button>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
+                                  No se adjuntaron fotos de procedimiento para esta actividad.
+                                </p>
+                              )}
+
+                              <div className="flex flex-wrap items-center gap-2 pt-1">
+                                <button
+                                  type="button"
+                                  disabled={isSavingProc}
+                                  onClick={() => handleValidateProcedure(r, q.id, 'validated')}
+                                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
+                                    procStatus === 'validated'
+                                      ? 'bg-green-600 text-white shadow-sm'
+                                      : 'bg-white border border-green-300 text-green-700 hover:bg-green-50'
+                                  }`}
+                                >
+                                  <CheckCircle2 className="h-3.5 w-3.5" />
+                                  Validar como correcto
+                                </button>
+
+                                <button
+                                  type="button"
+                                  disabled={isSavingProc}
+                                  onClick={() => handleValidateProcedure(r, q.id, 'rejected')}
+                                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
+                                    procStatus === 'rejected'
+                                      ? 'bg-red-600 text-white shadow-sm'
+                                      : 'bg-white border border-red-300 text-red-700 hover:bg-red-50'
+                                  }`}
+                                >
+                                  <XCircle className="h-3.5 w-3.5" />
+                                  Rechazar procedimiento
+                                </button>
+
+                                {(procStatus === 'validated' || procStatus === 'rejected') && (
+                                  <button
+                                    type="button"
+                                    disabled={isSavingProc}
+                                    onClick={() => handleValidateProcedure(r, q.id, null)}
+                                    className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs text-ink-subtle hover:bg-sand-200/70 hover:text-ink transition-colors disabled:opacity-50"
+                                  >
+                                    <RotateCcw className="h-3 w-3" />
+                                    Volver a pendiente
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </div>
                     );
                   })
@@ -1031,6 +1242,30 @@ export default function ExamResultsPage() {
             </div>
           );
         })()}
+      </Modal>
+
+      {/* ── Procedure photo zoom lightbox modal ── */}
+      <Modal
+        open={zoomedProcedurePhoto !== null}
+        onClose={() => setZoomedProcedurePhoto(null)}
+        title={zoomedProcedurePhoto?.title ?? 'Foto del procedimiento'}
+        size="lg"
+        zIndexClass="z-[60]"
+      >
+        {zoomedProcedurePhoto && (
+          <div className="space-y-3">
+            <img
+              src={zoomedProcedurePhoto.src}
+              alt={zoomedProcedurePhoto.title}
+              className="w-full max-h-[75vh] object-contain rounded-lg border border-sand-200 bg-sand-50"
+            />
+            <div className="flex justify-end">
+              <Button type="button" variant="secondary" onClick={() => setZoomedProcedurePhoto(null)}>
+                Cerrar
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
 
       {/* ── Non-quiz hint ── */}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { collection, addDoc, query, orderBy, Timestamp, deleteDoc, doc, updateDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import type { FormResponse, RespondentInfo } from '../types/response';
+import type { FormResponse, ProcedureValidationStatus, RespondentInfo } from '../types/response';
 
 export function useResponses(formId: string) {
   const [responses, setResponses] = useState<FormResponse[]>([]);
@@ -16,16 +16,31 @@ export function useResponses(formId: string) {
     return unsub;
   }, [formId]);
 
-  async function submitResponse(answers: Record<string, any>, respondent?: RespondentInfo | null) {
+  async function submitResponse(
+    answers: Record<string, any>,
+    respondent?: RespondentInfo | null,
+    procedurePhotos?: Record<string, string[]>
+  ) {
     const clean: Record<string, any> = {};
     for (const [k, v] of Object.entries(answers)) {
       if (v !== undefined) clean[k] = v;
     }
+
+    const cleanPhotos: Record<string, string[]> = {};
+    if (procedurePhotos) {
+      for (const [qId, list] of Object.entries(procedurePhotos)) {
+        if (Array.isArray(list) && list.length > 0) {
+          cleanPhotos[qId] = list.filter((item) => typeof item === 'string' && item.length > 0);
+        }
+      }
+    }
+
     await addDoc(collection(db, 'forms', formId, 'responses'), {
       respondentId: null,
       respondentEmail: respondent?.email ?? null,
       respondent: respondent ?? null,
       answers: clean,
+      ...(Object.keys(cleanPhotos).length > 0 ? { procedurePhotos: cleanPhotos } : {}),
       submittedAt: Timestamp.now(),
     });
   }
@@ -34,8 +49,16 @@ export function useResponses(formId: string) {
     await deleteDoc(doc(db, 'forms', formId, 'responses', responseId));
   }
 
-  async function updateResponse(responseId: string, updates: { answers?: Record<string, any>; respondent?: RespondentInfo }) {
-    await updateDoc(doc(db, 'forms', formId, 'responses', responseId), updates);
+  async function updateResponse(
+    responseId: string,
+    updates: {
+      answers?: Record<string, any>;
+      respondent?: RespondentInfo;
+      procedurePhotos?: Record<string, string[]>;
+      procedureValidations?: Record<string, ProcedureValidationStatus>;
+    }
+  ) {
+    await updateDoc(doc(db, 'forms', formId, 'responses', responseId), JSON.parse(JSON.stringify(updates)));
   }
 
   return { responses, loading, submitResponse, deleteResponse, updateResponse };
