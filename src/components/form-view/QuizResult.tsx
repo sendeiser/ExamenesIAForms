@@ -3,19 +3,28 @@ import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { LatexRenderer } from '../ui/LatexRenderer';
 import { CheckCircle2, XCircle, Sparkles, Loader2 } from 'lucide-react';
-import type { QuizScore } from '../../lib/quizScoring';
+import {
+  computeGrade1to10,
+  formatGrade1to10,
+  getGrade1to10Label,
+  type GradeRoundingMode,
+  type QuizScore,
+} from '../../lib/quizScoring';
 import { callAi, parseJsonArrayFromAi } from '../../lib/aiClient';
 
 interface QuizResultProps {
   score: QuizScore;
+  gradeRounding?: GradeRoundingMode;
 }
 
-export function QuizResult({ score }: QuizResultProps) {
+export function QuizResult({ score, gradeRounding = 'quarter' }: QuizResultProps) {
   const [feedback, setFeedback] = useState<Record<string, string> | null>(null);
   const [loadingFeedback, setLoadingFeedback] = useState(false);
   const [feedbackError, setFeedbackError] = useState('');
 
-  const gradeColor = score.percentage >= 60 ? 'text-green-600' : score.percentage >= 40 ? 'text-yellow-600' : 'text-red-600';
+  const grade = computeGrade1to10(score.earnedPoints, score.totalPoints, gradeRounding);
+  const gradeDisplay = formatGrade1to10(grade, gradeRounding);
+  const gradeColor = grade >= 6 ? 'text-green-600' : grade >= 4 ? 'text-yellow-600' : 'text-red-600';
   const wrongResults = score.results.filter((r) => !r.isCorrect);
   const textResults = score.results.filter((r) => r.type === 'text' || r.type === 'paragraph');
   const hasWrong = wrongResults.length > 0;
@@ -36,9 +45,16 @@ export function QuizResult({ score }: QuizResultProps) {
   return (
     <div className="space-y-6">
       <Card className="p-6 text-center">
-        <h2 className="text-xl font-bold mb-2">Resultado del examen</h2>
-        <div className={`text-5xl font-bold ${gradeColor} my-4`}>{score.earnedPoints} / {score.totalPoints}</div>
-        <p className="text-gray-500">{score.percentage.toFixed(1)}%</p>
+        <h2 className="font-display text-xl font-bold text-ink mb-2">Resultado del examen</h2>
+        <div className={`font-mono text-5xl font-bold ${gradeColor} my-4`}>
+          {gradeDisplay} <span className="text-2xl opacity-70">/ 10</span>
+        </div>
+        <p className="text-sm font-semibold text-ink mb-1">
+          {getGrade1to10Label(grade)} · {grade >= 6 ? 'Aprobado' : 'Reprobado'}
+        </p>
+        <p className="font-mono text-xs text-ink-subtle">
+          Puntaje: {score.earnedPoints} / {score.totalPoints} ({score.percentage.toFixed(1)}%) · Escala 1–10 ({gradeRounding === 'integer' ? 'redondeada' : 'cada 0.25'})
+        </p>
       </Card>
 
       {hasWrong && textResults.length > 0 && !feedback && (
@@ -78,7 +94,7 @@ export function QuizResult({ score }: QuizResultProps) {
                     )}
                   </div>
                   {feedback && feedback[r.questionId] && (r.type === 'text' || r.type === 'paragraph') && (
-                    <div className="mt-2 p-3 bg-indigo-50 rounded-lg text-xs text-gray-700 leading-relaxed">
+                    <div className="mt-2 p-3 bg-brand-50 border border-brand-100 rounded-lg text-xs text-ink-muted leading-relaxed">
                       {feedback[r.questionId]}
                     </div>
                   )}

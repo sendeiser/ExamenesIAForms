@@ -182,7 +182,7 @@ export function AiSettingsModal() {
 
   const keyBadge =
     currentEffective.apiKeySource === 'local'
-      ? { text: 'Clave personalizada (este navegador)', classes: 'bg-indigo-50 text-indigo-700 border-indigo-200' }
+      ? { text: 'Clave personalizada (este navegador)', classes: 'bg-brand-50 text-brand-700 border-brand-200' }
       : currentEffective.apiKeySource === 'env'
         ? { text: 'Clave configurada desde .env', classes: 'bg-green-50 text-green-700 border-green-200' }
         : { text: `Sin API key de ${currentMeta.label}`, classes: 'bg-amber-50 text-amber-800 border-amber-200' };
@@ -191,7 +191,7 @@ export function AiSettingsModal() {
     <Modal open={open} onClose={close} title="Configuración de IA" zIndexClass="z-[60]">
       <div className="space-y-4">
         <div className="space-y-1.5">
-          <label className="block text-sm font-medium text-gray-700">Proveedor de IA</label>
+          <label className="block text-sm font-medium text-ink-muted">Proveedor de IA</label>
           <div className="grid grid-cols-2 gap-2">
             {(['openrouter', 'groq'] as AiProvider[]).map((p) => {
               const meta = PROVIDER_META[p];
@@ -209,13 +209,13 @@ export function AiSettingsModal() {
                   }}
                   className={`flex items-center justify-between px-3 py-2.5 rounded-lg border text-sm font-medium transition-colors ${
                     isSelected
-                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                      ? 'border-brand-600 bg-brand-50 text-brand-700'
+                      : 'border-sand-300 bg-white text-ink-muted hover:border-sand-400 hover:bg-sand-50'
                   }`}
                 >
                   <span>{meta.label}</span>
                   <span
-                    className={`h-2 w-2 rounded-full ${hasKey ? 'bg-green-500' : 'bg-gray-300'}`}
+                    className={`h-2 w-2 rounded-full ${hasKey ? 'bg-state-success' : 'bg-sand-300'}`}
                     title={hasKey ? 'API key configurada' : 'Sin API key'}
                   />
                 </button>
@@ -236,14 +236,14 @@ export function AiSettingsModal() {
 
         <div className="space-y-1">
           <div className="flex items-center justify-between">
-            <label htmlFor="ai-provider-api-key" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="ai-provider-api-key" className="block text-sm font-medium text-ink-muted">
               API Key de {currentMeta.label}
             </label>
             <a
               href={currentMeta.keysUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 hover:underline"
+              className="inline-flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700 hover:underline"
             >
               Obtener clave
               <ExternalLink className="h-3 w-3" />
@@ -265,7 +265,7 @@ export function AiSettingsModal() {
                   : currentMeta.keyPlaceholder
               }
               autoComplete="off"
-              className="block w-full rounded-lg border border-gray-300 pl-3 pr-10 py-2 text-sm shadow-sm transition-colors placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono"
+              className="block w-full rounded-lg border border-sand-400 pl-3 pr-10 py-2 text-sm shadow-sm transition-colors placeholder:text-ink-light/70 focus:outline-none focus:ring-2 focus:ring-brand-500/25 focus:border-brand-600 font-mono"
             />
             <button
               type="button"

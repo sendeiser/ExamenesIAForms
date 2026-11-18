@@ -1,5 +1,49 @@
 import type { Question } from '../types/question';
 
+export type GradeRoundingMode = 'quarter' | 'integer';
+
+export function snapGrade1to10(
+  grade: number,
+  mode: GradeRoundingMode = 'quarter'
+): number {
+  const clamped = Math.max(1, Math.min(10, grade));
+  if (mode === 'integer') {
+    return Math.round(clamped);
+  }
+  return Math.round(clamped * 4) / 4;
+}
+
+/** Calcula la nota en escala del 1 al 10 con redondeo cada 0.25 o al entero más cercano. */
+export function computeGrade1to10(
+  earnedPoints: number,
+  totalPoints: number,
+  mode: GradeRoundingMode = 'quarter'
+): number {
+  if (totalPoints <= 0) return 1;
+  const raw = Math.max(1, Math.min(10, (earnedPoints / totalPoints) * 10));
+  return snapGrade1to10(raw, mode);
+}
+
+/** Formatea una nota 1-10 eliminando ceros decimales innecesarios. */
+export function formatGrade1to10(
+  grade: number,
+  mode: GradeRoundingMode = 'quarter'
+): string {
+  const snapped = snapGrade1to10(grade, mode);
+  if (mode === 'integer') {
+    return String(Math.round(snapped));
+  }
+  return Number(snapped.toFixed(2)).toString();
+}
+
+export function getGrade1to10Label(grade: number): string {
+  if (grade >= 9) return 'Excelente';
+  if (grade >= 8) return 'Muy bueno';
+  if (grade >= 7) return 'Bueno';
+  if (grade >= 6) return 'Suficiente';
+  return 'Insuficiente';
+}
+
 export interface QuizScore {
   totalPoints: number;
   earnedPoints: number;

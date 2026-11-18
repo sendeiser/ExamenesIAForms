@@ -6,8 +6,10 @@ import { Button } from '../ui/Button';
 import { Toggle } from '../ui/Toggle';
 import { Input } from '../ui/Input';
 import { MathToolbar, useMathInsert } from '../ui/MathToolbar';
-import { GripVertical, Copy, Trash2, ImagePlus, Link, X, Sparkles, ChevronUp, ChevronDown } from 'lucide-react';
-import type { Question } from '../../types/question';
+import { LatexRenderer } from '../ui/LatexRenderer';
+import { GripVertical, Trash2, ImagePlus, Link, X, Sparkles, ChevronUp, ChevronDown, Table2 } from 'lucide-react';
+import type { Question, QuestionTable } from '../../types/question';
+import { buildExpectedTableAnswer, createDefaultQuestionTable } from '../../lib/tableUtils';
 import { TextQuestion } from './question-types/TextQuestion';
 import { MultipleChoiceQuestion } from './question-types/MultipleChoiceQuestion';
 import { CheckboxQuestion } from './question-types/CheckboxQuestion';
@@ -16,6 +18,7 @@ import { LinearScaleQuestion } from './question-types/LinearScaleQuestion';
 import { DateQuestion } from './question-types/DateQuestion';
 import { ConditionsEditor } from './ConditionsEditor';
 import { QuizSettings } from './QuizSettings';
+import { TableEditor } from './TableEditor';
 import { ImageSearchModal } from './ImageSearchModal';
 import { AiModifyModal } from './AiModifyModal';
 
@@ -89,6 +92,54 @@ export function QuestionCard({ question }: QuestionCardProps) {
     reorderQuestions(sorted);
   }
 
+  function toggleTable() {
+    if (question.settings?.table) {
+      const { table: _, ...rest } = question.settings ?? {};
+      updateQuestion(question.id, { settings: rest });
+      return;
+    }
+    updateQuestion(question.id, {
+      settings: {
+        ...question.settings,
+        table: createDefaultQuestionTable(2, 3),
+      },
+    });
+  }
+
+  function handleTableChange(nextTable: QuestionTable) {
+    const prevTable = question.settings?.table;
+    const updates: Partial<Question> = {
+      settings: { ...question.settings, table: nextTable },
+    };
+    if (form?.settings?.isQuiz && question.type === 'text') {
+      const prevExpected = prevTable ? buildExpectedTableAnswer(prevTable) : null;
+      const nextExpected = buildExpectedTableAnswer(nextTable);
+      if (nextExpected) {
+        updates.quizSettings = {
+          correctAnswer: nextExpected,
+          points: question.quizSettings?.points ?? 1,
+        };
+      } else if (prevExpected && question.quizSettings?.correctAnswer === prevExpected) {
+        updates.quizSettings = {
+          correctAnswer: null,
+          points: question.quizSettings?.points ?? 1,
+        };
+      }
+    }
+    updateQuestion(question.id, updates);
+  }
+
+  const showTitlePreview =
+    question.title.includes('$') ||
+    question.title.includes('\\(') ||
+    question.title.includes('\\[') ||
+    question.title.includes('|') ||
+    question.title.includes('\\begin{tabular}') ||
+    question.title.includes('\\begin{array}');
+
+  const hideRedundantTextInput =
+    question.type === 'text' && (question.settings?.table?.editableCells?.length ?? 0) > 0;
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -97,7 +148,7 @@ export function QuestionCard({ question }: QuestionCardProps) {
 
   return (
     <>
-      <div ref={setNodeRef} style={style} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div ref={setNodeRef} style={style} className="bg-white rounded-xl shadow-paper border border-sand-300 p-6">
         <div className="flex items-start gap-4">
           <div className="flex flex-col items-center gap-0.5 mt-1">
             <button onClick={moveUp} disabled={idx <= 0} className="text-gray-400 hover:text-gray-600 disabled:opacity-20 disabled:cursor-not-allowed p-0.5">
@@ -118,7 +169,24 @@ export function QuestionCard({ question }: QuestionCardProps) {
               placeholder="Pregunta sin título"
               className="text-lg font-medium border-0 px-0 focus:ring-0"
             />
-            <MathToolbar onInsert={insertTitle} />
+            {showTitlePreview && (
+              <div className="rounded-lg border border-sand-200 bg-sand-50/60 px-3 py-2 text-xs text-ink-light">
+                <LatexRenderer text={question.title} />
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-4">
+              <MathToolbar onInsert={insertTitle} />
+              {!question.settings?.table && (
+                <button
+                  type="button"
+                  onClick={toggleTable}
+                  className="inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors"
+                >
+                  <Table2 className="h-3.5 w-3.5" />
+                  Agregar tabla
+                </button>
+              )}
+            </div>
             {question.settings?.imageUrl && (
               <div className="relative group">
                 <img
@@ -138,7 +206,15 @@ export function QuestionCard({ question }: QuestionCardProps) {
                 </button>
               </div>
             )}
-            <QuestionTypeComponent question={question} />
+            {question.settings?.table && (
+              <TableEditor
+                table={question.settings.table}
+                isQuiz={Boolean(form?.settings?.isQuiz)}
+                onChange={handleTableChange}
+                onRemove={toggleTable}
+              />
+            )}
+            {!hideRedundantTextInput && <QuestionTypeComponent question={question} />}
             <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
               <Toggle
                 label="Obligatoria"
@@ -157,14 +233,22 @@ export function QuestionCard({ question }: QuestionCardProps) {
                 ))}
               </select>
               <div className="flex items-center gap-1">
-                <Button variant="ghost" onClick={() => setAiModalOpen(true)} title="Modificar con IA" className="p-2">
-                  <Sparkles className="h-4 w-4 text-indigo-500" />
+                <Button variant="ghost" onClick={() => setAiModalOpen(true)} title="Modificar con IA" className="p-2 hover:bg-terracotta-50">
+                  <Sparkles className="h-4 w-4 text-terracotta-500" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={toggleTable}
+                  title={question.settings?.table ? 'Quitar tabla' : 'Agregar tabla'}
+                  className="p-2"
+                >
+                  <Table2 className={`h-4 w-4 ${question.settings?.table ? 'text-brand-600' : 'text-ink-subtle'}`} />
                 </Button>
                 <Button variant="ghost" onClick={() => setImageModalOpen(true)} title="Buscar imagen" className="p-2">
-                  <ImagePlus className="h-4 w-4 text-gray-500" />
+                  <ImagePlus className="h-4 w-4 text-ink-subtle" />
                 </Button>
                 <Button variant="ghost" onClick={() => setShowUrlInput(!showUrlInput)} title="Pegar URL de imagen" className="p-2">
-                  <Link className={`h-4 w-4 ${showUrlInput ? 'text-indigo-500' : 'text-gray-500'}`} />
+                  <Link className={`h-4 w-4 ${showUrlInput ? 'text-brand-600' : 'text-ink-subtle'}`} />
                 </Button>
                 <Button variant="ghost" onClick={() => removeQuestion(question.id)} className="p-2">
                   <Trash2 className="h-4 w-4 text-red-500" />

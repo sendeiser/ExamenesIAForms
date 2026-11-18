@@ -5,6 +5,7 @@ import { Input } from '../ui/Input';
 import { Loader2, Sparkles } from 'lucide-react';
 import { callAi, parseJsonArrayFromAi } from '../../lib/aiClient';
 import { AiStatusBar } from './AiStatusBar';
+import { extractTableFromQuestionPayload } from '../../lib/tableUtils';
 import { useEditorStore } from '../../store/editorStore';
 
 interface AiModifyAllModalProps {
@@ -67,7 +68,8 @@ IMPORTANTE:
 - Mantén el MISMO ID de cada pregunta original
 - Debes devolver EXACTAMENTE ${questions.length} preguntas en el mismo orden
 - Si una pregunta no necesita cambios, devuélvela igual que la original
-- Para linearScale incluye "settings": { "min": 1, "max": 5, "minLabel": "", "maxLabel": "" }`;
+- Para linearScale incluye "settings": { "min": 1, "max": 5, "minLabel": "", "maxLabel": "" }
+- Si alguna actividad requiere una tabla o cuadro, inclúyela SIEMPRE en "settings": { "table": { "caption": "opcional", "headers": ["Col 1", "Col 2"], "rows": [{ "cells": ["dato", "respuesta esperada"] }], "editableCells": ["0:1"] } } con coordenadas "fila:columna" (base 0) para las celdas a completar por el alumno. Si excepcionalmente usas LaTeX para una tabla, dibuja SIEMPRE todas las líneas de columnas ({|c|c|...|}) y de filas (\\hline)`;
 
     try {
       const text = await callAi({ prompt });
@@ -78,13 +80,14 @@ IMPORTANTE:
       }
 
       for (const q of modified) {
+        const extracted = extractTableFromQuestionPayload(q);
         const updates: Record<string, any> = {
-          title: q.title,
+          title: extracted.title,
           description: q.description ?? '',
           options: (q.options ?? []).map((o: any) => typeof o === 'string' ? { label: o } : o),
-          settings: q.settings ?? {},
+          settings: extracted.settings,
           quizSettings: {
-            correctAnswer: q.correctAnswer ?? null,
+            correctAnswer: extracted.correctAnswer ?? null,
             points: q.points ?? 1,
           },
         };

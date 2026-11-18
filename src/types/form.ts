@@ -4,6 +4,7 @@ export interface FormSettings {
   limitResponses: number | null;
   confirmationMessage: string;
   isQuiz: boolean;
+  gradeRounding?: 'quarter' | 'integer';
   securityEnabled: boolean;
   maxViolations: number;
   fullscreen: boolean;
@@ -12,8 +13,11 @@ export interface FormSettings {
 }
 
 export interface FormTheme {
+  presetId?: string;
   primaryColor: string;
   backgroundColor: string;
+  cardBackgroundColor?: string;
+  textColor?: string;
   fontFamily: string;
   showProgressBar: boolean;
   borderRadius?: 'none' | 'sm' | 'md' | 'lg' | 'xl';

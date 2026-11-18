@@ -5,6 +5,7 @@ import { Input } from '../ui/Input';
 import { Loader2, Sparkles } from 'lucide-react';
 import { callAi, parseJsonArrayFromAi } from '../../lib/aiClient';
 import { AiStatusBar } from './AiStatusBar';
+import { extractTableFromQuestionPayload } from '../../lib/tableUtils';
 import type { Question } from '../../types/question';
 
 interface AiModifyModalProps {
@@ -60,6 +61,7 @@ IMPORTANTE:
 - Usa notación LaTeX entre $...$ para fórmulas matemáticas
 - Si el tipo cambia, incluye options según corresponda
 - Para linearScale incluye "settings": { "min": 1, "max": 5, "minLabel": "", "maxLabel": "" }
+- Si el docente pide una tabla o cuadro de doble entrada, inclúyela SIEMPRE en "settings": { "table": { "caption": "opcional", "headers": ["Col 1", "Col 2"], "rows": [{ "cells": ["dato", "respuesta esperada"] }], "editableCells": ["0:1"] } } donde "editableCells" usa coordenadas "fila:columna" (base 0) que el alumno debe completar. Si excepcionalmente incluyes una tabla en LaTeX en el enunciado, incluye SIEMPRE todas las líneas de columnas ({|c|c|...|}) y todas las líneas de filas (\\hline)
 - Mantén todo lo que no se deba modificar igual que la pregunta original`;
 
     try {
@@ -71,13 +73,14 @@ IMPORTANTE:
       }
 
       const q = modified[0];
+      const extracted = extractTableFromQuestionPayload(q);
       const updates: Partial<Question> = {
-        title: q.title,
+        title: extracted.title,
         description: q.description ?? '',
         options: (q.options ?? []).map((o: any) => typeof o === 'string' ? { label: o } : o),
-        settings: q.settings ?? {},
+        settings: extracted.settings,
         quizSettings: {
-          correctAnswer: q.correctAnswer ?? null,
+          correctAnswer: extracted.correctAnswer ?? null,
           points: q.points ?? 1,
         },
       };

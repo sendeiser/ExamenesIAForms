@@ -1,6 +1,7 @@
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { QuestionInput } from './QuestionInput';
+import { QuestionTableView } from './QuestionTableView';
 import { LatexRenderer } from '../ui/LatexRenderer';
 import type { Section } from '../../types/question';
 import type { Question } from '../../types/question';
@@ -39,6 +40,15 @@ export function SectionPage({ section, questions, answers, onAnswer, isFirst, is
             <span className="text-sm font-medium"><LatexRenderer text={q.title} /></span>
             {q.required && <span className="text-red-500 ml-1">*</span>}
           </label>
+          {q.settings?.table && (
+            <div className="mb-3">
+              <QuestionTableView
+                table={q.settings.table}
+                value={answers[q.id]}
+                onChange={(v) => onAnswer(q.id, v)}
+              />
+            </div>
+          )}
           <QuestionInput question={q} value={answers[q.id]} onChange={(v) => onAnswer(q.id, v)} />
         </Card>
       ))}

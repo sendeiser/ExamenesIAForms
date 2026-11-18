@@ -64,7 +64,7 @@ export default function FormViewPage() {
 
   if (authError) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white py-12 px-4 flex items-start justify-center">
+      <div className="min-h-screen bg-paper-grid py-12 px-4 flex items-start justify-center">
         <div className="bg-red-50 border border-red-200 rounded-xl p-6 max-w-lg text-center space-y-3">
           <p className="text-red-700 text-sm">{authError}</p>
         </div>
@@ -73,11 +73,11 @@ export default function FormViewPage() {
   }
 
   if (loading) return <LoadingSpinner />;
-  if (!form) return <div className="text-center py-12 text-gray-600">Formulario no encontrado</div>;
+  if (!form) return <div className="text-center py-12 text-ink-subtle">Formulario no encontrado</div>;
 
   if (isAuto) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white py-12 px-4">
+      <div className="min-h-screen bg-paper-grid py-10 px-4">
         <FormView
           form={form}
           questions={questions}
@@ -93,7 +93,7 @@ export default function FormViewPage() {
 
   if (!respondent) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white py-12 px-4">
+      <div className="min-h-screen bg-paper-grid py-12 px-4 flex items-center justify-center">
         <RespondentForm formTitle={form.title} onStart={(data) => {
           try { document.documentElement.requestFullscreen(); } catch {}
           setRespondent(data);
@@ -103,7 +103,7 @@ export default function FormViewPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-white py-12 px-4">
+    <div className="min-h-screen bg-paper-grid py-10 px-4">
       <FormView form={form} questions={questions} sections={sections} respondent={respondent} onSubmit={(answers) => submitResponse(answers, respondent)} />
     </div>
   );

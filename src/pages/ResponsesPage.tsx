@@ -24,7 +24,7 @@ export default function ResponsesPage() {
           <Link to={`/form/${formId}`}>
             <Button variant="ghost"><ArrowLeft className="h-4 w-4" /></Button>
           </Link>
-          <h1 className="text-xl font-bold">{form?.title ?? 'Respuestas'}</h1>
+          <h1 className="font-display text-2xl font-bold text-ink">{form?.title ?? 'Respuestas'}</h1>
         </div>
       </div>
 

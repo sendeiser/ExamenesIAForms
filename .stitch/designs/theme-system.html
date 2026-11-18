@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+
+<html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={theme:{extend:{colors:{background:"#F7F5F0","on-background":"#1A1C1E",surface:"#F7F5F0","on-surface":"#1C1B1F","surface-container":"#FFFFFF","surface-container-low":"#F2EFEB","surface-container-high":"#EBE7DF",outline:"#E4E0D8","outline-variant":"#D0CBC0",primary:"#1B3B6F","on-primary":"#FFFFFF","primary-container":"#DCE3F0","on-primary-container":"#0A1D3A",secondary:"#C84B31","on-secondary":"#FFFFFF","secondary-container":"#F9DFD8","on-secondary-container":"#431106",tertiary:"#15803D","on-tertiary":"#FFFFFF","tertiary-container":"#D4EFDC","on-tertiary-container":"#052E14"},fontFamily:{headline:["Bricolage Grotesque","sans-serif"],body:["Plus Jakarta Sans","sans-serif"],mono:["JetBrains Mono","monospace"]},borderRadius:{DEFAULT:"8px",md:"10px",lg:"12px"}}}}</script></head><body class="bg-surface font-body text-on-surface antialiased"><header class="fixed top-0 left-0 right-0 h-16 z-50 bg-surface/90 backdrop-blur-md shadow-[0_1px_8px_rgba(0,0,0,0.04)] px-4 lg:px-6 flex items-center justify-between"><div class="flex items-center gap-4"><div class="flex items-center gap-2"><div class="w-9 h-9 rounded-md bg-primary text-on-primary flex items-center justify-center font-headline font-bold text-sm tracking-tight">Ex</div><div class="flex flex-col"><span class="font-headline font-bold text-xs uppercase tracking-wider text-primary leading-none">Atelier</span><span class="font-headline font-extrabold text-sm tracking-tight text-on-surface leading-tight">Exámenes</span></div></div><div class="hidden md:flex items-center gap-2 text-xs text-on-surface/70 pl-3"><a class="hover:text-primary transition-colors" data-path="examenes" href="#">Mis exámenes</a><span class="text-on-surface/40">/</span><a class="hover:text-primary transition-colors" data-path="fisica-ii" href="#">Física II</a><span class="text-on-surface/40">/</span><span class="font-medium text-on-surface">Configuración visual</span></div></div><div class="flex items-center gap-3"><div class="hidden xl:flex items-center gap-2 bg-surface-container-low px-3 py-1.5 rounded-md text-xs"><span class="font-headline font-semibold text-primary truncate max-w-[220px]">Parcial de Física II: Termodinámica</span><span class="w-1 h-1 rounded-full bg-on-surface/30"></span><span class="inline-flex items-center gap-1 text-tertiary font-mono text-[11px]"><span class="material-symbols-outlined text-[14px]">check_circle</span>Borrador guardado</span></div><nav class="flex items-center bg-surface-container-high p-1 rounded-md text-xs font-medium" data-active-classes="bg-surface-container text-primary font-bold shadow-[0_1px_4px_rgba(0,0,0,0.06)]"><a class="px-3 py-1.5 rounded text-on-surface/70 hover:text-on-surface transition-colors" data-path="editor" href="#">Editor</a><a class="px-3 py-1.5 rounded text-on-surface/70 hover:text-on-surface transition-colors" data-path="vista-previa" href="#">Vista previa</a><a class="px-3 py-1.5 rounded text-on-surface/70 hover:text-on-surface transition-colors" data-path="dividido" href="#">Dividido</a></nav></div><div class="flex items-center gap-2 lg:gap-3"><button class="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-md bg-surface-container hover:bg-surface-container-high text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[16px]">ios_share</span>Compartir</button><button class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-md bg-primary text-on-primary hover:bg-primary/90 transition-colors" type="button"><span class="material-symbols-outlined text-[16px]">play_arrow</span>Probar</button><div class="flex items-center gap-2 pl-2"><div class="hidden lg:flex flex-col text-right"><span class="text-xs font-semibold text-on-surface leading-none">Prof. Martín</span><span class="text-[10px] text-on-surface/60 font-mono leading-tight">Cátedra Titular</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><aside class="fixed left-0 top-16 bottom-0 w-64 bg-surface-container-low/70 backdrop-blur-sm z-40 flex flex-col justify-between py-4 px-3 shadow-[0_1px_8px_rgba(0,0,0,0.02)]"><div class="flex flex-col gap-4"><div class="px-3 pt-1"><span class="text-[11px] font-mono uppercase tracking-wider text-on-surface/60 font-semibold">Estructura de Examen</span></div><nav class="flex flex-col gap-1" data-active-classes="bg-primary-container text-on-primary-container font-semibold rounded-md"><a class="flex items-center gap-3 px-3 py-2 rounded-md text-xs text-on-surface/80 hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="configuracion-general" href="#"><span class="material-symbols-outlined text-[18px]">tune</span>Datos generales</a><a class="flex items-center gap-3 px-3 py-2 rounded-md text-xs text-on-surface/80 hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="banco-de-preguntas" href="#"><span class="material-symbols-outlined text-[18px]">quiz</span>Banco de reactivos</a><a class="flex items-center gap-3 px-3 py-2 rounded-md text-xs text-on-surface/80 hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="configuracion-visual" href="#"><span class="material-symbols-outlined text-[18px]">palette</span>Diseño editorial</a><a class="flex items-center gap-3 px-3 py-2 rounded-md text-xs text-on-surface/80 hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="criterios-evaluacion" href="#"><span class="material-symbols-outlined text-[18px]">grading</span>Rúbrica y puntajes</a></nav></div><div class="p-3 bg-surface-container rounded-md shadow-[0_1px_4px_rgba(0,0,0,0.04)] text-xs flex flex-col gap-1"><span class="font-headline font-bold text-primary text-xs">Normativa Académica</span><p class="text-[11px] text-on-surface/70 leading-relaxed">El formato cumple la resolución CS 104/24 de evaluaciones presenciales estandarizadas.</p></div></aside><div class="pl-64"><main class="relative pt-16 bg-surface min-h-screen"><div class="flex flex-col w-full">
+<!-- Subheader / Action bar -->
+<section class="w-full bg-surface-container px-6 py-4 shadow-sm relative z-20">
+<div class="max-w-[1720px] mx-auto flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
+<div class="flex flex-col gap-1 min-w-0">
+<div class="flex items-center gap-2 text-[11px] font-mono tracking-wider text-on-surface/60 uppercase">
+<span class="hover:text-primary cursor-pointer transition-colors">Mis exámenes</span>
+<span>/</span>
+<span class="hover:text-primary cursor-pointer transition-colors">Física II</span>
+<span>/</span>
+<span class="text-primary font-semibold">Configuración de diseño</span>
+</div>
+<div class="flex flex-wrap items-center gap-2.5">
+<h1 class="font-headline text-xl md:text-2xl font-extrabold tracking-tight text-on-surface truncate">
+            Parcial de Física II: Termodinámica
+          </h1>
+<span class="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-primary-container text-on-primary-container">
+            FIS-102
+          </span>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-tertiary-container text-on-tertiary-container">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+            En línea · Sincronizado
+          </span>
+</div>
+</div>
+<div class="flex flex-wrap items-center justify-between xl:justify-end gap-3">
+<!-- View mode pills -->
+<div class="flex items-center bg-surface-container-high p-1 rounded-lg text-xs font-semibold shadow-inner">
+<button class="px-3 py-1.5 rounded-md text-on-surface/70 hover:text-on-surface transition-colors flex items-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[16px]">edit_note</span>
+            Editor
+          </button>
+<button class="px-3 py-1.5 rounded-md text-on-surface/70 hover:text-on-surface transition-colors flex items-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+            Vista previa
+          </button>
+<button class="px-3 py-1.5 rounded-md text-on-surface/70 hover:text-on-surface transition-colors flex items-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[16px]">vertical_split</span>
+            Dividido
+          </button>
+<button class="px-3 py-1.5 rounded-md bg-surface-container text-primary font-bold shadow-sm flex items-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[16px] text-secondary">palette</span>
+            Personalizar tema
+          </button>
+</div>
+<!-- Primary actions -->
+<div class="flex items-center gap-2">
+<button class="px-3 py-2 text-xs font-medium rounded-lg text-on-surface/70 hover:text-on-surface hover:bg-surface-container-high transition-colors flex items-center gap-1" id="btn-revert" type="button">
+<span class="material-symbols-outlined text-[16px]">history</span>
+            Revertir cambios
+          </button>
+<button class="px-3.5 py-2 text-xs font-medium rounded-lg bg-surface-container-low hover:bg-surface-container-high text-on-surface transition-colors flex items-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[16px]">bookmark_add</span>
+            Guardar plantilla
+          </button>
+<button class="px-4 py-2 text-xs font-bold rounded-lg bg-primary text-on-primary hover:bg-primary/95 shadow-md hover:shadow-lg transition-all flex items-center gap-1.5" id="btn-apply-theme" type="button">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+            Aplicar tema al examen
+          </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Workspace Container (7/12 main, 5/12 preview) -->
+<div class="max-w-[1720px] mx-auto w-full px-4 lg:px-6 py-6">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- LEFT 7/12: CONFIGURATOR SYSTEM -->
+<section class="lg:col-span-7 flex flex-col gap-6">
+<!-- Header Banner Card -->
+<div class="bg-surface-container rounded-xl p-6 shadow-sm relative overflow-hidden">
+<div class="absolute -right-8 -top-8 w-44 h-44 rounded-full bg-primary-container/30 blur-2xl pointer-events-none"></div>
+<div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 relative z-10">
+<div class="flex items-start gap-4">
+<div class="w-12 h-12 rounded-xl bg-primary text-on-primary flex items-center justify-center shadow-md">
+<span class="material-symbols-outlined text-2xl">auto_fix_high</span>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<h2 class="font-headline text-lg sm:text-xl font-bold tracking-tight text-on-surface">
+                    Sistema de temas del examen
+                  </h2>
+<span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wide uppercase bg-primary-container text-on-primary-container">
+                    Editorial CS-104
+                  </span>
+</div>
+<p class="text-xs sm:text-sm text-on-surface/75 max-w-xl leading-relaxed">
+                  Defina la identidad tipográfica, cromática y de legibilidad para la evaluación impresa y digital. Cumple los estándares de accesibilidad visual AAA de la cátedra.
+                </p>
+</div>
+</div>
+<div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-high text-xs font-semibold text-primary self-start shadow-sm">
+<span class="material-symbols-outlined text-[16px] text-tertiary">verified</span>
+<span id="active-theme-label">Atelier Académico · Preajuste activo</span>
+</div>
+</div>
+<!-- Section Tabs -->
+<div class="mt-6 flex items-center gap-1 bg-surface-container-low p-1 rounded-lg text-xs font-semibold w-full sm:w-fit">
+<button class="tab-btn px-4 py-1.5 rounded-md bg-surface-container text-primary shadow-sm" data-tab="presets" type="button">
+              Preajustes recomendados
+            </button>
+<button class="tab-btn px-4 py-1.5 rounded-md text-on-surface/70 hover:text-on-surface transition-colors" data-tab="custom" type="button">
+              Personalización avanzada
+            </button>
+<button class="tab-btn px-4 py-1.5 rounded-md text-on-surface/70 hover:text-on-surface transition-colors" data-tab="header" type="button">
+              Membrete y Escudo
+            </button>
+</div>
+</div>
+<!-- 6 Preset Theme Gallery Grid -->
+<div class="flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="font-headline font-bold text-sm text-on-surface uppercase tracking-wider">
+                Colección Curada de Estilos
+              </span>
+<span class="text-xs text-on-surface/50 font-mono">(6 preajustes listos)</span>
+</div>
+<span class="text-xs text-primary font-medium hover:underline cursor-pointer flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">tune</span>
+              Restablecer valores originales
+            </span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5" id="theme-grid">
+<!-- THEME 1: ATELIER ACADÉMICO (ACTIVE) -->
+<div class="theme-card group relative bg-surface-container rounded-xl p-4 shadow-md transition-all duration-200 cursor-pointer ring-2 ring-primary hover:shadow-lg" data-theme="atelier">
+<div class="absolute top-3 right-3 z-10 flex items-center gap-1">
+<span class="badge-selected px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-primary text-on-primary shadow-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">check</span>
+                  Activo
+                </span>
+</div>
+<div class="h-20 w-full rounded-lg mb-3 p-2.5 flex flex-col justify-between overflow-hidden shadow-inner bg-[#F7F5F0]">
+<div class="h-4 rounded px-2 flex items-center justify-between text-[9px] font-bold text-white shadow-sm bg-[#1B3B6F]">
+<span class="truncate">UNIVERSIDAD · CS</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#E5B54F]"></span>
+</div>
+<div class="space-y-1">
+<div class="h-2 w-3/4 rounded bg-[#1B3B6F]/20"></div>
+<div class="h-1.5 w-1/2 rounded bg-[#1B3B6F]/10"></div>
+</div>
+</div>
+<div class="flex items-center justify-between mb-1.5">
+<h3 class="font-headline font-bold text-sm text-on-surface">Atelier Académico</h3>
+<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface/70">Clásico Editorial</span>
+</div>
+<p class="text-[11px] text-on-surface/65 mb-3 line-clamp-1">Equilibrio perfecto de sobriedad y calidez archival.</p>
+<div class="flex items-center justify-between pt-2">
+<div class="flex items-center gap-1.5">
+<span class="w-4 h-4 rounded-full shadow-sm bg-[#1B3B6F]" title="#1B3B6F Cobalto"></span>
+<span class="w-4 h-4 rounded-full shadow-sm bg-[#F7F5F0]" title="#F7F5F0 Marfil"></span>
+<span class="w-4 h-4 rounded-full shadow-sm bg-[#C84B31]" title="#C84B31 Terracota"></span>
+</div>
+<span class="text-[10px] font-mono text-on-surface/60">Newsreader + Inter</span>
+</div>
+</div>
+<!-- THEME 2: CÁTEDRA CLÁSICA -->
+<div class="theme-card group relative bg-surface-container rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer" data-theme="catedra">
+<div class="h-20 w-full rounded-lg mb-3 p-2.5 flex flex-col justify-between overflow-hidden shadow-inner bg-[#F4EFE6]">
+<div class="h-4 rounded px-2 flex items-center justify-between text-[9px] font-bold text-white shadow-sm bg-[#0F2537]">
+<span class="truncate">FACULTAD DE LETRAS</span>
+<span class="text-[9px] text-[#C5A059]">✦</span>
+</div>
+<div class="space-y-1">
+<div class="h-2 w-4/5 rounded bg-[#0F2537]/20"></div>
+<div class="h-1.5 w-3/5 rounded bg-[#0F2537]/10"></div>
+</div>
+</div>
+<div class="flex items-center justify-between mb-1.5">
+<h3 class="font-headline font-bold text-sm text-on-surface">Cátedra Clásica</h3>
+<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface/70">Serif Real</span>
+</div>
+<p class="text-[11px] text-on-surface/65 mb-3 line-clamp-1">Inspiración en pergamino y sellos de oro litográfico.</p>
+<div class="flex items-center justify-between pt-2">
+<div class="flex items-center gap-1.5">
+<span class="w-4 h-4 rounded-full shadow-sm bg-[#0F2537]"></span>
+<span class="w-4 h-4 rounded-full shadow-sm bg-[#C5A059]"></span>
+<span class="w-4 h-4 rounded-full shadow-sm bg-[#F4EFE6]"></span>
+</div>
+<span class="text-[10px] font-mono text-on-surface/60">Playfair + Garamond</span>
+</div>
+</div>
+<!-- THEME 3: LABORATORIO STEM -->
+<div class="theme-card group relative bg-surface-container rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer" data-theme="stem">
+<div class="h-20 w-full rounded-lg mb-3 p-2.5 flex flex-col justify-between overflow-hidden shadow-inner bg-[#F8FAFC]">
+<div class="h-4 rounded px-2 flex items-center justify-between text-[9px] font-mono font-bold text-white shadow-sm bg-[#0284C7]">
+<span class="truncate">PHYSICS//LAB.02</span>
+<span class="font-mono text-[8px] bg-sky-950 px-1 rounded">ISO</span>
+</div>
+<div class="space-y-1">
+<div class="h-2 w-2/3 rounded bg-sky-700/20"></div>
+<div class="h-1.5 w-1/3 rounded bg-emerald-600/30"></div>
+</div>
+</div>
+<div class="flex items-center justify-between mb-1.5">
+<h3 class="font-headline font-bold text-sm text-on-surface">Laboratorio STEM</h3>
+<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface/70">Precisión</span>
+</div>
+<p class="text-[11px] text-on-surface/65 mb-3 line-clamp-1">Líneas técnicas para fórmulas y cálculo analítico.</p>
+<div class="flex items-center justify-between pt-2">
+<div class="flex items-center gap-1.5">
+<span class="w-4 h-4 rounded-full shadow-sm bg-[#0284C7]"></span>
+<span class="w-4 h-4 rounded-full shadow-sm bg-[#059669]"></span>
+<span class="w-4 h-4 rounded-full shadow-sm bg-[#0F172A]"></span>
+</div>
+<span class="text-[10px] font-mono text-on-surface/60">JetBrains + Space</span>
+</div>
+</div>
+<!-- THEME 4: AULA BOTÁNICA -->
+<div class="theme-card group relative bg-surface-container rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer" data-theme="botanica">
+<div class="h-20 w-full rounded-lg mb-3 p-2.5 flex flex-col justify-between overflow-hidden shadow-inner bg-[#EBF2EB]">
+<div class="h-4 rounded px-2 flex items-center justify-between text-[9px] font-bold text-white shadow-sm bg-[#1B4323]">
+<span class="truncate">CIENCIAS NATURALES</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#82B376]"></span>
+</div>
+<div class="space-y-1">
+<div class="h-2 w-3/4 rounded bg-[#1B4323]/25"></div>
+<div class="h-1.5 w-1/2 rounded bg-[#1B4323]/15"></div>
+</div>
+</div>
+<div class="flex items-center justify-between mb-1.5">
+<h3 class="font-headline font-bold text-sm text-on-surface">Aula Botánica</h3>
+<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface/70">Orgánico</span>
+</div>
+<p class="text-[11px] text-on-surface/65 mb-3 line-clamp-1">Tonos salvia y bosque que reducen la fatiga mental.</p>
+<div class="flex items-center justify-between pt-2">
+<div class="flex items-center gap-1.5">
+<span class="w-4 h-4 rounded-full shadow-sm bg-[#1B4323]"></span>
+<span class="w-4 h-4 rounded-full shadow-sm bg-[#82B376]"></span>
+<span class="w-4 h-4 rounded-full shadow-sm bg-[#EBF2EB]"></span>
+</div>
+<span class="text-[10px] font-mono text-on-surface/60">Lora + Jakarta</span>
+</div>
+</div>
+<!-- THEME 5: EDITORIAL TERRACOTA -->
+<div class="theme-card group relative bg-surface-container rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer" data-theme="terracota">
+<div class="h-20 w-full rounded-lg mb-3 p-2.5 flex flex-col justify-between overflow-hidden shadow-inner bg-[#FBF7F2]">
+<div class="h-4 rounded px-2 flex items-center justify-between text-[9px] font-bold text-white shadow-sm bg-[#B84E29]">
+<span class="truncate">HUMANIDADES &amp; ARTE</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#E5B54F]"></span>
+</div>
+<div class="space-y-1">
+<div class="h-2 w-4/5 rounded bg-[#B84E29]/20"></div>
+<div class="h-1.5 w-2/5 rounded bg-[#B84E29]/10"></div>
+</div>
+</div>
+<div class="flex items-center justify-between mb-1.5">
+<h3 class="font-headline font-bold text-sm text-on-surface">Editorial Terracota</h3>
+<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface/70">Humanidades</span>
+</div>
+<p class="text-[11px] text-on-surface/65 mb-3 line-clamp-1">Textura arcillosa vibrante para evaluaciones de ensayo.</p>
+<div class="flex items-center justify-between pt-2">
+<div class="flex items-center gap-1.5">
+<span class="w-4 h-4 rounded-full shadow-sm bg-[#B84E29]"></span>
+<span class="w-4 h-4 rounded-full shadow-sm bg-[#F5DEB3]"></span>
+<span class="w-4 h-4 rounded-full shadow-sm bg-[#382622]"></span>
+</div>
+<span class="text-[10px] font-mono text-on-surface/60">Fraunces + DM Sans</span>
+</div>
+</div>
+<!-- THEME 6: MODO NOCTURNO FOCUS -->
+<div class="theme-card group relative bg-surface-container rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer" data-theme="nocturno">
+<div class="h-20 w-full rounded-lg mb-3 p-2.5 flex flex-col justify-between overflow-hidden shadow-inner bg-[#10141D]">
+<div class="h-4 rounded px-2 flex items-center justify-between text-[9px] font-bold text-white shadow-sm bg-[#1E293B]">
+<span class="truncate text-amber-300">MODO NOCTURNO</span>
+<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+</div>
+<div class="space-y-1">
+<div class="h-2 w-3/4 rounded bg-slate-700"></div>
+<div class="h-1.5 w-1/2 rounded bg-amber-500/40"></div>
+</div>
+</div>
+<div class="flex items-center justify-between mb-1.5">
+<h3 class="font-headline font-bold text-sm text-on-surface">Modo Nocturno Focus</h3>
+<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface/70">Pantalla</span>
+</div>
+<p class="text-[11px] text-on-surface/65 mb-3 line-clamp-1">Contraste invertido para laboratorios con baja luminiscencia.</p>
+<div class="flex items-center justify-between pt-2">
+<div class="flex items-center gap-1.5">
+<span class="w-4 h-4 rounded-full shadow-sm bg-[#10141D]"></span>
+<span class="w-4 h-4 rounded-full shadow-sm bg-[#F59E0B]"></span>
+<span class="w-4 h-4 rounded-full shadow-sm bg-[#38BDF8]"></span>
+</div>
+<span class="text-[10px] font-mono text-on-surface/60">Inter + Fira Code</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Fine-Grained Customization Controls -->
+<div class="bg-surface-container rounded-xl p-6 shadow-sm flex flex-col gap-6">
+<div class="flex items-center justify-between pb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl">tune</span>
+<h3 class="font-headline text-base font-bold text-on-surface">
+                Ajustes detallados del tema
+              </h3>
+</div>
+<span class="text-xs text-on-surface/60 font-mono">Modificaciones en tiempo real</span>
+</div>
+<!-- 1. Paleta Cromática -->
+<div class="flex flex-col gap-3">
+<span class="text-xs font-mono font-bold uppercase tracking-wider text-on-surface/70">
+              1. Paleta cromática del examen
+            </span>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+<!-- Color 1 -->
+<div class="p-3 rounded-lg bg-surface-container-low flex flex-col gap-2">
+<span class="text-[11px] font-medium text-on-surface/80">Acento Primario</span>
+<div class="flex items-center gap-2">
+<input class="w-8 h-8 rounded border-none cursor-pointer bg-transparent" id="picker-primary" type="color" value="#1B3B6F"/>
+<input class="w-full text-xs font-mono px-2 py-1 rounded bg-surface-container text-on-surface focus:outline-none uppercase font-semibold" id="hex-primary" type="text" value="#1B3B6F"/>
+</div>
+<span class="text-[10px] text-on-surface/50">Encabezados, botones y números</span>
+</div>
+<!-- Color 2 -->
+<div class="p-3 rounded-lg bg-surface-container-low flex flex-col gap-2">
+<span class="text-[11px] font-medium text-on-surface/80">Lienzo / Hoja Base</span>
+<div class="flex items-center gap-2">
+<input class="w-8 h-8 rounded border-none cursor-pointer bg-transparent" id="picker-bg" type="color" value="#F7F5F0"/>
+<input class="w-full text-xs font-mono px-2 py-1 rounded bg-surface-container text-on-surface focus:outline-none uppercase font-semibold" id="hex-bg" type="text" value="#F7F5F0"/>
+</div>
+<span class="text-[10px] text-on-surface/50">Fondo de página física y digital</span>
+</div>
+<!-- Color 3 -->
+<div class="p-3 rounded-lg bg-surface-container-low flex flex-col gap-2">
+<span class="text-[11px] font-medium text-on-surface/80">Tarjetas de Reactivo</span>
+<div class="flex items-center gap-2">
+<input class="w-8 h-8 rounded border-none cursor-pointer bg-transparent" id="picker-card" type="color" value="#FFFFFF"/>
+<input class="w-full text-xs font-mono px-2 py-1 rounded bg-surface-container text-on-surface focus:outline-none uppercase font-semibold" id="hex-card" type="text" value="#FFFFFF"/>
+</div>
+<span class="text-[10px] text-on-surface/50">Superficie de preguntas</span>
+</div>
+<!-- Color 4 -->
+<div class="p-3 rounded-lg bg-surface-container-low flex flex-col gap-2">
+<span class="text-[11px] font-medium text-on-surface/80">Barra de Membrete</span>
+<div class="flex items-center gap-2">
+<input class="w-8 h-8 rounded border-none cursor-pointer bg-transparent" id="picker-header" type="color" value="#1B3B6F"/>
+<input class="w-full text-xs font-mono px-2 py-1 rounded bg-surface-container text-on-surface focus:outline-none uppercase font-semibold" id="hex-header" type="text" value="#1B3B6F"/>
+</div>
+<span class="text-[10px] text-on-surface/50">Banda institucional superior</span>
+</div>
+</div>
+</div>
+<!-- 2. Tipografía y Jerarquía -->
+<div class="flex flex-col gap-3 pt-2">
+<span class="text-xs font-mono font-bold uppercase tracking-wider text-on-surface/70">
+              2. Tipografía y legibilidad
+            </span>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+<div class="flex flex-col gap-1.5">
+<label class="text-xs font-medium text-on-surface/80">Familia para Títulos</label>
+<select class="w-full text-xs px-3 py-2 rounded-lg bg-surface-container-low text-on-surface font-semibold focus:outline-none cursor-pointer shadow-inner" id="select-font-headline">
+<option selected="" value="Bricolage Grotesque">Bricolage Grotesque (Actual)</option>
+<option value="Playfair Display">Playfair Display (Serif Académico)</option>
+<option value="Newsreader">Newsreader (Editorial Tradicional)</option>
+<option value="Plus Jakarta Sans">Plus Jakarta Sans (Sans Moderno)</option>
+</select>
+<span class="text-[10px] text-on-surface/50">Para nombre de examen y reactivos</span>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-xs font-medium text-on-surface/80">Cuerpo y Reactivos</label>
+<select class="w-full text-xs px-3 py-2 rounded-lg bg-surface-container-low text-on-surface font-semibold focus:outline-none cursor-pointer shadow-inner" id="select-font-body">
+<option selected="" value="Plus Jakarta Sans">Plus Jakarta Sans (Recomendada)</option>
+<option value="Inter">Inter (Máxima Legibilidad)</option>
+<option value="Lora">Lora (Serif para Humanidades)</option>
+<option value="JetBrains Mono">JetBrains Mono (Notación STEM)</option>
+</select>
+<span class="text-[10px] text-on-surface/50">Enunciados y opciones de respuesta</span>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-xs font-medium text-on-surface/80">Escala de Tamaño Base</label>
+<div class="grid grid-cols-3 gap-1 bg-surface-container-low p-1 rounded-lg text-xs font-medium">
+<button class="btn-scale py-1.5 rounded text-on-surface/70 hover:text-on-surface text-center" data-scale="14" type="button">14px</button>
+<button class="btn-scale py-1.5 rounded bg-surface-container text-primary font-bold shadow-sm text-center" data-scale="15" type="button">15px ★</button>
+<button class="btn-scale py-1.5 rounded text-on-surface/70 hover:text-on-surface text-center" data-scale="16" type="button">16px</button>
+</div>
+<span class="text-[10px] text-on-surface/50">15px optimiza lectura en hojas A4</span>
+</div>
+</div>
+</div>
+<!-- 3. Superficies, Radio y Controles Estructurales -->
+<div class="flex flex-col gap-3 pt-2">
+<span class="text-xs font-mono font-bold uppercase tracking-wider text-on-surface/70">
+              3. Superficie y micro-estilo editorial
+            </span>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Estilo de borde/sombra -->
+<div class="p-3.5 rounded-lg bg-surface-container-low flex flex-col gap-2">
+<span class="text-xs font-semibold text-on-surface">Tratamiento de tarjetas de pregunta</span>
+<div class="grid grid-cols-3 gap-1 text-[11px]">
+<label class="flex items-center gap-1.5 p-2 rounded bg-surface-container shadow-xs cursor-pointer">
+<input checked="" class="text-primary focus:ring-0" name="card-style" type="radio" value="sandstone"/>
+<span class="font-medium">Sandstone</span>
+</label>
+<label class="flex items-center gap-1.5 p-2 rounded hover:bg-surface-container cursor-pointer transition-colors">
+<input class="text-primary focus:ring-0" name="card-style" type="radio" value="paper-shadow"/>
+<span class="font-medium">Sombra Papel</span>
+</label>
+<label class="flex items-center gap-1.5 p-2 rounded hover:bg-surface-container cursor-pointer transition-colors">
+<input class="text-primary focus:ring-0" name="card-style" type="radio" value="minimal"/>
+<span class="font-medium">Plano</span>
+</label>
+</div>
+</div>
+<!-- Radio de esquinas -->
+<div class="p-3.5 rounded-lg bg-surface-container-low flex flex-col gap-2">
+<span class="text-xs font-semibold text-on-surface">Radio de esquinas (Border-radius)</span>
+<div class="grid grid-cols-3 gap-1 text-[11px]">
+<label class="flex items-center gap-1.5 p-2 rounded hover:bg-surface-container cursor-pointer transition-colors">
+<input class="text-primary focus:ring-0" name="corner-radius" type="radio" value="4px"/>
+<span class="font-medium">4px (Formal)</span>
+</label>
+<label class="flex items-center gap-1.5 p-2 rounded bg-surface-container shadow-xs cursor-pointer">
+<input checked="" class="text-primary focus:ring-0" name="corner-radius" type="radio" value="8px"/>
+<span class="font-medium font-bold text-primary">8px (Editorial)</span>
+</label>
+<label class="flex items-center gap-1.5 p-2 rounded hover:bg-surface-container cursor-pointer transition-colors">
+<input class="text-primary focus:ring-0" name="corner-radius" type="radio" value="12px"/>
+<span class="font-medium">12px (Suave)</span>
+</label>
+</div>
+</div>
+</div>
+<!-- Toggles de accesibilidad y opciones editoriales -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+<label class="flex items-center justify-between p-3 rounded-lg bg-surface-container-low cursor-pointer hover:bg-surface-container-high transition-colors">
+<div class="flex flex-col pr-2">
+<span class="text-xs font-semibold text-on-surface leading-tight">Barra de progreso</span>
+<span class="text-[10px] text-on-surface/60">Indicador en tiempo real</span>
+</div>
+<input checked="" class="w-4 h-4 rounded text-primary accent-primary focus:ring-0 cursor-pointer" id="toggle-progress" type="checkbox"/>
+</label>
+<label class="flex items-center justify-between p-3 rounded-lg bg-surface-container-low cursor-pointer hover:bg-surface-container-high transition-colors">
+<div class="flex flex-col pr-2">
+<span class="text-xs font-semibold text-on-surface leading-tight">Alto contraste</span>
+<span class="text-[10px] text-on-surface/60">Legibilidad AA/AAA</span>
+</div>
+<input class="w-4 h-4 rounded text-primary accent-primary focus:ring-0 cursor-pointer" id="toggle-contrast" type="checkbox"/>
+</label>
+<label class="flex items-center justify-between p-3 rounded-lg bg-surface-container-low cursor-pointer hover:bg-surface-container-high transition-colors">
+<div class="flex flex-col pr-2">
+<span class="text-xs font-semibold text-on-surface leading-tight">Escudo en Membrete</span>
+<span class="text-[10px] text-on-surface/60">Sello oficial en Pág. 1</span>
+</div>
+<input checked="" class="w-4 h-4 rounded text-primary accent-primary focus:ring-0 cursor-pointer" id="toggle-seal" type="checkbox"/>
+</label>
+</div>
+</div>
+</div>
+<!-- Academic Compliance Footer Note -->
+<div class="p-4 rounded-xl bg-surface-container-low flex items-center justify-between text-xs text-on-surface/75">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-xl">verified_user</span>
+<div>
+<p class="font-medium text-on-surface">Validación de Impresión de Exámenes</p>
+<p class="text-[11px] text-on-surface/60">Compatible al 100% con exportación PDF en pliegos A4 y formatos de corrección OMR de óptica asistida.</p>
+</div>
+</div>
+<button class="hidden sm:inline-flex px-3 py-1.5 rounded-lg bg-surface-container text-[11px] font-semibold text-on-surface hover:text-primary transition-colors shadow-xs" type="button">
+            Ver especificaciones
+          </button>
+</div>
+</section>
+<!-- RIGHT 5/12: STICKY REAL-TIME EXAM PREVIEW -->
+<aside class="lg:col-span-5 sticky top-20 flex flex-col gap-4">
+<div class="bg-surface-container rounded-xl shadow-md p-5 flex flex-col gap-4">
+<!-- Live Preview Control Header -->
+<div class="flex items-center justify-between pb-3">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-tertiary"></span>
+<h3 class="font-headline font-bold text-sm text-on-surface">Vista previa en vivo</h3>
+<span class="px-2 py-0.5 rounded text-[10px] font-mono bg-primary-container text-on-primary-container font-semibold">
+                Estudiante
+              </span>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="flex items-center bg-surface-container-low p-1 rounded-md">
+<button class="p-1 rounded bg-surface-container text-primary shadow-xs" id="preview-mode-desktop" title="Modo Pantalla Completa" type="button">
+<span class="material-symbols-outlined text-[16px]">desktop_windows</span>
+</button>
+<button class="p-1 rounded text-on-surface/60 hover:text-on-surface" id="preview-mode-mobile" title="Modo Dispositivo Móvil" type="button">
+<span class="material-symbols-outlined text-[16px]">smartphone</span>
+</button>
+</div>
+<button class="p-1.5 rounded-md hover:bg-surface-container-high text-on-surface/70 transition-colors" id="btn-refresh-preview" title="Refrescar vista" type="button">
+<span class="material-symbols-outlined text-[16px]">refresh</span>
+</button>
+</div>
+</div>
+<!-- MINIATURE REALISTIC EXAM SHEET CONTAINER -->
+<div class="w-full rounded-xl transition-all duration-300 p-4 sm:p-6 shadow-sm overflow-hidden flex flex-col gap-5 bg-[#F7F5F0]" id="exam-sheet-frame">
+<!-- Real-time Exam Header / Institutional Banner -->
+<div class="rounded-lg p-4 text-white shadow-sm flex flex-col gap-3 transition-colors duration-200 bg-[#1B3B6F]" id="preview-header-bar">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-center gap-2.5">
+<!-- Monogram / Seal -->
+<div class="w-9 h-9 rounded-md bg-white/10 flex items-center justify-center font-headline font-black text-sm tracking-tight text-white border-0 shadow-inner" id="preview-seal-icon">
+                    UNI
+                  </div>
+<div class="flex flex-col">
+<span class="text-[10px] uppercase font-mono tracking-widest text-white/80 leading-none">
+                      Universidad Nacional de Cuyo
+                    </span>
+<span class="text-xs font-semibold text-white/95 mt-0.5">
+                      Facultad de Ciencias Exactas · Cátedra Física II
+                    </span>
+</div>
+</div>
+<div class="text-right">
+<span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-white/20 text-white">
+                    FIS-102
+                  </span>
+</div>
+</div>
+<!-- Exam Title and Metadata Bar -->
+<div class="pt-2 flex flex-col gap-1">
+<h4 class="font-headline font-extrabold text-base sm:text-lg tracking-tight text-white leading-snug" id="preview-exam-title">
+                  Parcial de Física II: Termodinámica
+                </h4>
+<div class="flex flex-wrap items-center gap-3 text-[11px] text-white/80 font-mono">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+                    120 minutos
+                  </span>
+<span>•</span>
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">military_tech</span>
+                    100 puntos totales
+                  </span>
+<span>•</span>
+<span>Turno Mañana</span>
+</div>
+</div>
+</div>
+<!-- Real-time Exam Progress Bar -->
+<div class="flex flex-col gap-1.5" id="preview-progress-wrapper">
+<div class="flex items-center justify-between text-[11px]">
+<span class="font-medium text-on-surface/75">Sección 1 de 3: Termodinámica Clásica</span>
+<span class="font-mono font-bold text-primary">60% completado</span>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-container-high overflow-hidden">
+<div class="h-full rounded-full transition-all duration-300 w-[60%] bg-[#1B3B6F]" id="preview-progress-fill"></div>
+</div>
+</div>
+<!-- QUESTION CARD 1 -->
+<div class="preview-question-card rounded-lg p-4 sm:p-5 shadow-sm transition-all duration-200 bg-white" id="preview-card-1">
+<div class="flex items-center justify-between mb-3">
+<span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider bg-surface-container-high text-on-surface/80">
+                  Pregunta 1 · 10 puntos · Obligatoria
+                </span>
+<span class="text-[11px] font-mono text-tertiary font-semibold flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[14px]">check</span>
+                  Respondida
+                </span>
+</div>
+<!-- Question statement with math formula -->
+<p class="preview-body-text text-xs sm:text-sm font-medium text-on-surface leading-relaxed mb-3">
+                ¿Cuál es la variación analítica de la entropía ($\Delta S$) en un proceso isotérmico reversible donde un gas ideal absorbe calor a temperatura absoluta $T$?
+              </p>
+<!-- LaTeX mathematical formula visual block -->
+<div class="p-3 rounded-md bg-surface-container-low mb-4 flex items-center justify-center font-mono text-xs text-primary font-bold shadow-inner">
+<span>ΔS = ∫ (δQ_rev / T) = Q_rev / T = n·R·ln(V_final / V_inicial)</span>
+</div>
+<!-- Options list -->
+<div class="flex flex-col gap-2.5">
+<!-- Option A: SELECTED -->
+<label class="preview-option-selected flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-all bg-primary-container/40 text-on-surface shadow-xs">
+<div class="w-4 h-4 rounded-full mt-0.5 flex items-center justify-center text-white shrink-0 bg-[#1B3B6F]">
+<span class="material-symbols-outlined text-[12px] font-bold">check</span>
+</div>
+<div class="flex flex-col text-xs leading-normal">
+<span class="font-bold">Opción A (Seleccionada)</span>
+<span class="text-on-surface/80">$\Delta S = Q / T$, dado que al ser isotérmico la temperatura $T$ permanece estrictamente constante en la integral.</span>
+</div>
+</label>
+<!-- Option B: Neutral -->
+<label class="preview-option flex items-start gap-3 p-3 rounded-lg hover:bg-surface-container-low cursor-pointer transition-colors bg-surface-container/60 text-on-surface/90">
+<div class="w-4 h-4 rounded-full mt-0.5 bg-surface-container-high shrink-0"></div>
+<div class="flex flex-col text-xs leading-normal">
+<span class="font-semibold text-on-surface/90">Opción B</span>
+<span class="text-on-surface/70">$\Delta S = 0$, puesto que en cualquier proceso cerrado con gas ideal no hay cambio de entropía local.</span>
+</div>
+</label>
+<!-- Option C: Neutral -->
+<label class="preview-option flex items-start gap-3 p-3 rounded-lg hover:bg-surface-container-low cursor-pointer transition-colors bg-surface-container/60 text-on-surface/90">
+<div class="w-4 h-4 rounded-full mt-0.5 bg-surface-container-high shrink-0"></div>
+<div class="flex flex-col text-xs leading-normal">
+<span class="font-semibold text-on-surface/90">Opción C</span>
+<span class="text-on-surface/70">$\Delta S = n \cdot C_v \cdot \ln(T_2 / T_1)$, dependiendo exclusivamente de la capacidad calorífica molar.</span>
+</div>
+</label>
+</div>
+</div>
+<!-- QUESTION CARD 2 (EXCERPT OPEN ANSWER) -->
+<div class="preview-question-card rounded-lg p-4 sm:p-5 shadow-sm transition-all duration-200 bg-white" id="preview-card-2">
+<div class="flex items-center justify-between mb-3">
+<span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider bg-surface-container-high text-on-surface/80">
+                  Pregunta 2 · 15 puntos · Desarrollo
+                </span>
+<span class="text-[11px] font-mono text-on-surface/50">Pendiente</span>
+</div>
+<p class="preview-body-text text-xs sm:text-sm font-medium text-on-surface leading-relaxed mb-3">
+                Explique con rigor termodinámico por qué ninguna máquina térmica cíclica real puede superar la eficiencia teórica del Ciclo de Carnot entre dos focos dados.
+              </p>
+<div class="w-full h-20 rounded-md p-2.5 text-xs text-on-surface/60 font-mono bg-surface-container-low">
+                Escriba su justificación analítica basada en el postulado de Kelvin-Planck y la formulación de Clausius...
+              </div>
+</div>
+<!-- Exam bottom navigation inside preview -->
+<div class="flex items-center justify-between pt-2">
+<button class="px-3 py-1.5 rounded text-xs font-medium text-on-surface/70 hover:text-on-surface transition-colors" type="button">
+                ← Reactivo anterior
+              </button>
+<button class="px-4 py-2 rounded text-xs font-bold text-white shadow-sm flex items-center gap-1 bg-[#1B3B6F]" id="preview-btn-next" type="button">
+<span>Siguiente reactivo</span>
+<span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Micro Footnote & Accessibility feedback -->
+<div class="flex items-start gap-2.5 p-3 rounded-lg bg-surface-container-low text-[11px] text-on-surface/75">
+<span class="material-symbols-outlined text-primary text-[18px] shrink-0 mt-0.5">sync</span>
+<p class="leading-relaxed">
+              Los cambios de color, tipografía y estilo se sincronizan instantáneamente con el archivo imprimible en PDF (resolución 300 DPI) y con la experiencia del aula virtual.
+            </p>
+</div>
+</div>
+</aside>
+</div>
+</div>
+</div>
+<script>
+  (function initExamThemeStudio() {
+    // Theme presets dictionary
+    const themes = {
+      atelier: {
+        name: 'Atelier Académico',
+        label: 'Atelier Académico · Preajuste activo',
+        primary: '#1B3B6F',
+        bg: '#F7F5F0',
+        card: '#FFFFFF',
+        header: '#1B3B6F',
+        fontHeadline: 'Bricolage Grotesque',
+        fontBody: 'Plus Jakarta Sans',
+        radius: '8px'
+      },
+      catedra: {
+        name: 'Cátedra Clásica',
+        label: 'Cátedra Clásica · Serif Universitario',
+        primary: '#0F2537',
+        bg: '#F4EFE6',
+        card: '#FFFFFF',
+        header: '#0F2537',
+        fontHeadline: 'Playfair Display',
+        fontBody: 'Newsreader',
+        radius: '4px'
+      },
+      stem: {
+        name: 'Laboratorio STEM',
+        label: 'Laboratorio STEM · Precisión Científica',
+        primary: '#0284C7',
+        bg: '#F8FAFC',
+        card: '#FFFFFF',
+        header: '#0284C7',
+        fontHeadline: 'JetBrains Mono',
+        fontBody: 'Plus Jakarta Sans',
+        radius: '6px'
+      },
+      botanica: {
+        name: 'Aula Botánica',
+        label: 'Aula Botánica · Orgánico y Sereno',
+        primary: '#1B4323',
+        bg: '#EBF2EB',
+        card: '#FFFFFF',
+        header: '#1B4323',
+        fontHeadline: 'Lora',
+        fontBody: 'Plus Jakarta Sans',
+        radius: '10px'
+      },
+      terracota: {
+        name: 'Editorial Terracota',
+        label: 'Editorial Terracota · Humanidades',
+        primary: '#B84E29',
+        bg: '#FBF7F2',
+        card: '#FFFFFF',
+        header: '#B84E29',
+        fontHeadline: 'Bricolage Grotesque',
+        fontBody: 'Plus Jakarta Sans',
+        radius: '8px'
+      },
+      nocturno: {
+        name: 'Modo Nocturno Focus',
+        label: 'Modo Nocturno Focus · Estudio Oscuro',
+        primary: '#F59E0B',
+        bg: '#10141D',
+        card: '#1E293B',
+        header: '#0F172A',
+        fontHeadline: 'Bricolage Grotesque',
+        fontBody: 'Plus Jakarta Sans',
+        radius: '8px'
+      }
+    };
+
+    // DOM Elements
+    const pickerPrimary = document.getElementById('picker-primary');
+    const hexPrimary = document.getElementById('hex-primary');
+    const pickerBg = document.getElementById('picker-bg');
+    const hexBg = document.getElementById('hex-bg');
+    const pickerCard = document.getElementById('picker-card');
+    const hexCard = document.getElementById('hex-card');
+    const pickerHeader = document.getElementById('picker-header');
+    const hexHeader = document.getElementById('hex-header');
+
+    const examSheet = document.getElementById('exam-sheet-frame');
+    const previewHeaderBar = document.getElementById('preview-header-bar');
+    const previewProgressFill = document.getElementById('preview-progress-fill');
+    const previewBtnNext = document.getElementById('preview-btn-next');
+    const previewCards = document.querySelectorAll('.preview-question-card');
+    const activeThemeLabel = document.getElementById('active-theme-label');
+    const themeCards = document.querySelectorAll('.theme-card');
+
+    const toggleProgress = document.getElementById('toggle-progress');
+    const progressWrapper = document.getElementById('preview-progress-wrapper');
+    const toggleSeal = document.getElementById('toggle-seal');
+    const previewSealIcon = document.getElementById('preview-seal-icon');
+    const toggleContrast = document.getElementById('toggle-contrast');
+
+    const selectFontHeadline = document.getElementById('select-font-headline');
+    const selectFontBody = document.getElementById('select-font-body');
+    const previewExamTitle = document.getElementById('preview-exam-title');
+    const previewBodyTexts = document.querySelectorAll('.preview-body-text');
+
+    // Update real-time preview colors
+    function updateLiveColors(primary, bg, card, header) {
+      if (examSheet) examSheet.style.backgroundColor = bg;
+      if (previewHeaderBar) previewHeaderBar.style.backgroundColor = header;
+      if (previewProgressFill) previewProgressFill.style.backgroundColor = primary;
+      if (previewBtnNext) previewBtnNext.style.backgroundColor = primary;
+      
+      previewCards.forEach(c => {
+        c.style.backgroundColor = card;
+        if (bg === '#10141D') {
+          c.classList.add('text-white');
+        } else {
+          c.classList.remove('text-white');
+        }
+      });
+
+      // Update option selected indicator
+      const selOption = document.querySelector('.preview-option-selected');
+      if (selOption) {
+        const dot = selOption.querySelector('div');
+        if (dot) dot.style.backgroundColor = primary;
+      }
+    }
+
+    // Sync input color with pickers
+    function syncInputColor(picker, input, propKey) {
+      picker.addEventListener('input', (e) => {
+        input.value = e.target.value.toUpperCase();
+        updatePreviewFromInputs();
+      });
+      input.addEventListener('change', (e) => {
+        let val = e.target.value;
+        if (!val.startsWith('#')) val = '#' + val;
+        picker.value = val;
+        updatePreviewFromInputs();
+      });
+    }
+
+    syncInputColor(pickerPrimary, hexPrimary, 'primary');
+    syncInputColor(pickerBg, hexBg, 'bg');
+    syncInputColor(pickerCard, hexCard, 'card');
+    syncInputColor(pickerHeader, hexHeader, 'header');
+
+    function updatePreviewFromInputs() {
+      updateLiveColors(pickerPrimary.value, pickerBg.value, pickerCard.value, pickerHeader.value);
+    }
+
+    // Theme preset switcher
+    themeCards.forEach(card => {
+      card.addEventListener('click', () => {
+        const themeKey = card.getAttribute('data-theme');
+        const theme = themes[themeKey];
+        if (!theme) return;
+
+        // Visual selection states in cards
+        themeCards.forEach(c => {
+          c.classList.remove('ring-2', 'ring-primary', 'shadow-md');
+          c.classList.add('shadow-sm');
+          const badge = c.querySelector('.badge-selected');
+          if (badge) badge.remove();
+        });
+
+        card.classList.add('ring-2', 'ring-primary', 'shadow-md');
+        card.classList.remove('shadow-sm');
+        
+        // Add active check badge
+        const badgeSpan = document.createElement('span');
+        badgeSpan.className = 'badge-selected px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-primary text-on-primary shadow-sm flex items-center gap-1';
+        badgeSpan.innerHTML = '<span class="material-symbols-outlined text-[12px]">check</span> Activo';
+        
+        const topBadgeContainer = card.querySelector('.absolute.top-3.right-3') || card;
+        topBadgeContainer.appendChild(badgeSpan);
+
+        // Update form controls
+        pickerPrimary.value = theme.primary;
+        hexPrimary.value = theme.primary.toUpperCase();
+        pickerBg.value = theme.bg;
+        hexBg.value = theme.bg.toUpperCase();
+        pickerCard.value = theme.card;
+        hexCard.value = theme.card.toUpperCase();
+        pickerHeader.value = theme.header;
+        hexHeader.value = theme.header.toUpperCase();
+
+        if (activeThemeLabel) activeThemeLabel.textContent = theme.label;
+
+        // Apply to preview
+        updateLiveColors(theme.primary, theme.bg, theme.card, theme.header);
+      });
+    });
+
+    // Toggles
+    if (toggleProgress && progressWrapper) {
+      toggleProgress.addEventListener('change', (e) => {
+        progressWrapper.style.display = e.target.checked ? 'flex' : 'none';
+      });
+    }
+
+    if (toggleSeal && previewSealIcon) {
+      toggleSeal.addEventListener('change', (e) => {
+        previewSealIcon.style.display = e.target.checked ? 'flex' : 'none';
+      });
+    }
+
+    if (toggleContrast) {
+      toggleContrast.addEventListener('change', (e) => {
+        if (e.target.checked) {
+          pickerPrimary.value = '#000000';
+          hexPrimary.value = '#000000';
+          pickerBg.value = '#FFFFFF';
+          hexBg.value = '#FFFFFF';
+          pickerCard.value = '#FFFFFF';
+          hexCard.value = '#FFFFFF';
+          pickerHeader.value = '#000000';
+          hexHeader.value = '#000000';
+        } else {
+          pickerPrimary.value = '#1B3B6F';
+          hexPrimary.value = '#1B3B6F';
+          pickerBg.value = '#F7F5F0';
+          hexBg.value = '#F7F5F0';
+          pickerCard.value = '#FFFFFF';
+          hexCard.value = '#FFFFFF';
+          pickerHeader.value = '#1B3B6F';
+          hexHeader.value = '#1B3B6F';
+        }
+        updatePreviewFromInputs();
+      });
+    }
+
+    // Typography selector
+    if (selectFontHeadline && previewExamTitle) {
+      selectFontHeadline.addEventListener('change', (e) => {
+        previewExamTitle.style.fontFamily = e.target.value;
+      });
+    }
+
+    if (selectFontBody) {
+      selectFontBody.addEventListener('change', (e) => {
+        previewBodyTexts.forEach(t => t.style.fontFamily = e.target.value);
+      });
+    }
+
+    // Border Radius Radios
+    const radiusInputs = document.querySelectorAll('input[name="corner-radius"]');
+    radiusInputs.forEach(input => {
+      input.addEventListener('change', (e) => {
+        const val = e.target.value;
+        previewCards.forEach(c => c.style.borderRadius = val);
+        if (previewHeaderBar) previewHeaderBar.style.borderRadius = val;
+      });
+    });
+
+    // Scale buttons
+    const scaleButtons = document.querySelectorAll('.btn-scale');
+    scaleButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        scaleButtons.forEach(b => {
+          b.classList.remove('bg-surface-container', 'text-primary', 'font-bold', 'shadow-sm');
+          b.classList.add('text-on-surface/70');
+        });
+        btn.classList.add('bg-surface-container', 'text-primary', 'font-bold', 'shadow-sm');
+        btn.classList.remove('text-on-surface/70');
+
+        const scale = btn.getAttribute('data-scale');
+        previewBodyTexts.forEach(t => t.style.fontSize = scale + 'px');
+      });
+    });
+
+    // Preview device toggles
+    const btnDesktop = document.getElementById('preview-mode-desktop');
+    const btnMobile = document.getElementById('preview-mode-mobile');
+    if (btnDesktop && btnMobile && examSheet) {
+      btnMobile.addEventListener('click', () => {
+        examSheet.style.maxWidth = '360px';
+        examSheet.style.margin = '0 auto';
+        btnMobile.classList.add('bg-surface-container', 'text-primary', 'shadow-xs');
+        btnMobile.classList.remove('text-on-surface/60');
+        btnDesktop.classList.remove('bg-surface-container', 'text-primary', 'shadow-xs');
+        btnDesktop.classList.add('text-on-surface/60');
+      });
+
+      btnDesktop.addEventListener('click', () => {
+        examSheet.style.maxWidth = '100%';
+        btnDesktop.classList.add('bg-surface-container', 'text-primary', 'shadow-xs');
+        btnDesktop.classList.remove('text-on-surface/60');
+        btnMobile.classList.remove('bg-surface-container', 'text-primary', 'shadow-xs');
+        btnMobile.classList.add('text-on-surface/60');
+      });
+    }
+
+    // Notification toast on Apply
+    const btnApply = document.getElementById('btn-apply-theme');
+    if (btnApply) {
+      btnApply.addEventListener('click', () => {
+        const originalContent = btnApply.innerHTML;
+        btnApply.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">autorenew</span> Guardando estilo...';
+        btnApply.disabled = true;
+        setTimeout(() => {
+          btnApply.innerHTML = '<span class="material-symbols-outlined text-[18px]">done_all</span> ¡Tema publicado!';
+          btnApply.classList.add('bg-tertiary');
+          setTimeout(() => {
+            btnApply.innerHTML = originalContent;
+            btnApply.classList.remove('bg-tertiary');
+            btnApply.disabled = false;
+          }, 2000);
+        }, 800);
+      });
+    }
+
+    // Revert button
+    const btnRevert = document.getElementById('btn-revert');
+    if (btnRevert) {
+      btnRevert.addEventListener('click', () => {
+        const firstTheme = themeCards[0];
+        if (firstTheme) firstTheme.click();
+      });
+    }
+  })();
+</script></main></div></body></html>

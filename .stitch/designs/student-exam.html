@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+
+<html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><title>Atelier Académico - Evaluación</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&amp;family=JetBrains+Mono:wght@400..700&amp;family=Plus+Jakarta+Sans:wght@400..700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={theme:{extend:{colors:{primary:"#1B3B6F","on-primary":"#FFFFFF","primary-container":"#DCE4F0","on-primary-container":"#0E2448",accent:"#C84B31","on-accent":"#FFFFFF",success:"#15803D","on-success":"#FFFFFF",surface:"#F7F5F0","on-surface":"#1C1B19","surface-card":"#FFFFFF","surface-container-low":"#F2EFEB","surface-container-high":"#EAE5DC","on-surface-variant":"#5B5852",outline:"#E4E0D8"},fontFamily:{headline:["Bricolage Grotesque","sans-serif"],body:["Plus Jakarta Sans","sans-serif"],mono:["JetBrains Mono","monospace"]},borderRadius:{sm:"6px",DEFAULT:"8px",md:"10px",lg:"12px"}}}}</script></head><body class="bg-surface font-body text-on-surface antialiased min-h-screen"><header class="fixed top-0 w-full z-50 bg-surface/90 backdrop-blur-md shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between gap-4"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded bg-primary text-on-primary flex items-center justify-center font-headline font-bold text-sm tracking-wide">AA</div><div class="flex flex-col"><span class="text-xs font-mono font-medium text-on-surface-variant tracking-wider uppercase">Atelier Académico</span><span class="text-sm font-headline font-bold text-primary">Exámenes</span></div></div><div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-card shadow-[0_1px_4px_rgba(0,0,0,0.03)]"><span class="w-2 h-2 rounded-full bg-success animate-pulse"></span><span class="text-xs font-medium text-on-surface">Examen activo</span><span class="text-xs text-on-surface-variant font-mono">•</span><span class="text-xs font-mono font-bold text-accent">Tiempo restante: 01:14:32</span></div><nav class="hidden lg:flex items-center gap-6" data-active-classes="text-primary font-bold"><a class="text-xs font-mono text-on-surface-variant hover:text-on-surface transition-colors" data-path="evaluacion-activa" href="#">Examen</a><a class="text-xs font-mono text-on-surface-variant hover:text-on-surface transition-colors" data-path="instrucciones" href="#">Instrucciones</a><a class="text-xs font-mono text-on-surface-variant hover:text-on-surface transition-colors" data-path="hoja-de-respuestas" href="#">Resumen</a></nav><div class="flex items-center gap-3"><div class="hidden md:flex flex-col text-right"><span class="text-xs font-medium text-on-surface leading-tight">Demo Estudiante</span><span class="text-[11px] font-mono text-on-surface-variant leading-tight">ID: EST-84920</span></div><div class="flex items-center gap-1.5"><button class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Pantalla completa" type="button"><span class="material-symbols-outlined text-[18px]">fullscreen</span></button><button class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Soporte y Ayuda" type="button"><span class="material-symbols-outlined text-[18px]">help</span></button><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-1"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></div></header><main class="w-full pt-16 bg-surface"><div class="flex flex-col w-full pb-32">
+<div class="max-w-[780px] w-full mx-auto px-4 sm:px-6 pt-8 space-y-10">
+<!-- EXAM HEADER BANNER -->
+<header class="space-y-6">
+<!-- Breadcrumb & Badges -->
+<div class="flex flex-wrap items-center justify-between gap-3 text-xs">
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-primary/10 text-primary font-mono font-medium tracking-wide uppercase text-[11px]">
+<span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+            Evaluación en curso
+          </span>
+<span class="text-on-surface-variant/50 font-mono">/</span>
+<span class="font-mono text-on-surface-variant font-medium tracking-wider uppercase text-[11px]">
+            FIS-101 · Física Clásica
+          </span>
+</div>
+<div class="flex items-center gap-2 font-mono text-[11px] text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px] text-primary">security</span>
+<span>Modo seguro activo</span>
+</div>
+</div>
+<!-- Title & Guidelines -->
+<div class="space-y-3">
+<h1 class="font-headline font-bold text-3xl sm:text-4xl text-on-surface tracking-tight leading-tight">
+          Parcial I: Cinemática y Dinámica
+        </h1>
+<p class="text-sm sm:text-base text-on-surface-variant font-body leading-relaxed max-w-2xl">
+          Lea con atención cada consigna. Justifique sus respuestas con rigor analítico. Dispone de sincronización y guardado automático continuo en el servidor académico.
+        </p>
+</div>
+<!-- Section Progress Block -->
+<div class="bg-surface-card rounded-lg p-5 shadow-sm space-y-3.5">
+<div class="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 text-xs">
+<div class="font-headline font-semibold text-on-surface flex items-center gap-2">
+<span class="text-primary font-mono text-xs">§ 1.0</span>
+<span>Sección 1 de 2: Fundamentos Newtonianos</span>
+</div>
+<span class="font-mono text-on-surface-variant text-[11px]">
+            3 de 5 reactivos respondidos · 60%
+          </span>
+</div>
+<!-- Custom Progress Track -->
+<div class="w-full h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full transition-all duration-500 ease-out" style="width: 60%"></div>
+</div>
+<!-- Micro Metadata Row -->
+<div class="flex flex-wrap items-center justify-between gap-3 text-[11px] font-mono text-on-surface-variant pt-1">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">grade</span>
+            Puntaje de sección: 30 pts
+          </span>
+<span class="flex items-center gap-1.5 text-success font-medium">
+<span class="material-symbols-outlined text-[14px]">cloud_done</span>
+            Autoguardado: Hace 12 segundos
+          </span>
+</div>
+</div>
+</header>
+<!-- MAIN FORM / QUESTIONS -->
+<main class="space-y-8">
+<!-- CARD 1: Short Answer Question -->
+<section class="bg-surface-card rounded-lg p-6 sm:p-8 shadow-sm space-y-5 transition-shadow hover:shadow-md">
+<!-- Question Header -->
+<div class="flex items-start justify-between gap-4">
+<div class="flex items-center gap-2.5">
+<span class="w-7 h-7 rounded bg-surface-container-high text-primary font-mono font-bold text-xs flex items-center justify-center">
+              01
+            </span>
+<span class="text-xs font-mono font-semibold tracking-wider text-on-surface uppercase">
+              10 Puntos
+            </span>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded bg-surface-container-low text-on-surface-variant text-[11px] font-mono uppercase tracking-wider">
+              Obligatoria
+            </span>
+<span class="px-2 py-0.5 rounded bg-surface-container-low text-on-surface-variant text-[11px] font-mono flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">edit_note</span>
+              Desarrollo
+            </span>
+</div>
+</div>
+<!-- Question Prompt -->
+<div class="space-y-2">
+<h2 class="font-headline font-bold text-lg sm:text-xl text-on-surface">
+            1. Explica la Primera Ley de Newton con un ejemplo cotidiano.
+          </h2>
+<p class="text-xs sm:text-sm text-on-surface-variant leading-relaxed">
+            Detalla el concepto de inercia y cómo se manifiesta el equilibrio de fuerzas cuando la suma vectorial es nula ($\Sigma \vec{F} = 0$).
+          </p>
+</div>
+<!-- Editor Wrapper -->
+<div class="space-y-2">
+<!-- Textarea Formatting Micro-bar -->
+<div class="flex items-center justify-between px-3 py-1.5 bg-surface-container-low rounded-t-md text-xs font-mono text-on-surface-variant">
+<div class="flex items-center gap-1">
+<button class="p-1 rounded hover:bg-surface-card hover:text-on-surface transition-colors" title="Negrita" type="button">
+<span class="font-bold">B</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-card hover:text-on-surface transition-colors italic" title="Cursiva" type="button">
+<span>I</span>
+</button>
+<span class="text-on-surface-variant/30 mx-1">|</span>
+<button class="flex items-center gap-1 px-1.5 py-0.5 rounded hover:bg-surface-card hover:text-on-surface transition-colors text-[11px]" title="Insertar notación" type="button">
+<span class="material-symbols-outlined text-[13px]">functions</span>
+<span>Símbolo</span>
+</button>
+</div>
+<div class="text-[11px] text-on-surface-variant/70">
+              Markdown admitido
+            </div>
+</div>
+<!-- Textarea Input -->
+<textarea class="w-full bg-surface-container-low/40 rounded-b-md p-4 text-sm font-body text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:bg-surface-card focus:shadow-[inset_0_0_0_1.5px_#1B3B6F] transition-all duration-200 resize-y leading-relaxed" placeholder="Escriba aquí su desarrollo conceptual con precisión matemática..." rows="5">Un pasajero de pie en un autobús que frena bruscamente experimenta una tendencia aparente hacia adelante debido a que su masa continúa en su estado de movimiento rectilíneo uniforme previo. Esto evidencia el principio de inercia (Primera Ley): en ausencia de una fuerza neta externa no nula aplicada sobre el cuerpo, este conserva invariante su velocidad vectorial. El rozamiento de la suela contra el piso actúa como la fuerza equilibrante posterior.</textarea>
+<!-- Textarea Footer -->
+<div class="flex items-center justify-between text-[11px] font-mono text-on-surface-variant pt-1 px-1">
+<span class="flex items-center gap-1 text-success">
+<span class="material-symbols-outlined text-[13px]">check_circle</span>
+              Respuesta guardada en borrador
+            </span>
+<span>42 / 500 palabras sugeridas</span>
+</div>
+</div>
+</section>
+<!-- CARD 2: Multiple Choice Physics Question with Formula -->
+<section class="bg-surface-card rounded-lg p-6 sm:p-8 shadow-sm space-y-6 transition-shadow hover:shadow-md">
+<!-- Question Header -->
+<div class="flex items-start justify-between gap-4">
+<div class="flex items-center gap-2.5">
+<span class="w-7 h-7 rounded bg-surface-container-high text-primary font-mono font-bold text-xs flex items-center justify-center">
+              02
+            </span>
+<span class="text-xs font-mono font-semibold tracking-wider text-on-surface uppercase">
+              10 Puntos
+            </span>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded bg-surface-container-low text-on-surface-variant text-[11px] font-mono uppercase tracking-wider">
+              Obligatoria
+            </span>
+<span class="px-2 py-0.5 rounded bg-surface-container-low text-on-surface-variant text-[11px] font-mono flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">radio_button_checked</span>
+              Opción única
+            </span>
+</div>
+</div>
+<!-- Question Prompt -->
+<div class="space-y-4">
+<h2 class="font-headline font-bold text-lg sm:text-xl text-on-surface leading-snug">
+            2. De acuerdo con la Segunda Ley de Newton expresada analíticamente:
+          </h2>
+<!-- Prominent LaTeX Display Box -->
+<div class="bg-surface-container-low/70 rounded-lg p-5 sm:p-6 text-center space-y-2">
+<div class="font-mono text-base sm:text-lg text-primary font-bold tracking-wider">
+              F = m · a
+            </div>
+<div class="text-xs font-mono text-on-surface-variant flex items-center justify-center gap-2">
+<span>o en formulación diferencial:</span>
+<span class="font-semibold text-on-surface">F⃗_neta = dp⃗ / dt</span>
+</div>
+</div>
+<p class="text-sm text-on-surface font-body font-medium pt-1">
+            ¿Qué ocurre con el vector aceleración de un cuerpo puntual de masa inercial constante si la fuerza neta aplicada se triplica de manera instantánea?
+          </p>
+</div>
+<!-- Radio Options List -->
+<div aria-label="Opciones de la Pregunta 2" class="space-y-2.5" role="radiogroup">
+<!-- Option A (Unselected) -->
+<label class="group flex items-start gap-4 p-4 rounded-lg bg-surface-container-low/40 hover:bg-surface-container-low cursor-pointer transition-all duration-150">
+<input class="sr-only" name="q2_option" type="radio" value="A"/>
+<span class="w-5 h-5 rounded-full bg-surface-card flex items-center justify-center text-[10px] font-mono font-bold text-on-surface-variant group-hover:text-primary mt-0.5 shrink-0 shadow-sm">
+              A
+            </span>
+<div class="text-sm font-body text-on-surface-variant group-hover:text-on-surface leading-snug pt-0.5">
+              La aceleración se reduce a la tercera parte (<span class="font-mono font-medium">a / 3</span>) en virtud de la conservación del momento lineal.
+            </div>
+</label>
+<!-- Option B (Selected State) -->
+<label class="group flex items-start gap-4 p-4 rounded-lg bg-primary/[0.04] shadow-[0_0_0_1.5px_#1B3B6F] cursor-pointer transition-all duration-150">
+<input checked="" class="sr-only" name="q2_option" type="radio" value="B"/>
+<div class="w-5 h-5 rounded-full bg-primary flex items-center justify-center text-[10px] font-mono font-bold text-on-primary mt-0.5 shrink-0">
+              ✓
+            </div>
+<div class="space-y-1 pt-0.5">
+<div class="text-sm font-body font-medium text-on-surface leading-snug">
+                La aceleración se triplica de forma directamente proporcional en la misma dirección y sentido de la fuerza neta (<span class="font-mono font-bold text-primary">3a</span>).
+              </div>
+<div class="text-[11px] font-mono text-primary font-medium flex items-center gap-1">
+<span>Opción seleccionada</span>
+<span>• Presione B para alternar</span>
+</div>
+</div>
+</label>
+<!-- Option C (Unselected) -->
+<label class="group flex items-start gap-4 p-4 rounded-lg bg-surface-container-low/40 hover:bg-surface-container-low cursor-pointer transition-all duration-150">
+<input class="sr-only" name="q2_option" type="radio" value="C"/>
+<span class="w-5 h-5 rounded-full bg-surface-card flex items-center justify-center text-[10px] font-mono font-bold text-on-surface-variant group-hover:text-primary mt-0.5 shrink-0 shadow-sm">
+              C
+            </span>
+<div class="text-sm font-body text-on-surface-variant group-hover:text-on-surface leading-snug pt-0.5">
+              La aceleración permanece invariable mientras no se altere el coeficiente de fricción cinética del medio.
+            </div>
+</label>
+<!-- Option D (Unselected) -->
+<label class="group flex items-start gap-4 p-4 rounded-lg bg-surface-container-low/40 hover:bg-surface-container-low cursor-pointer transition-all duration-150">
+<input class="sr-only" name="q2_option" type="radio" value="D"/>
+<span class="w-5 h-5 rounded-full bg-surface-card flex items-center justify-center text-[10px] font-mono font-bold text-on-surface-variant group-hover:text-primary mt-0.5 shrink-0 shadow-sm">
+              D
+            </span>
+<div class="text-sm font-body text-on-surface-variant group-hover:text-on-surface leading-snug pt-0.5">
+              La aceleración aumenta de manera cuadrática según la tasa del trabajo mecánico transferido por unidad de tiempo.
+            </div>
+</label>
+</div>
+</section>
+<!-- CARD 3: Checkbox Multi-select Question -->
+<section class="bg-surface-card rounded-lg p-6 sm:p-8 shadow-sm space-y-6 transition-shadow hover:shadow-md">
+<!-- Question Header -->
+<div class="flex items-start justify-between gap-4">
+<div class="flex items-center gap-2.5">
+<span class="w-7 h-7 rounded bg-surface-container-high text-primary font-mono font-bold text-xs flex items-center justify-center">
+              03
+            </span>
+<span class="text-xs font-mono font-semibold tracking-wider text-on-surface uppercase">
+              10 Puntos
+            </span>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded bg-surface-container-low text-on-surface-variant text-[11px] font-mono uppercase tracking-wider">
+              Obligatoria
+            </span>
+<span class="px-2 py-0.5 rounded bg-surface-container-low text-on-surface-variant text-[11px] font-mono flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">check_box</span>
+              Múltiple
+            </span>
+</div>
+</div>
+<!-- Question Prompt -->
+<div class="space-y-1.5">
+<h2 class="font-headline font-bold text-lg sm:text-xl text-on-surface">
+            3. Identifique las afirmaciones verdaderas respecto al Par Acción-Reacción:
+          </h2>
+<p class="text-xs sm:text-sm text-on-surface-variant">
+            Tercera Ley de Newton. Marque todas las alternativas que cumplan rigurosamente con el postulado.
+          </p>
+</div>
+<!-- Checkbox Options List -->
+<div class="space-y-2.5">
+<!-- Checkbox 1 (Selected) -->
+<label class="group flex items-start gap-3.5 p-4 rounded-lg bg-primary/[0.03] shadow-[0_0_0_1px_#1B3B6F] cursor-pointer transition-all duration-150">
+<input checked="" class="sr-only" type="checkbox"/>
+<div class="w-5 h-5 rounded bg-primary text-on-primary flex items-center justify-center mt-0.5 shrink-0 text-xs font-bold">
+              ✓
+            </div>
+<div class="text-sm font-body text-on-surface leading-snug">
+              Las fuerzas de acción y reacción actúan <strong class="font-semibold text-primary">siempre sobre cuerpos distintos</strong>, por lo que nunca pueden anularse mutuamente en el diagrama de cuerpo libre de un único objeto.
+            </div>
+</label>
+<!-- Checkbox 2 (Unselected) -->
+<label class="group flex items-start gap-3.5 p-4 rounded-lg bg-surface-container-low/40 hover:bg-surface-container-low cursor-pointer transition-all duration-150">
+<input class="sr-only" type="checkbox"/>
+<div class="w-5 h-5 rounded bg-surface-card shadow-sm flex items-center justify-center mt-0.5 shrink-0"></div>
+<div class="text-sm font-body text-on-surface-variant group-hover:text-on-surface leading-snug">
+              Ambas fuerzas se cancelan directamente entre sí en el reposo porque poseen idéntico módulo y sentidos contrarios aplicados sobre el centro de masas del mismo cuerpo emisor.
+            </div>
+</label>
+<!-- Checkbox 3 (Selected) -->
+<label class="group flex items-start gap-3.5 p-4 rounded-lg bg-primary/[0.03] shadow-[0_0_0_1px_#1B3B6F] cursor-pointer transition-all duration-150">
+<input checked="" class="sr-only" type="checkbox"/>
+<div class="w-5 h-5 rounded bg-primary text-on-primary flex items-center justify-center mt-0.5 shrink-0 text-xs font-bold">
+              ✓
+            </div>
+<div class="text-sm font-body text-on-surface leading-snug">
+              Se manifiestan de manera <strong class="font-semibold text-primary">rigurosamente simultánea en el tiempo</strong>; no existe desfase temporal de causa-efecto entre la interacción de ambos sistemas físicos.
+            </div>
+</label>
+<!-- Checkbox 4 (Unselected) -->
+<label class="group flex items-start gap-3.5 p-4 rounded-lg bg-surface-container-low/40 hover:bg-surface-container-low cursor-pointer transition-all duration-150">
+<input class="sr-only" type="checkbox"/>
+<div class="w-5 h-5 rounded bg-surface-card shadow-sm flex items-center justify-center mt-0.5 shrink-0"></div>
+<div class="text-sm font-body text-on-surface-variant group-hover:text-on-surface leading-snug">
+              La fuerza reactiva emerge exclusivamente en colisiones donde el cuerpo receptor posee mayor masa inercial que el agente perturbador.
+            </div>
+</label>
+</div>
+</section>
+</main>
+<!-- SUBTLE PAGINATION NOTE -->
+<div class="text-center py-2">
+<p class="font-mono text-xs text-on-surface-variant">
+        Fin de la Sección 1 · Continúe a la sección de Resolución Práctica de Problemas
+      </p>
+</div>
+</div>
+<!-- FIXED BOTTOM FLOATING NAVIGATION BAR -->
+<aside class="fixed bottom-0 left-0 w-full z-40 bg-surface/90 backdrop-blur-md shadow-[0_-4px_16px_rgba(0,0,0,0.04)]">
+<div class="max-w-[780px] mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
+<!-- Autosave Status Indicator -->
+<div class="flex items-center gap-2.5 min-w-0">
+<span class="w-2 h-2 rounded-full bg-success shrink-0 animate-pulse"></span>
+<div class="flex flex-col truncate">
+<span class="text-xs font-body font-medium text-on-surface truncate">Borrador seguro y sincronizado</span>
+<span class="text-[10px] font-mono text-on-surface-variant hidden sm:inline">3 de 3 reactivos completados</span>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex items-center gap-3 shrink-0">
+<button class="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded text-xs font-mono font-medium text-on-surface-variant/40 bg-surface-container-low cursor-not-allowed" disabled="" type="button">
+<span class="material-symbols-outlined text-[14px]">arrow_back</span>
+<span>Anterior</span>
+</button>
+<button class="inline-flex items-center gap-2 px-5 py-2.5 rounded bg-primary text-on-primary text-xs sm:text-sm font-headline font-semibold shadow hover:shadow-md hover:bg-primary/95 active:scale-[0.99] transition-all" type="button">
+<span>Siguiente sección</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</aside>
+</div></main><footer class="w-full py-6 mt-auto bg-surface"><div class="max-w-7xl mx-auto px-6 lg:px-12 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs font-mono text-on-surface-variant"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-[16px] text-success">verified_user</span><span>Entorno vigilado y sincronizado automáticamente.</span></div><div>© 2025 Atelier Académico. Todos los derechos reservados.</div></div></footer></body></html>

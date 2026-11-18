@@ -23,7 +23,7 @@ interface EditorStore {
   loading: boolean;
   loadForm: (formId: string) => Promise<void>;
   updateForm: (updates: Partial<Form>) => Promise<void>;
-  addQuestion: (type: QuestionType) => Promise<void>;
+  addQuestion: (type: QuestionType, initialUpdates?: Partial<Question>) => Promise<void>;
   updateQuestion: (questionId: string, updates: Partial<Question>) => Promise<void>;
   removeQuestion: (questionId: string) => Promise<void>;
   reorderQuestions: (questions: Question[]) => Promise<void>;
@@ -71,23 +71,31 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
     await updateDoc(doc(db, 'forms', form.id), { ...clean, updatedAt: Timestamp.now() });
   },
 
-  addQuestion: async (type) => {
+  addQuestion: async (type, initialUpdates) => {
     const { form, questions } = get();
     if (!form) return;
+    const defaultTitle =
+      initialUpdates?.title ?? (type === 'multipleChoice' ? 'Opción múltiple' : 'Nueva pregunta');
     const newQuestion = {
       formId: form.id,
       type,
-      title: type === 'multipleChoice' ? 'Opción múltiple' : 'Nueva pregunta',
-      description: '',
-      required: false,
-      order: questions.length,
-      options: type === 'multipleChoice' || type === 'checkbox' || type === 'dropdown' ? [{ label: 'Opción 1' }] : [],
-      settings: {},
-      conditions: null,
-      sectionId: null,
+      title: defaultTitle,
+      description: initialUpdates?.description ?? '',
+      required: initialUpdates?.required ?? false,
+      order: initialUpdates?.order ?? questions.length,
+      options:
+        initialUpdates?.options ??
+        (type === 'multipleChoice' || type === 'checkbox' || type === 'dropdown'
+          ? [{ label: 'Opción 1' }]
+          : []),
+      settings: initialUpdates?.settings ?? {},
+      conditions: initialUpdates?.conditions ?? null,
+      sectionId: initialUpdates?.sectionId ?? null,
+      ...(initialUpdates?.quizSettings ? { quizSettings: initialUpdates.quizSettings } : {}),
     };
-    const docRef = await addDoc(collection(db, 'forms', form.id, 'questions'), newQuestion);
-    set({ questions: [...questions, { id: docRef.id, ...newQuestion } as Question] });
+    const cleanNewQuestion = JSON.parse(JSON.stringify(newQuestion));
+    const docRef = await addDoc(collection(db, 'forms', form.id, 'questions'), cleanNewQuestion);
+    set({ questions: [...questions, { id: docRef.id, ...cleanNewQuestion } as Question] });
   },
 
   updateQuestion: async (questionId, updates) => {

@@ -61,7 +61,7 @@ export default function AnalyticsPage() {
           <Link to={`/form/${formId}`}>
             <Button variant="ghost"><ArrowLeft className="h-4 w-4" /></Button>
           </Link>
-          <h1 className="text-xl font-bold">{form?.title ?? 'Análisis'}</h1>
+          <h1 className="font-display text-2xl font-bold text-ink">{form?.title ?? 'Análisis'}</h1>
         </div>
         <div className="flex items-center gap-2">
           <Link to={`/form/${formId}/exam-results`}>
@@ -104,8 +104,8 @@ export default function AnalyticsPage() {
                         <span><LatexRenderer text={item.label} /></span>
                         <span className="text-gray-500">{count} ({Math.round(pct)}%)</span>
                       </div>
-                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                        <div className="h-full bg-indigo-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                      <div className="h-2 bg-sand-200 rounded-full overflow-hidden">
+                        <div className="h-full bg-brand-600 rounded-full transition-all" style={{ width: `${pct}%` }} />
                       </div>
                     </div>
                   );

@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { Button } from '../ui/Button';
-import { FileText, KeyRound, LogOut } from 'lucide-react';
+import { KeyRound, LogOut, User as UserIcon } from 'lucide-react';
 import {
   PROVIDER_META,
   getEffectiveAiConfig,
@@ -18,37 +17,66 @@ export function Header() {
   const providerLabel = PROVIDER_META[provider].label;
 
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 font-bold text-xl text-brand-600">
-          <FileText className="h-6 w-6" />
-          Exámenes
-        </Link>
-        <div className="flex items-center gap-2 sm:gap-4">
+    <header className="bg-canvas/90 backdrop-blur-xl border-b border-sand-300 sticky top-0 z-40">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <Link to="/" className="flex items-center gap-2.5 group">
+            <span className="w-9 h-9 rounded-lg bg-brand-600 text-white flex items-center justify-center font-display font-bold text-base tracking-tight shadow-sm transition-transform group-hover:scale-95">
+              Ex
+            </span>
+            <span className="flex flex-col">
+              <span className="font-display font-bold text-lg text-brand-600 leading-none tracking-tight">
+                Exámenes
+              </span>
+              <span className="text-[10px] font-mono uppercase tracking-widest text-ink-light mt-0.5 hidden sm:block">
+                Atelier Académico
+              </span>
+            </span>
+          </Link>
+
           {user && (
             <>
-              <Button
-                variant="secondary"
-                className="px-3 py-1.5 text-xs"
+              <span className="h-5 w-px bg-sand-300 hidden sm:block" />
+              <button
+                type="button"
                 onClick={openSettingsModal}
                 title={`Configurar API key y modelo de IA (actual: ${providerLabel})`}
                 aria-label="Configurar IA"
+                className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-full bg-sand-200/80 hover:bg-sand-300/70 border border-sand-300 text-xs font-mono font-medium text-ink-subtle transition-colors"
               >
                 <span className="relative flex items-center">
-                  <KeyRound className="h-4 w-4" />
                   <span
-                    className={`absolute -top-1 -right-1 h-2 w-2 rounded-full ${
-                      hasApiKey ? 'bg-green-500' : 'bg-amber-500'
+                    className={`h-2 w-2 rounded-full ${
+                      hasApiKey ? 'bg-state-success' : 'bg-state-warning'
                     }`}
                   />
                 </span>
-                <span className="hidden sm:inline">API IA ({providerLabel})</span>
-              </Button>
-              <span className="text-sm text-gray-600 hidden sm:block">{user.displayName || user.email}</span>
-              <Button variant="ghost" onClick={logout}>
+                <KeyRound className="h-3.5 w-3.5 text-ink-light sm:hidden" />
+                <span className="hidden sm:inline">API IA · {providerLabel}</span>
+              </button>
+            </>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 sm:gap-3">
+          {user && (
+            <>
+              <div className="hidden md:flex items-center gap-2.5 px-2.5 py-1 rounded-full bg-white border border-sand-300 shadow-sm">
+                <span className="w-6 h-6 rounded-full bg-brand-600 text-white flex items-center justify-center">
+                  <UserIcon className="h-3.5 w-3.5" />
+                </span>
+                <span className="text-xs font-medium text-ink max-w-[180px] truncate">
+                  {user.displayName || user.email}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={logout}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-ink-subtle hover:text-terracotta-600 hover:bg-terracotta-50 transition-colors"
+              >
                 <LogOut className="h-4 w-4" />
-                Salir
-              </Button>
+                <span className="hidden sm:inline">Salir</span>
+              </button>
             </>
           )}
         </div>

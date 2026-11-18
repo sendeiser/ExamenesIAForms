@@ -53,7 +53,7 @@ export function ConditionsEditor({ question }: ConditionsEditorProps) {
       />
 
       {enabled && condition && (
-        <div className="space-y-2 pl-6 border-l-2 border-indigo-200">
+        <div className="space-y-2 pl-6 border-l-2 border-brand-200">
           <p className="text-xs text-gray-500">Mostrar esta pregunta si:</p>
 
           <Select

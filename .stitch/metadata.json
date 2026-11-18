@@ -1,0 +1,36 @@
+{
+  "projectId": "4552469293811886931",
+  "title": "ExamenesIAForms - Editorial Academic Studio",
+  "deviceType": "DESKTOP",
+  "lastSyncTime": "2026-11-17T20:18:30-03:00",
+  "designSystem": {
+    "name": "assets/3245396094193701313",
+    "displayName": "Atelier Academico"
+  },
+  "screens": {
+    "dashboard": {
+      "id": "f5bfaecf955e4691a5fe62e6ee4a4a03",
+      "title": "Mis Exámenes - Panel Principal",
+      "html": ".stitch/designs/dashboard.html",
+      "screenshot": ".stitch/designs/dashboard.png"
+    },
+    "builder-split": {
+      "id": "33e79a96dedf4586acb572ccc70ade9a",
+      "title": "Constructor de Exámenes - Vista Dividida",
+      "html": ".stitch/designs/builder-split.html",
+      "screenshot": ".stitch/designs/builder-split.png"
+    },
+    "student-exam": {
+      "id": "1b30ea98a6c748f783066f42f2ab7e72",
+      "title": "Evaluación Activa: Parcial I - Cinemática y Dinámica",
+      "html": ".stitch/designs/student-exam.html",
+      "screenshot": ".stitch/designs/student-exam.png"
+    },
+    "theme-system": {
+      "id": "f2e026d3fb804e15b711c5727300ab60",
+      "title": "Configurador de Temas de Examen",
+      "html": ".stitch/designs/theme-system.html",
+      "screenshot": ".stitch/designs/theme-system.png"
+    }
+  }
+}

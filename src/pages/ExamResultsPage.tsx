@@ -1,19 +1,27 @@
-import { useEffect, useMemo, useState, useRef } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useEditorStore } from '../store/editorStore';
 import { useResponses } from '../hooks/useResponses';
-import { scoreQuiz, type QuizScore } from '../lib/quizScoring';
+import {
+  scoreQuiz,
+  computeGrade1to10,
+  formatGrade1to10,
+  snapGrade1to10,
+  getGrade1to10Label,
+  type GradeRoundingMode,
+  type QuizScore,
+} from '../lib/quizScoring';
+import { generateExamResultsPdf } from '../lib/pdfReportGenerator';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { exportToCsv } from '../utils/export-csv';
-import { ArrowLeft, Download, ChevronDown, ChevronRight, CheckCircle2, XCircle, Trash2, Edit3, Save, Printer, X, Users, FileDown } from 'lucide-react';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
+import { ArrowLeft, Download, CheckCircle2, XCircle, Trash2, Edit3, Save, X, Users, FileDown, Eye } from 'lucide-react';
 import { LatexRenderer } from '../components/ui/LatexRenderer';
+import { QuestionTableView } from '../components/form-view/QuestionTableView';
 import { toOptionItem } from '../types/question';
 import type { FormResponse } from '../types/response';
 import type { Question } from '../types/question';
@@ -23,8 +31,9 @@ export default function ExamResultsPage() {
   const form = useEditorStore((s) => s.form);
   const questions = useEditorStore((s) => s.questions);
   const loadForm = useEditorStore((s) => s.loadForm);
+  const updateForm = useEditorStore((s) => s.updateForm);
   const { responses, loading, deleteResponse, updateResponse } = useResponses(formId!);
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [editTarget, setEditTarget] = useState<string | null>(null);
   const [editAnswers, setEditAnswers] = useState<Record<string, any>>({});
@@ -33,6 +42,7 @@ export default function ExamResultsPage() {
   const [simConfig, setSimConfig] = useState({ total: 10, pass: 7, fail: 3 });
   const [pdfConfigOpen, setPdfConfigOpen] = useState(false);
   const [pdfGenerating, setPdfGenerating] = useState(false);
+  const [pdfError, setPdfError] = useState('');
   const [pdfSections, setPdfSections] = useState({
     header: true,
     meta: true,
@@ -42,11 +52,25 @@ export default function ExamResultsPage() {
     studentDetail: true,
     footer: true,
   });
-  const printRef = useRef<HTMLDivElement>(null);
   const [editingScores, setEditingScores] = useState(false);
   const [scoreOverrides, setScoreOverrides] = useState<Record<string, number>>({});
+  const [gradeOverrides, setGradeOverrides] = useState<Record<string, number>>({});
+  const [gradeRounding, setGradeRounding] = useState<GradeRoundingMode>('quarter');
 
   useEffect(() => { if (formId) loadForm(formId); }, [formId]);
+
+  useEffect(() => {
+    if (form?.settings?.gradeRounding) {
+      setGradeRounding(form.settings.gradeRounding);
+    }
+  }, [form?.settings?.gradeRounding]);
+
+  function handleChangeGradeRounding(nextMode: GradeRoundingMode) {
+    setGradeRounding(nextMode);
+    if (form?.settings) {
+      updateForm({ settings: { ...form.settings, gradeRounding: nextMode } });
+    }
+  }
 
   const scored = useMemo(() => {
     if (!form?.settings?.isQuiz) return null;
@@ -72,7 +96,26 @@ export default function ExamResultsPage() {
     });
   }, [scored, scoreOverrides]);
 
+  const selectedStudentItem = useMemo(() => {
+    if (!selectedStudentId) return null;
+    const items: any[] = displayScores ?? scored ?? responses;
+    const found = items.find((item) => (item.response ?? item).id === selectedStudentId);
+    if (!found) return null;
+    return {
+      response: (found.response ?? found) as FormResponse,
+      score: (found.score ?? null) as QuizScore | null,
+    };
+  }, [selectedStudentId, displayScores, scored, responses]);
+
   if (loading) return <LoadingSpinner />;
+
+  function getStudentGrade(responseId: string, earned: number, total: number): number {
+    const manualGrade = gradeOverrides[responseId];
+    if (manualGrade !== undefined) {
+      return snapGrade1to10(manualGrade, gradeRounding);
+    }
+    return computeGrade1to10(earned, total, gradeRounding);
+  }
 
   const totalRespondents = scored?.length ?? responses.length;
   const totalPoints = (displayScores ?? scored)?.[0]?.score.totalPoints ?? 0;
@@ -82,19 +125,20 @@ export default function ExamResultsPage() {
   const sorted = displayScores ? [...displayScores].sort((a, b) => b.score.earnedPoints - a.score.earnedPoints) : [];
   const highestEarned = sorted[0]?.score.earnedPoints ?? 0;
   const lowestEarned = sorted[sorted.length - 1]?.score.earnedPoints ?? 0;
-  const passed = displayScores ? displayScores.filter((r) => r.score.percentage >= 60).length : 0;
+
+  const studentGrades = displayScores
+    ? displayScores.map((item) => getStudentGrade(item.response.id, item.score.earnedPoints, item.score.totalPoints))
+    : [];
+  const avgGrade = studentGrades.length > 0
+    ? studentGrades.reduce((sum, g) => sum + g, 0) / studentGrades.length
+    : 0;
+  const highestGrade = studentGrades.length > 0 ? Math.max(...studentGrades) : 1;
+  const lowestGrade = studentGrades.length > 0 ? Math.min(...studentGrades) : 1;
+  const passed = studentGrades.filter((g) => g >= 6).length;
   const passRate = displayScores && displayScores.length > 0 ? (passed / displayScores.length) * 100 : 0;
 
-  function toggleRow(id: string) {
-    setExpandedRows((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  }
-
   function handleExport() {
-    if (!form?.settings?.isQuiz || !scored) {
+    if (!form?.settings?.isQuiz || !(displayScores ?? scored)) {
       const headers = ['Nombre', 'Email', 'Fecha', ...questions.map((q) => q.title)];
       const rows = responses.map((r) => [
         r.respondent?.name ?? '',
@@ -106,8 +150,9 @@ export default function ExamResultsPage() {
       return;
     }
 
+    const list = displayScores ?? scored!;
     const headers = [
-      'Nombre', 'Email', 'Puntaje', 'Total', 'Porcentaje', 'Aprobado',
+      'Nombre', 'Email', 'Puntaje', 'Total', 'Nota (1-10)', 'Porcentaje', 'Aprobado',
       ...questions.flatMap((q) => [
         `${q.title} (respuesta)`,
         `${q.title} (correcta)`,
@@ -115,30 +160,38 @@ export default function ExamResultsPage() {
       ]),
     ];
 
-    const rows = scored.map(({ response: r, score: s }) => [
-      r.respondent?.name ?? '',
-      r.respondent?.email ?? r.respondentEmail ?? '',
-      String(s.earnedPoints),
-      String(s.totalPoints),
-      `${s.percentage}%`,
-      s.percentage >= 60 ? 'Sí' : 'No',
-      ...s.results.flatMap((res) => [
-        Array.isArray(res.userAnswer) ? res.userAnswer.join('; ') : String(res.userAnswer ?? ''),
-        Array.isArray(res.correctAnswer) ? res.correctAnswer.join('; ') : String(res.correctAnswer ?? ''),
-        `${res.earned}/${res.points}`,
-      ]),
-    ]);
+    const rows = list.map(({ response: r, score: s }) => {
+      const grade = getStudentGrade(r.id, s.earnedPoints, s.totalPoints);
+      return [
+        r.respondent?.name ?? '',
+        r.respondent?.email ?? r.respondentEmail ?? '',
+        String(s.earnedPoints),
+        String(s.totalPoints),
+        formatGrade1to10(grade, gradeRounding),
+        `${s.percentage.toFixed(0)}%`,
+        grade >= 6 ? 'Sí' : 'No',
+        ...s.results.flatMap((res) => [
+          Array.isArray(res.userAnswer) ? res.userAnswer.join('; ') : String(res.userAnswer ?? ''),
+          Array.isArray(res.correctAnswer) ? res.correctAnswer.join('; ') : String(res.correctAnswer ?? ''),
+          `${res.earned}/${res.points}`,
+        ]),
+      ];
+    });
 
     exportToCsv(`${form?.title ?? 'resultados'}_calificaciones.csv`, [headers, ...rows]);
   }
 
   async function handleDelete() {
     if (!deleteTarget) return;
-    await deleteResponse(deleteTarget);
+    const deletedId = deleteTarget;
+    await deleteResponse(deletedId);
+    if (selectedStudentId === deletedId) setSelectedStudentId(null);
+    if (editTarget === deletedId) cancelEdit();
     setDeleteTarget(null);
   }
 
   function startEdit(r: FormResponse) {
+    setSelectedStudentId(r.id);
     setEditTarget(r.id);
     setEditAnswers({ ...r.answers });
   }
@@ -146,6 +199,13 @@ export default function ExamResultsPage() {
   function cancelEdit() {
     setEditTarget(null);
     setEditAnswers({});
+  }
+
+  function closeStudentModal() {
+    if (selectedStudentItem && editTarget === selectedStudentItem.response.id) {
+      cancelEdit();
+    }
+    setSelectedStudentId(null);
   }
 
   async function saveEdit() {
@@ -218,25 +278,9 @@ export default function ExamResultsPage() {
     }
   }
 
-  function renderAnswerReadonly(q: Question, value: any) {
+  function renderAnswerReadonly(_q: Question, value: any) {
     if (Array.isArray(value)) return value.join(', ');
     return String(value ?? '—');
-  }
-
-  function getGradeLetter(pct: number): string {
-    if (pct >= 90) return 'A';
-    if (pct >= 80) return 'B';
-    if (pct >= 70) return 'C';
-    if (pct >= 60) return 'D';
-    return 'F';
-  }
-
-  function getGradeLabel(pct: number): string {
-    if (pct >= 90) return 'Excelente';
-    if (pct >= 80) return 'Muy bueno';
-    if (pct >= 70) return 'Bueno';
-    if (pct >= 60) return 'Suficiente';
-    return 'Insuficiente';
   }
 
   const firstNames = [
@@ -350,121 +394,101 @@ export default function ExamResultsPage() {
   }
 
   async function handleDownloadPdf() {
-    if (!printRef.current) return;
+    setPdfError('');
     setPdfGenerating(true);
     setPdfConfigOpen(false);
 
-    const container = printRef.current;
-    const sections = container.querySelectorAll<HTMLElement>('[data-section]');
-
-    // Store originals and show/hide sections
-    const originals: Map<HTMLElement, string> = new Map();
-    sections.forEach((el) => {
-      originals.set(el, el.style.display);
-      const name = el.getAttribute('data-section')!;
-      el.style.display = (pdfSections as any)[name] ? '' : 'none';
-    });
-
     try {
-      // Temporarily show the container on screen for capture
-      container.classList.remove('hidden', 'print:block');
-      container.style.position = 'fixed';
-      container.style.top = '0';
-      container.style.left = '0';
-      container.style.width = '210mm';
-      container.style.background = 'white';
-      container.style.zIndex = '99999';
-      container.style.overflow = 'visible';
+      await new Promise((r) => setTimeout(r, 0));
+      const rawItems = displayScores ?? scored;
+      const itemsForPdf = rawItems
+        ? rawItems.map((it) => ({ response: it.response, score: it.score }))
+        : responses.map((r) => ({ response: r, score: null }));
 
-      // Wait for DOM to settle
-      await new Promise((r) => requestAnimationFrame(r));
-      await new Promise((r) => setTimeout(r, 200));
-
-      const canvas = await html2canvas(container, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: false,
-        logging: false,
-        backgroundColor: '#ffffff',
-        width: container.scrollWidth,
-        height: container.scrollHeight,
-        windowWidth: container.scrollWidth,
+      generateExamResultsPdf({
+        form,
+        questions,
+        items: itemsForPdf,
+        scoreOverrides,
+        gradeOverrides,
+        gradeRounding,
+        sections: pdfSections,
       });
-
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      const imgWidth = 190; // mm (A4 minus margins)
-      const pageHeight = 297; // mm (A4 height)
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      let y = 10;
-
-      if (imgHeight <= pageHeight - 20) {
-        pdf.addImage(imgData, 'JPEG', 10, y, imgWidth, imgHeight);
-      } else {
-        // Split across pages
-        const pageImgHeight = pageHeight - 20;
-        const ratio = imgWidth / canvas.width;
-        let remaining = imgHeight;
-        let srcY = 0;
-
-        while (remaining > 0) {
-          const h = Math.min(remaining, pageImgHeight);
-          const srcH = h / ratio;
-          const pageCanvas = document.createElement('canvas');
-          pageCanvas.width = canvas.width;
-          pageCanvas.height = srcH;
-          const ctx = pageCanvas.getContext('2d')!;
-          ctx.drawImage(canvas, 0, srcY, canvas.width, srcH, 0, 0, canvas.width, srcH);
-          const pageImg = pageCanvas.toDataURL('image/jpeg', 0.95);
-          if (y > 10) pdf.addPage();
-          pdf.addImage(pageImg, 'JPEG', 10, y, imgWidth, h);
-          srcY += srcH;
-          remaining -= h;
-          y = 10;
-        }
-      }
-
-      pdf.save(`${form?.title ?? 'informe'}_${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch (err) {
+      console.error('Error exporting PDF:', err);
+      setPdfError(
+        err instanceof Error
+          ? `No se pudo generar el PDF: ${err.message}`
+          : 'No se pudo generar el archivo PDF.'
+      );
     } finally {
-      // Restore
-      sections.forEach((el) => {
-        const orig = originals.get(el);
-        el.style.display = orig ?? '';
-      });
-      container.style.position = '';
-      container.style.top = '';
-      container.style.left = '';
-      container.style.width = '';
-      container.style.background = '';
-      container.style.zIndex = '';
-      container.style.overflow = '';
-      container.classList.add('hidden', 'print:block');
       setPdfGenerating(false);
     }
   }
 
+  const hasManualOverrides =
+    Object.keys(scoreOverrides).length > 0 || Object.keys(gradeOverrides).length > 0;
+
   return (
     <div className="space-y-6 print:space-y-4">
       {/* ── Header ── */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between print:hidden">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between print:hidden">
         <div className="flex items-center gap-4">
           <Link to={`/form/${formId}/analytics`}>
             <Button variant="ghost"><ArrowLeft className="h-4 w-4" /></Button>
           </Link>
           <h1 className="text-xl font-bold">{form?.title ?? 'Resultados'} — Informe</h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {form?.settings?.isQuiz && (
+            <div
+              className="inline-flex rounded-lg border border-sand-300 bg-sand-100 p-0.5"
+              role="group"
+              aria-label="Modo de escala de nota"
+            >
+              <button
+                type="button"
+                onClick={() => handleChangeGradeRounding('quarter')}
+                className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                  gradeRounding === 'quarter'
+                    ? 'bg-white text-brand-700 font-semibold shadow-sm'
+                    : 'text-ink-subtle hover:text-ink'
+                }`}
+              >
+                Nota 1-10 (0.25)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleChangeGradeRounding('integer')}
+                className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                  gradeRounding === 'integer'
+                    ? 'bg-white text-brand-700 font-semibold shadow-sm'
+                    : 'text-ink-subtle hover:text-ink'
+                }`}
+              >
+                Nota 1-10 (Redondeado)
+              </button>
+            </div>
+          )}
           <Button
             variant={editingScores ? 'primary' : 'secondary'}
-            onClick={() => {
-              if (editingScores) setScoreOverrides({});
-              setEditingScores(!editingScores);
-            }}
+            onClick={() => setEditingScores(!editingScores)}
           >
             <Edit3 className="h-4 w-4" />
             <span className="hidden sm:inline">{editingScores ? 'Finalizar edición' : 'Editar notas'}</span>
           </Button>
+          {hasManualOverrides && (
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setScoreOverrides({});
+                setGradeOverrides({});
+              }}
+              className="text-xs text-amber-700 hover:bg-amber-50"
+            >
+              Restablecer notas
+            </Button>
+          )}
           <Button variant="secondary" onClick={() => setSimulateOpen(true)} disabled={!form?.settings?.isQuiz}>
             <Users className="h-4 w-4" />
             <span className="hidden sm:inline">Simular</span>
@@ -480,6 +504,15 @@ export default function ExamResultsPage() {
         </div>
       </div>
 
+      {pdfError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center justify-between gap-2 print:hidden">
+          <span>{pdfError}</span>
+          <button type="button" onClick={() => setPdfError('')} className="p-1 hover:bg-red-100 rounded">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       {/* ── Header visible in print ── */}
       <div className="hidden print:block">
         <h1 className="text-xl font-bold">{form?.title ?? 'Resultados'} — Informe</h1>
@@ -489,26 +522,30 @@ export default function ExamResultsPage() {
       {/* ── Stats cards ── */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 print:grid-cols-5 print:gap-2">
         <Card className="p-4 text-center">
-          <p className="text-2xl font-bold text-gray-900">{totalRespondents}</p>
+          <p className="font-mono text-2xl font-bold text-gray-900">{totalRespondents}</p>
           <p className="text-xs text-gray-500">Total estudiantes</p>
         </Card>
         {scored && (
           <>
             <Card className="p-4 text-center">
-              <p className="text-2xl font-bold text-indigo-600">{avgEarned.toFixed(1)} / {totalPoints}</p>
-              <p className="text-xs text-gray-500">Promedio</p>
+              <p className="font-mono text-2xl font-bold text-brand-600">{avgGrade.toFixed(2)} / 10</p>
+              <p className="text-xs text-ink-light">Promedio ({avgEarned.toFixed(1)}/{totalPoints} pts)</p>
             </Card>
             <Card className="p-4 text-center">
-              <p className="text-2xl font-bold text-green-600">{highestEarned} / {totalPoints}</p>
-              <p className="text-xs text-gray-500">Nota más alta</p>
+              <p className="font-mono text-2xl font-bold text-green-600">
+                {formatGrade1to10(highestGrade, gradeRounding)} / 10
+              </p>
+              <p className="text-xs text-gray-500">Nota más alta ({highestEarned}/{totalPoints} pts)</p>
             </Card>
             <Card className="p-4 text-center">
-              <p className="text-2xl font-bold text-red-600">{lowestEarned} / {totalPoints}</p>
-              <p className="text-xs text-gray-500">Nota más baja</p>
+              <p className="font-mono text-2xl font-bold text-red-600">
+                {formatGrade1to10(lowestGrade, gradeRounding)} / 10
+              </p>
+              <p className="text-xs text-gray-500">Nota más baja ({lowestEarned}/{totalPoints} pts)</p>
             </Card>
             <Card className="p-4 text-center">
-              <p className="text-2xl font-bold text-blue-600">{passRate.toFixed(1)}%</p>
-              <p className="text-xs text-gray-500">Tasa de aprobación</p>
+              <p className="font-mono text-2xl font-bold text-blue-600">{passRate.toFixed(1)}%</p>
+              <p className="text-xs text-gray-500">Aprobación (&gt;= 6)</p>
             </Card>
           </>
         )}
@@ -526,6 +563,7 @@ export default function ExamResultsPage() {
                 {scored && (
                   <>
                     <th className="text-center px-4 py-3 font-medium text-gray-600">Puntaje</th>
+                    <th className="text-center px-4 py-3 font-medium text-gray-600">Nota (1-10)</th>
                     <th className="text-center px-4 py-3 font-medium text-gray-600">%</th>
                     <th className="text-center px-4 py-3 font-medium text-gray-600">Aprobado</th>
                   </>
@@ -538,60 +576,110 @@ export default function ExamResultsPage() {
                 {(displayScores ?? scored ?? responses).map((item: any) => {
                   const r: FormResponse = item.response ?? item;
                   const s: QuizScore | null = item.score ?? null;
-                  const expanded = expandedRows.has(r.id);
+                  const isSelected = selectedStudentId === r.id;
                   const editing = editTarget === r.id;
+                  const earnedVal = s ? (scoreOverrides[r.id] ?? s.earnedPoints) : 0;
+                  const pctVal = s && s.totalPoints > 0 ? (earnedVal / s.totalPoints) * 100 : 0;
+                  const studentGrade = s ? getStudentGrade(r.id, earnedVal, s.totalPoints) : 1;
+                  const gradeEdited = gradeOverrides[r.id] !== undefined;
 
                 return (
-                  <tr key={r.id} className="border-b hover:bg-gray-50">
+                  <tr
+                    key={r.id}
+                    onClick={() => setSelectedStudentId(r.id)}
+                    title="Haz clic para ver todo lo que hizo este alumno"
+                    className={`group border-b cursor-pointer transition-colors ${
+                      isSelected ? 'bg-brand-50/70' : 'hover:bg-brand-50/40'
+                    }`}
+                  >
                     <td className="px-4 py-3 text-gray-400 print:hidden">
-                      {s && (
-                        <button onClick={() => toggleRow(r.id)} className="p-1">
-                          {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                        </button>
-                      )}
+                      <Eye className={`h-4 w-4 transition-colors ${isSelected ? 'text-brand-600' : 'text-gray-400 group-hover:text-brand-600'}`} />
                     </td>
-                    <td className="px-4 py-3 font-medium">{r.respondent?.name || '—'}</td>
+                    <td className="px-4 py-3 font-medium text-gray-900">{r.respondent?.name || '—'}</td>
                     <td className="px-4 py-3 text-gray-500">{r.respondent?.email || r.respondentEmail || '—'}</td>
                     {s && (
                       <>
-                        <td className="px-4 py-3 text-center">
+                        <td
+                          className="px-4 py-3 text-center"
+                          onClick={editingScores ? (e) => e.stopPropagation() : undefined}
+                        >
                           {editingScores ? (
                             <input
                               type="number"
                               min={0}
                               max={s.totalPoints}
-                              value={scoreOverrides[r.id] ?? s.earnedPoints}
+                              value={earnedVal}
+                              onClick={(e) => e.stopPropagation()}
                               onChange={(e) => {
                                 const v = Math.max(0, Math.min(s.totalPoints, Number(e.target.value) || 0));
                                 setScoreOverrides((prev) => ({ ...prev, [r.id]: v }));
+                                setGradeOverrides((prev) => {
+                                  if (prev[r.id] === undefined) return prev;
+                                  const next = { ...prev };
+                                  delete next[r.id];
+                                  return next;
+                                });
                               }}
                               className="w-16 text-center border rounded px-1 py-0.5 text-sm font-mono"
                             />
                           ) : (
                             <span className={scoreOverrides[r.id] !== undefined ? 'text-amber-600' : ''}>
-                              {scoreOverrides[r.id] ?? s.earnedPoints}/{s.totalPoints}
+                              {earnedVal}/{s.totalPoints}
+                            </span>
+                          )}
+                        </td>
+                        <td
+                          className="px-4 py-3 text-center font-mono"
+                          onClick={editingScores ? (e) => e.stopPropagation() : undefined}
+                        >
+                          {editingScores ? (
+                            <input
+                              type="number"
+                              min={1}
+                              max={10}
+                              step={gradeRounding === 'integer' ? 1 : 0.25}
+                              value={studentGrade}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) => {
+                                const parsed = Number(e.target.value);
+                                if (Number.isNaN(parsed)) return;
+                                setGradeOverrides((prev) => ({
+                                  ...prev,
+                                  [r.id]: snapGrade1to10(parsed, gradeRounding),
+                                }));
+                              }}
+                              className="w-16 text-center border rounded px-1 py-0.5 text-sm font-mono font-bold"
+                            />
+                          ) : (
+                            <span
+                              className={`font-bold ${
+                                gradeEdited
+                                  ? 'text-amber-600'
+                                  : studentGrade >= 6
+                                    ? 'text-brand-700'
+                                    : 'text-red-600'
+                              }`}
+                            >
+                              {formatGrade1to10(studentGrade, gradeRounding)}
                             </span>
                           )}
                         </td>
                         <td className="px-4 py-3 text-center font-mono">
-                          {s.totalPoints > 0 ? ((editingScores ? (scoreOverrides[r.id] ?? s.earnedPoints) : s.earnedPoints) / s.totalPoints * 100).toFixed(0) : 0}%
+                          {pctVal.toFixed(0)}%
                         </td>
                         <td className="px-4 py-3 text-center">
-                          {(() => {
-                            const pct = s.totalPoints > 0 ? ((editingScores ? (scoreOverrides[r.id] ?? s.earnedPoints) : s.earnedPoints) / s.totalPoints * 100) : 0;
-                            return pct >= 60 ? (
-                              <span className="text-green-600 font-medium">Aprobado</span>
-                            ) : (
-                              <span className="text-red-600 font-medium">Reprobado</span>
-                            );
-                          })()}
+                          {studentGrade >= 6 ? (
+                            <span className="text-green-600 font-medium">Aprobado</span>
+                          ) : (
+                            <span className="text-red-600 font-medium">Reprobado</span>
+                          )}
                         </td>
                       </>
                     )}
                     <td className="px-4 py-3 text-gray-400 text-xs">
                       {r.submittedAt?.toLocaleString() ?? ''}
                     </td>
-                    <td className="px-4 py-3 print:hidden">
+                    <td className="px-4 py-3 print:hidden" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-1">
                         {editing ? (
                           <>
@@ -604,7 +692,7 @@ export default function ExamResultsPage() {
                           </>
                         ) : (
                           <>
-                            <button onClick={() => startEdit(r)} className="p-1 text-indigo-600 hover:bg-indigo-50 rounded" title="Editar respuestas">
+                            <button onClick={() => startEdit(r)} className="p-1 text-brand-600 hover:bg-brand-50 rounded" title="Editar respuestas">
                               <Edit3 className="h-4 w-4" />
                             </button>
                             <button onClick={() => setDeleteTarget(r.id)} className="p-1 text-red-600 hover:bg-red-50 rounded" title="Eliminar">
@@ -625,21 +713,26 @@ export default function ExamResultsPage() {
             {(displayScores ?? scored ?? responses).map((item: any) => {
               const r: FormResponse = item.response ?? item;
               const s: QuizScore | null = item.score ?? null;
-              const expanded = expandedRows.has(r.id);
+              const isSelected = selectedStudentId === r.id;
               const editing = editTarget === r.id;
+              const earnedVal = s ? (scoreOverrides[r.id] ?? s.earnedPoints) : 0;
+              const pctVal = s && s.totalPoints > 0 ? (earnedVal / s.totalPoints) * 100 : 0;
+              const studentGrade = s ? getStudentGrade(r.id, earnedVal, s.totalPoints) : 1;
 
               return (
-                <div key={r.id} className="px-4 py-3 space-y-1.5">
+                <div
+                  key={r.id}
+                  onClick={() => setSelectedStudentId(r.id)}
+                  className={`px-4 py-3 space-y-1.5 cursor-pointer transition-colors ${
+                    isSelected ? 'bg-brand-50/70' : 'hover:bg-brand-50/40'
+                  }`}
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      {s && (
-                        <button onClick={() => toggleRow(r.id)} className="p-1 -ml-1 text-gray-400">
-                          {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                        </button>
-                      )}
+                      <Eye className={`h-4 w-4 -ml-1 ${isSelected ? 'text-brand-600' : 'text-gray-400'}`} />
                       <span className="font-medium text-sm">{r.respondent?.name || '—'}</span>
                     </div>
-                    <div className="flex items-center gap-1 print:hidden">
+                    <div className="flex items-center gap-1 print:hidden" onClick={(e) => e.stopPropagation()}>
                       {editing ? (
                         <>
                           <button onClick={saveEdit} className="p-1.5 text-green-600 hover:bg-green-50 rounded" title="Guardar">
@@ -651,7 +744,7 @@ export default function ExamResultsPage() {
                         </>
                       ) : (
                         <>
-                          <button onClick={() => startEdit(r)} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded" title="Editar respuestas">
+                          <button onClick={() => startEdit(r)} className="p-1.5 text-brand-600 hover:bg-brand-50 rounded" title="Editar respuestas">
                             <Edit3 className="h-4 w-4" />
                           </button>
                           <button onClick={() => setDeleteTarget(r.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded" title="Eliminar">
@@ -664,15 +757,21 @@ export default function ExamResultsPage() {
 
                   <div className="text-xs text-gray-500">{r.respondent?.email || r.respondentEmail || '—'}</div>
 
-                  <div className="flex items-center gap-3 text-xs">
+                  <div className="flex items-center gap-3 text-xs flex-wrap">
                     {s && (
                       <>
                         <span>
-                          Puntaje: <strong className={scoreOverrides[r.id] !== undefined ? 'text-amber-600' : ''}>{scoreOverrides[r.id] ?? s.earnedPoints}/{s.totalPoints}</strong>
+                          Nota:{' '}
+                          <strong className={`font-mono ${studentGrade >= 6 ? 'text-brand-700' : 'text-red-600'}`}>
+                            {formatGrade1to10(studentGrade, gradeRounding)}/10
+                          </strong>
                         </span>
-                        <span className="font-mono">{s.totalPoints > 0 ? ((scoreOverrides[r.id] ?? s.earnedPoints) / s.totalPoints * 100).toFixed(0) : 0}%</span>
-                        <span className={((scoreOverrides[r.id] ?? s.earnedPoints) / s.totalPoints * 100) >= 60 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
-                          {((scoreOverrides[r.id] ?? s.earnedPoints) / s.totalPoints * 100) >= 60 ? 'Aprobado' : 'Reprobado'}
+                        <span>
+                          Puntaje: <strong className={scoreOverrides[r.id] !== undefined ? 'text-amber-600' : ''}>{earnedVal}/{s.totalPoints}</strong>
+                        </span>
+                        <span className="font-mono">{pctVal.toFixed(0)}%</span>
+                        <span className={studentGrade >= 6 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                          {studentGrade >= 6 ? 'Aprobado' : 'Reprobado'}
                         </span>
                       </>
                     )}
@@ -688,108 +787,258 @@ export default function ExamResultsPage() {
         )}
       </Card>
 
-      {/* ── Expandable quiz detail ── */}
-      {(displayScores ?? scored)?.map(({ response: r, score: s }) => {
-        if (!expandedRows.has(r.id)) return null;
-        const editing = editTarget === r.id;
-        const currentAnswers = editing ? editAnswers : r.answers;
+      {/* ── Student full detail modal ── */}
+      <Modal
+        open={selectedStudentItem !== null}
+        onClose={closeStudentModal}
+        title={
+          selectedStudentItem
+            ? `Detalle de ${selectedStudentItem.response.respondent?.name || 'estudiante'}`
+            : 'Detalle del estudiante'
+        }
+        size="lg"
+      >
+        {selectedStudentItem && (() => {
+          const { response: r, score: s } = selectedStudentItem;
+          const editing = editTarget === r.id;
+          const currentAnswers = editing ? editAnswers : r.answers;
+          const scoreResultMap = new Map(s?.results.map((res) => [res.questionId, res]) ?? []);
+          const effectiveEarned = s ? (scoreOverrides[r.id] ?? s.earnedPoints) : 0;
+          const pct = s && s.totalPoints > 0 ? (effectiveEarned / s.totalPoints) * 100 : 0;
+          const studentGrade = s ? getStudentGrade(r.id, effectiveEarned, s.totalPoints) : 1;
+          const correctCount = s ? s.results.filter((res) => res.isCorrect).length : 0;
+          const wrongCount = s ? s.results.filter((res) => !res.isCorrect).length : 0;
+          const hasOverride = s ? (scoreOverrides[r.id] !== undefined || gradeOverrides[r.id] !== undefined) : false;
 
-        return (
-          <Card key={`${r.id}-detail`} className="p-6 print:break-inside-avoid">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-4">
-              Detalle — {r.respondent?.name || '—'}
-            </p>
-            <div className="space-y-3">
-              {s.results.map((res) => {
-                const q = questions.find((qq) => qq.id === res.questionId);
-                return (
-                  <div key={res.questionId} className="flex items-start gap-3 py-2 border-b border-gray-200 last:border-0">
-                    {res.isCorrect ? (
-                      <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
-                    ) : (
-                      <XCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium"><LatexRenderer text={res.questionTitle} /></p>
-                      <div className="text-xs text-gray-500 mt-0.5 space-y-1">
-                        {editing && q ? (
-                          <div className="mt-1">
-                            <span className="text-gray-400 text-[10px] block mb-1">Editar respuesta:</span>
-                            {renderAnswerInput(q, currentAnswers[q.id], (v) =>
-                              setEditAnswers((prev) => ({ ...prev, [q.id]: v })),
-                            )}
-                          </div>
-                        ) : (
-                          <span>
-                            Respuesta:{' '}
-                            <span className="font-mono">
-                              <LatexRenderer text={q ? renderAnswerReadonly(q, r.answers[q.id]) : String(r.answers[res.questionId] ?? '')} />
-                            </span>
-                          </span>
-                        )}
-                        {!res.isCorrect && res.correctAnswer !== null && (
-                          <br />
-                        )}
-                        {!res.isCorrect && res.correctAnswer !== null && (
-                          <span>
-                            Correcta:{' '}
-                            <span className="font-mono text-green-600">
-                              <LatexRenderer text={Array.isArray(res.correctAnswer) ? res.correctAnswer.join(', ') : String(res.correctAnswer)} />
-                            </span>
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <span className={`text-xs font-mono shrink-0 ${res.isCorrect ? 'text-green-600' : 'text-red-600'}`}>
-                      {res.earned}/{res.points}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
-        );
-      })}
-
-      {/* ── Non-quiz expanded detail ── */}
-      {!scored && responses.map((r) => {
-        if (!expandedRows.has(r.id)) return null;
-        const editing = editTarget === r.id;
-        const currentAnswers = editing ? editAnswers : r.answers;
-
-        return (
-          <Card key={`${r.id}-detail`} className="p-6 print:break-inside-avoid">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-4">
-              Detalle — {r.respondent?.name || '—'}
-            </p>
-            <div className="space-y-2">
-              {questions.map((q) => (
-                <div key={q.id} className="py-1 border-b border-gray-100 last:border-0">
-                  <p className="text-xs font-medium"><LatexRenderer text={q.title} /></p>
-                  {editing ? (
-                    <div className="mt-1">
-                      {renderAnswerInput(q, currentAnswers[q.id], (v) =>
-                        setEditAnswers((prev) => ({ ...prev, [q.id]: v })),
-                      )}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-gray-500 mt-0.5 font-mono">
-                      <LatexRenderer text={renderAnswerReadonly(q, r.answers[q.id])} />
+          return (
+            <div className="space-y-4">
+              {/* Summary banner */}
+              <div className="rounded-xl border border-sand-300 bg-sand-50/70 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="min-w-0 space-y-0.5">
+                  <p className="font-display text-base font-bold text-ink truncate">
+                    {r.respondent?.name || 'Estudiante sin nombre'}
+                  </p>
+                  <p className="text-xs text-ink-light truncate">
+                    {r.respondent?.email || r.respondentEmail || 'Sin correo'}
+                  </p>
+                  {r.submittedAt && (
+                    <p className="text-[11px] font-mono text-ink-subtle pt-0.5">
+                      Entregado: {r.submittedAt.toLocaleString()}
                     </p>
                   )}
                 </div>
-              ))}
+
+                {s && (
+                  <div className="flex sm:flex-col items-center sm:items-end justify-between gap-1 shrink-0">
+                    <div className="flex items-baseline gap-2">
+                      <span
+                        className={`font-mono text-2xl font-bold ${
+                          hasOverride
+                            ? 'text-amber-600'
+                            : studentGrade >= 6
+                              ? 'text-brand-700'
+                              : 'text-red-600'
+                        }`}
+                      >
+                        {formatGrade1to10(studentGrade, gradeRounding)}/10
+                      </span>
+                      <span className="font-mono text-xs text-ink-subtle">
+                        ({effectiveEarned}/{s.totalPoints} · {pct.toFixed(0)}%)
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-ink-light">{getGrade1to10Label(studentGrade)}</span>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                          studentGrade >= 6 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}
+                      >
+                        {studentGrade >= 6 ? 'Aprobado' : 'Reprobado'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Metrics bar */}
+              {s && (
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="rounded-lg border border-sand-200 bg-white px-3 py-2">
+                    <p className="font-mono text-sm font-bold text-ink">{questions.length}</p>
+                    <p className="text-[11px] text-ink-subtle">Actividades</p>
+                  </div>
+                  <div className="rounded-lg border border-green-200 bg-green-50/60 px-3 py-2">
+                    <p className="font-mono text-sm font-bold text-green-700">{correctCount}</p>
+                    <p className="text-[11px] text-green-700">Correctas</p>
+                  </div>
+                  <div className="rounded-lg border border-red-200 bg-red-50/60 px-3 py-2">
+                    <p className="font-mono text-sm font-bold text-red-700">{wrongCount}</p>
+                    <p className="text-[11px] text-red-700">Incorrectas</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Activity-by-activity work */}
+              <div className="space-y-3">
+                {questions.length === 0 ? (
+                  <p className="text-sm text-gray-500 text-center py-6">
+                    Este examen no tiene actividades registradas.
+                  </p>
+                ) : (
+                  questions.map((q, qIdx) => {
+                    const res = scoreResultMap.get(q.id);
+                    const rawVal = currentAnswers[q.id];
+                    const hasAnswer =
+                      rawVal !== undefined &&
+                      rawVal !== null &&
+                      String(rawVal).trim() !== '' &&
+                      (!Array.isArray(rawVal) || rawVal.length > 0);
+                    const isTableInlineText =
+                      q.type === 'text' && (q.settings?.table?.editableCells?.length ?? 0) > 0;
+
+                    return (
+                      <div
+                        key={q.id}
+                        className={`rounded-xl border p-4 space-y-2.5 ${
+                          res
+                            ? res.isCorrect
+                              ? 'border-green-200 bg-white'
+                              : 'border-red-200 bg-red-50/20'
+                            : 'border-sand-300 bg-white'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                            {res ? (
+                              res.isCorrect ? (
+                                <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
+                              ) : (
+                                <XCircle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
+                              )
+                            ) : (
+                              <span className="mt-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-sand-200 text-[10px] font-mono font-semibold text-ink-light shrink-0">
+                                {qIdx + 1}
+                              </span>
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <span className="text-[11px] font-mono text-ink-subtle uppercase tracking-wide">
+                                Actividad {qIdx + 1}
+                              </span>
+                              <div className="text-sm font-medium text-ink mt-0.5">
+                                <LatexRenderer text={q.title || 'Pregunta sin título'} />
+                              </div>
+                            </div>
+                          </div>
+
+                          {res ? (
+                            <span
+                              className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-mono font-semibold ${
+                                res.isCorrect
+                                  ? 'bg-green-100 text-green-700'
+                                  : 'bg-red-100 text-red-700'
+                              }`}
+                            >
+                              {res.earned}/{res.points} pts
+                            </span>
+                          ) : (
+                            <span className="shrink-0 rounded-full bg-sand-100 border border-sand-200 px-2 py-0.5 text-[11px] text-ink-subtle">
+                              Sin puntaje
+                            </span>
+                          )}
+                        </div>
+
+                        {q.settings?.table && (
+                          <QuestionTableView
+                            table={q.settings.table}
+                            value={currentAnswers[q.id]}
+                            readOnly={!editing}
+                            onChange={
+                              editing
+                                ? (v) => setEditAnswers((prev) => ({ ...prev, [q.id]: v }))
+                                : undefined
+                            }
+                          />
+                        )}
+
+                        {editing ? (
+                          !isTableInlineText && (
+                            <div className="pt-1">
+                              <span className="text-ink-subtle text-[11px] font-medium block mb-1">
+                                Editar respuesta:
+                              </span>
+                              {renderAnswerInput(q, currentAnswers[q.id], (v) =>
+                                setEditAnswers((prev) => ({ ...prev, [q.id]: v }))
+                              )}
+                            </div>
+                          )
+                        ) : (
+                          <div className="rounded-lg bg-sand-50/80 border border-sand-200 px-3 py-2 text-xs">
+                            <span className="font-semibold text-ink-light">Respuesta: </span>
+                            {hasAnswer ? (
+                              <span className="font-mono text-ink">
+                                <LatexRenderer text={renderAnswerReadonly(q, rawVal)} />
+                              </span>
+                            ) : (
+                              <span className="italic text-ink-subtle">Sin responder</span>
+                            )}
+                          </div>
+                        )}
+
+                        {res && !res.isCorrect && res.correctAnswer !== null && res.correctAnswer !== undefined && (
+                          <div className="rounded-lg bg-green-50/80 border border-green-200 px-3 py-1.5 text-xs text-green-800">
+                            <span className="font-semibold">Correcta: </span>
+                            <span className="font-mono">
+                              <LatexRenderer
+                                text={
+                                  Array.isArray(res.correctAnswer)
+                                    ? res.correctAnswer.join(', ')
+                                    : String(res.correctAnswer)
+                                }
+                              />
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Modal footer actions */}
+              <div className="pt-3 border-t border-sand-200 flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
+                  {editing ? (
+                    <>
+                      <Button onClick={saveEdit}>
+                        <Save className="h-4 w-4" />
+                        Guardar cambios
+                      </Button>
+                      <Button variant="secondary" onClick={cancelEdit}>
+                        Cancelar edición
+                      </Button>
+                    </>
+                  ) : (
+                    <Button variant="secondary" onClick={() => startEdit(r)}>
+                      <Edit3 className="h-4 w-4" />
+                      Editar respuestas
+                    </Button>
+                  )}
+                </div>
+                <Button variant="ghost" onClick={closeStudentModal}>
+                  Cerrar
+                </Button>
+              </div>
             </div>
-          </Card>
-        );
-      })}
+          );
+        })()}
+      </Modal>
 
       {/* ── Non-quiz hint ── */}
       {!scored && (
         <Card className="p-6 text-center text-gray-600 text-sm print:hidden">
           Este formulario no tiene modo examen activado. Los resultados muestran solo las respuestas sin calificación.
           <br />
-          <Link to={`/form/${formId}`} className="text-indigo-600 hover:underline">Activar modo examen en el editor</Link>
+          <Link to={`/form/${formId}`} className="text-brand-600 hover:underline">Activar modo examen en el editor</Link>
         </Card>
       )}
 
@@ -880,7 +1129,7 @@ export default function ExamResultsPage() {
                   type="checkbox"
                   checked={(pdfSections as any)[key]}
                   onChange={() => setPdfSections((prev) => ({ ...prev, [key]: !(prev as any)[key] }))}
-                  className="accent-indigo-600"
+                  className="accent-brand-600"
                 />
                 <span className="text-sm text-gray-700">{label}</span>
               </label>
@@ -898,7 +1147,7 @@ export default function ExamResultsPage() {
       </Modal>
 
       {/* ── PROFESSIONAL PRINT REPORT ── */}
-      <div ref={printRef} className="hidden print:block print-report">
+      <div className="hidden print:block print-report">
         <div className="max-w-[210mm] mx-auto px-[15mm] py-[10mm]">
           {/* Header */}
           <div data-section="header" className="text-center border-b-2 border-gray-900 pb-6 mb-8">
@@ -923,10 +1172,10 @@ export default function ExamResultsPage() {
               </tr>
               {(displayScores ?? scored) && (displayScores ?? scored)!.length > 0 && (
                 <tr>
-                  <td className="text-gray-500 pr-4 py-1 font-medium">Puntaje máximo:</td>
-                  <td className="text-gray-900 py-1">{totalPoints} puntos</td>
+                  <td className="text-gray-500 pr-4 py-1 font-medium">Escala de nota:</td>
+                  <td className="text-gray-900 py-1">1–10 ({gradeRounding === 'integer' ? 'redondeado' : 'cada 0.25'})</td>
                   <td className="text-gray-500 pr-4 py-1 font-medium">Promedio grupal:</td>
-                  <td className="text-gray-900 py-1">{avgEarned.toFixed(1)} / {totalPoints} ({totalRespondents > 0 ? (avgEarned / totalPoints * 100).toFixed(1) : '0'}%)</td>
+                  <td className="text-gray-900 py-1">Nota {avgGrade.toFixed(2)}/10 · {avgEarned.toFixed(1)}/{totalPoints} pts</td>
                 </tr>
               )}
             </tbody>
@@ -934,10 +1183,14 @@ export default function ExamResultsPage() {
 
           {/* Summary cards */}
           {(displayScores ?? scored) && (
-            <div data-section="summary" className="grid grid-cols-4 gap-4 mb-8">
+            <div data-section="summary" className="grid grid-cols-5 gap-3 mb-8">
               <div className="border border-gray-300 rounded p-3 text-center">
                 <p className="text-2xl font-bold text-gray-900">{totalRespondents}</p>
                 <p className="text-[10px] text-gray-500 uppercase tracking-wide mt-1">Estudiantes</p>
+              </div>
+              <div className="border border-gray-300 rounded p-3 text-center">
+                <p className="text-2xl font-bold text-gray-900">{avgGrade.toFixed(2)}</p>
+                <p className="text-[10px] text-gray-500 uppercase tracking-wide mt-1">Promedio 1-10</p>
               </div>
               <div className="border border-gray-300 rounded p-3 text-center">
                 <p className="text-2xl font-bold text-gray-900">{passed}</p>
@@ -957,29 +1210,37 @@ export default function ExamResultsPage() {
           {/* Grade distribution */}
           {(displayScores ?? scored) && (
             <div data-section="distribution" className="mb-8">
-              <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Distribución de calificaciones</h2>
+              <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Distribución de calificaciones (1–10)</h2>
               <table className="w-full text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-gray-400">
-                    <th className="text-left py-2 font-medium text-gray-600">Rango</th>
-                    <th className="text-left py-2 font-medium text-gray-600">Letra</th>
+                    <th className="text-left py-2 font-medium text-gray-600">Rango (1-10)</th>
+                    <th className="text-left py-2 font-medium text-gray-600">Nivel</th>
                     <th className="text-left py-2 font-medium text-gray-600">Categoría</th>
                     <th className="text-center py-2 font-medium text-gray-600">Cantidad</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {[
-                    { range: '90-100%', letter: 'A', label: 'Excelente', min: 90 },
-                    { range: '80-89%', letter: 'B', label: 'Muy bueno', min: 80 },
-                    { range: '70-79%', letter: 'C', label: 'Bueno', min: 70 },
-                    { range: '60-69%', letter: 'D', label: 'Suficiente', min: 60 },
-                    { range: '0-59%', letter: 'F', label: 'Insuficiente', min: 0 },
-                  ].map((g) => {
+                  {(gradeRounding === 'integer'
+                    ? [
+                        { range: '9 a 10', letter: 'A', label: 'Excelente', min: 9, max: 10.01 },
+                        { range: '8', letter: 'B', label: 'Muy bueno', min: 8, max: 9 },
+                        { range: '7', letter: 'C', label: 'Bueno', min: 7, max: 8 },
+                        { range: '6', letter: 'D', label: 'Suficiente', min: 6, max: 7 },
+                        { range: '1 a 5', letter: 'F', label: 'Insuficiente', min: 0, max: 6 },
+                      ]
+                    : [
+                        { range: '9.00 a 10', letter: 'A', label: 'Excelente', min: 9, max: 10.01 },
+                        { range: '8.00 a 8.75', letter: 'B', label: 'Muy bueno', min: 8, max: 9 },
+                        { range: '7.00 a 7.75', letter: 'C', label: 'Bueno', min: 7, max: 8 },
+                        { range: '6.00 a 6.75', letter: 'D', label: 'Suficiente', min: 6, max: 7 },
+                        { range: '1.00 a 5.75', letter: 'F', label: 'Insuficiente', min: 0, max: 6 },
+                      ]
+                  ).map((g) => {
                     const items = displayScores ?? scored!;
-                    const count = items.filter((r) => {
-                      if (g.min === 90) return r.score.percentage >= 90;
-                      if (g.min === 0) return r.score.percentage < 60;
-                      return r.score.percentage >= g.min && r.score.percentage < g.min + 10;
+                    const count = items.filter(({ response: resp, score: sc }) => {
+                      const gradeVal = getStudentGrade(resp.id, sc.earnedPoints, sc.totalPoints);
+                      return gradeVal >= g.min && gradeVal < g.max;
                     }).length;
                     return (
                       <tr key={g.letter} className="border-b border-gray-200">
@@ -1006,8 +1267,8 @@ export default function ExamResultsPage() {
                   {(displayScores ?? scored) && (
                     <>
                       <th className="text-center py-2 font-bold text-gray-900">Puntaje</th>
+                      <th className="text-center py-2 font-bold text-gray-900">Nota (1-10)</th>
                       <th className="text-center py-2 font-bold text-gray-900">%</th>
-                      <th className="text-center py-2 font-bold text-gray-900">Nota</th>
                       <th className="text-center py-2 font-bold text-gray-900">Estado</th>
                     </>
                   )}
@@ -1017,18 +1278,21 @@ export default function ExamResultsPage() {
                 {(displayScores ?? scored ?? responses).map((item: any, idx: number) => {
                   const r: FormResponse = item.response ?? item;
                   const s: QuizScore | null = item.score ?? null;
+                  const earned = s ? (scoreOverrides[r.id] ?? s.earnedPoints) : 0;
+                  const pct = s && s.totalPoints > 0 ? (earned / s.totalPoints) * 100 : 0;
+                  const gradeVal = s ? getStudentGrade(r.id, earned, s.totalPoints) : 1;
                   return (
                     <tr key={r.id} className="border-b border-gray-200">
                       <td className="py-1.5 text-gray-500">{idx + 1}</td>
                       <td className="py-1.5 font-medium text-gray-900">{r.respondent?.name || '—'}</td>
                       {s && (
                         <>
-                          <td className="py-1.5 text-center font-mono text-gray-900">{scoreOverrides[r.id] ?? s.earnedPoints}/{s.totalPoints}</td>
-                          <td className="py-1.5 text-center font-mono text-gray-900">{s.totalPoints > 0 ? ((scoreOverrides[r.id] ?? s.earnedPoints) / s.totalPoints * 100).toFixed(0) : 0}%</td>
-                          <td className="py-1.5 text-center font-bold text-gray-900">{getGradeLetter(s.totalPoints > 0 ? ((scoreOverrides[r.id] ?? s.earnedPoints) / s.totalPoints * 100) : 0)}</td>
+                          <td className="py-1.5 text-center font-mono text-gray-900">{earned}/{s.totalPoints}</td>
+                          <td className="py-1.5 text-center font-mono font-bold text-gray-900">{formatGrade1to10(gradeVal, gradeRounding)}</td>
+                          <td className="py-1.5 text-center font-mono text-gray-900">{pct.toFixed(0)}%</td>
                           <td className="py-1.5 text-center">
-                            <span className={`font-medium text-[10px] px-2 py-0.5 rounded ${(scoreOverrides[r.id] ?? s.earnedPoints) / s.totalPoints * 100 >= 60 ? 'text-green-800 bg-green-100' : 'text-red-800 bg-red-100'}`}>
-                              {(scoreOverrides[r.id] ?? s.earnedPoints) / s.totalPoints * 100 >= 60 ? 'APROBADO' : 'REPROBADO'}
+                            <span className={`font-medium text-[10px] px-2 py-0.5 rounded ${gradeVal >= 6 ? 'text-green-800 bg-green-100' : 'text-red-800 bg-red-100'}`}>
+                              {gradeVal >= 6 ? 'APROBADO' : 'REPROBADO'}
                             </span>
                           </td>
                         </>
@@ -1044,7 +1308,11 @@ export default function ExamResultsPage() {
           {(displayScores ?? scored) && (
             <div data-section="studentDetail">
               <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-6">Detalle por estudiante</h2>
-              {(displayScores ?? scored!).map(({ response: r, score: s }, idx) => (
+              {(displayScores ?? scored!).map(({ response: r, score: s }, idx) => {
+                const earned = scoreOverrides[r.id] ?? s.earnedPoints;
+                const pct = s.totalPoints > 0 ? (earned / s.totalPoints) * 100 : 0;
+                const gradeVal = getStudentGrade(r.id, earned, s.totalPoints);
+                return (
                 <div key={r.id} className="mb-12 print:break-before-page">
                   {idx > 0 && <div className="h-0 print:break-before-page" />}
                   <div className="border-t-2 border-gray-900 pt-6">
@@ -1054,9 +1322,9 @@ export default function ExamResultsPage() {
                         <p className="text-xs text-gray-500">{r.respondent?.email || r.respondentEmail || '—'}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm text-gray-500">Calificación final</p>
-                        <p className="text-3xl font-bold text-gray-900">{scoreOverrides[r.id] ?? s.earnedPoints}/{s.totalPoints}</p>
-                        <p className="text-sm font-bold text-gray-900">{s.totalPoints > 0 ? ((scoreOverrides[r.id] ?? s.earnedPoints) / s.totalPoints * 100).toFixed(0) : 0}% — {getGradeLetter(s.totalPoints > 0 ? ((scoreOverrides[r.id] ?? s.earnedPoints) / s.totalPoints * 100) : 0)} ({getGradeLabel(s.totalPoints > 0 ? ((scoreOverrides[r.id] ?? s.earnedPoints) / s.totalPoints * 100) : 0)})</p>
+                        <p className="text-sm text-gray-500">Nota final (1–10)</p>
+                        <p className="text-3xl font-bold text-gray-900">{formatGrade1to10(gradeVal, gradeRounding)} / 10</p>
+                        <p className="text-sm font-bold text-gray-900">{earned}/{s.totalPoints} pts ({pct.toFixed(0)}%) — {getGrade1to10Label(gradeVal)}</p>
                       </div>
                     </div>
 
@@ -1107,16 +1375,16 @@ export default function ExamResultsPage() {
                     </table>
 
                     <div className="mt-4 text-center text-sm">
-                      <span className={`font-bold ${(() => { const pct = s.totalPoints > 0 ? ((scoreOverrides[r.id] ?? s.earnedPoints) / s.totalPoints * 100) : 0; return pct >= 60 ? 'text-green-800' : 'text-red-800'; })()}`}>
-                        {(() => { const pct = s.totalPoints > 0 ? ((scoreOverrides[r.id] ?? s.earnedPoints) / s.totalPoints * 100) : 0; return pct >= 60
-                          ? `APROBADO — ${getGradeLetter(pct)} (${getGradeLabel(pct)})`
-                          : `REPROBADO — ${getGradeLetter(pct)} (${getGradeLabel(pct)})`;
-                        })()}
+                      <span className={`font-bold ${gradeVal >= 6 ? 'text-green-800' : 'text-red-800'}`}>
+                        {gradeVal >= 6
+                          ? `APROBADO — Nota ${formatGrade1to10(gradeVal, gradeRounding)}/10 (${getGrade1to10Label(gradeVal)})`
+                          : `REPROBADO — Nota ${formatGrade1to10(gradeVal, gradeRounding)}/10 (${getGrade1to10Label(gradeVal)})`}
                       </span>
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
 

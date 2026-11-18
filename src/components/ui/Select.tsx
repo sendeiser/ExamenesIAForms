@@ -11,13 +11,13 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ className, label, error, id, options, ...props }, ref) => {
     return (
       <div className="space-y-1">
-        {label && <label htmlFor={id} className="block text-sm font-medium text-gray-700">{label}</label>}
+        {label && <label htmlFor={id} className="block text-sm font-medium text-ink-muted">{label}</label>}
         <select
           ref={ref}
           id={id}
           className={clsx(
-            'block w-full rounded-lg border px-3 py-2 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500',
-            error ? 'border-red-300' : 'border-gray-300',
+            'block w-full rounded-lg border bg-white px-3 py-2 text-sm text-ink shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500/25 focus:border-brand-600',
+            error ? 'border-red-300' : 'border-sand-400',
             className,
           )}
           aria-invalid={error ? true : undefined}

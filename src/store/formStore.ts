@@ -14,9 +14,9 @@ interface FormStore {
 }
 
 const defaultTheme = {
-  primaryColor: '#6366f1',
+  primaryColor: '#1B3B6F',
   backgroundColor: '#ffffff',
-  fontFamily: 'inherit',
+  fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
   showProgressBar: false,
 };
 

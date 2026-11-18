@@ -1,4 +1,5 @@
 import type { FormTheme } from '../../types/form';
+import { ensureReadableTextColor } from '../../lib/examThemes';
 
 interface FormHeaderProps {
   title: string;
@@ -15,8 +16,10 @@ const FONT_SIZE_MAP: Record<string, { title: string; desc: string }> = {
 
 export function FormHeader({ title, description, theme }: FormHeaderProps) {
   const hasImage = !!theme.headerImageUrl;
-  const bgColor = theme.headerBgColor || theme.primaryColor;
+  const bgColor = theme.headerBgColor || theme.primaryColor || '#1B3B6F';
+  const textColor = ensureReadableTextColor(bgColor, theme.headerTextColor);
   const fontSize = FONT_SIZE_MAP[theme.headerFontSize ?? ''] ?? FONT_SIZE_MAP.md;
+  const fontFamily = theme.headerFontFamily || theme.fontFamily || "'Bricolage Grotesque', sans-serif";
 
   return (
     <div
@@ -37,9 +40,15 @@ export function FormHeader({ title, description, theme }: FormHeaderProps) {
           }}
         />
       )}
-      <div className="relative z-10" style={{ fontFamily: theme.headerFontFamily }}>
-        <h1 className="font-bold" style={{ color: theme.headerTextColor, fontSize: fontSize.title }}>{title}</h1>
-        {description && <p className="mt-2" style={{ color: theme.headerTextColor, fontSize: fontSize.desc }}>{description}</p>}
+      <div className="relative z-10" style={{ fontFamily }}>
+        <h1 className="font-bold leading-tight" style={{ color: textColor, fontSize: fontSize.title }}>
+          {title}
+        </h1>
+        {description && (
+          <p className="mt-2 leading-relaxed" style={{ color: textColor, fontSize: fontSize.desc, opacity: 0.9 }}>
+            {description}
+          </p>
+        )}
       </div>
     </div>
   );

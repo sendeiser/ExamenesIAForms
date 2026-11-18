@@ -34,6 +34,18 @@ export interface QuestionCondition {
   value: string;
 }
 
+export interface QuestionTableRow {
+  cells: string[];
+}
+
+export interface QuestionTable {
+  headers: string[];
+  rows: QuestionTableRow[];
+  caption?: string;
+  /** Coordenadas "rowIdx:colIdx" que el alumno debe completar en el examen */
+  editableCells?: string[];
+}
+
 export interface QuestionSettings {
   rows?: number;
   min?: number;
@@ -42,6 +54,7 @@ export interface QuestionSettings {
   minLabel?: string;
   maxLabel?: string;
   imageUrl?: string;
+  table?: QuestionTable;
 }
 
 export interface QuizQuestionSettings {

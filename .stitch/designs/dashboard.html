@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+
+<html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&amp;family=JetBrains+Mono:wght@400..600&amp;family=Plus+Jakarta+Sans:wght@400..600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={theme:{extend:{colors:{background:"#F7F5F0",surface:"#F7F5F0","surface-paper":"#FFFFFF","surface-container-low":"#F2EFE9","surface-container-high":"#EBE7DE",outline:"#E4E0D8",primary:"#1B3B6F","on-primary":"#FFFFFF","primary-container":"#E0E7F5","on-primary-container":"#1B3B6F",accent:"#C84B31","on-accent":"#FFFFFF","accent-container":"#F9E8E5","on-accent-container":"#C84B31",success:"#15803D","on-success":"#FFFFFF","success-container":"#DCFCE7","on-success-container":"#15803D","on-surface":"#1C1917","on-surface-variant":"#57534E"},fontFamily:{headline:["Bricolage Grotesque","sans-serif"],body:["Plus Jakarta Sans","sans-serif"],mono:["JetBrains Mono","monospace"]},borderRadius:{sm:"6px",DEFAULT:"8px",md:"10px",lg:"12px",xl:"16px"}}}}</script></head><body class="bg-background font-body text-on-surface antialiased"><header class="fixed top-0 left-0 right-0 h-16 bg-surface/90 backdrop-blur-xl z-50 shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="w-full h-full px-6 flex items-center justify-between"><div class="flex items-center gap-4"><div class="flex items-center gap-3"><div class="w-9 h-9 rounded-lg bg-primary flex items-center justify-center text-on-primary shadow-sm"><span class="material-symbols-outlined text-[20px]">history_edu</span></div><span class="text-xl font-headline font-bold tracking-tight text-primary">Exámenes</span></div><div class="h-5 w-[1px] bg-outline mx-1 hidden sm:block"></div><div class="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-full bg-surface-container-high text-xs font-mono text-on-surface-variant"><span class="w-2 h-2 rounded-full bg-success inline-block"></span><span>API IA · Groq</span></div></div><div class="flex items-center gap-4"><div class="flex items-center gap-2.5"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div><div class="hidden md:flex flex-col text-left leading-tight"><span class="text-sm font-semibold text-on-surface">Prof. Martín</span><span class="text-[11px] text-on-surface-variant font-mono">Cátedra Titular</span></div></div><a class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium text-on-surface-variant hover:text-accent hover:bg-accent-container transition-colors" href="#"><span class="material-symbols-outlined text-[16px]">logout</span><span class="hidden sm:inline">Salir</span></a></div></div></header><aside class="fixed left-0 top-16 bottom-0 w-64 bg-surface-container-low z-40 flex flex-col justify-between py-6 shadow-[1px_0_8px_rgba(0,0,0,0.02)]"><div class="px-4"><div class="px-3 mb-3 text-[11px] font-mono font-semibold uppercase tracking-wider text-on-surface-variant">Gestión Académica</div><nav class="space-y-1" data-active-classes="bg-surface-paper text-primary font-semibold shadow-[0_1px_4px_rgba(0,0,0,0.04)]"><a aria-current="page" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors bg-surface-paper text-primary font-semibold shadow-[0_1px_4px_rgba(0,0,0,0.04)]" data-path="panel-principal" href="#"><span class="material-symbols-outlined text-[20px]">dashboard</span><span>Panel Principal</span></a><a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" data-path="banco-de-preguntas" href="#"><span class="material-symbols-outlined text-[20px]">quiz</span><span>Banco de Preguntas</span></a><a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" data-path="generador-con-ia" href="#"><span class="material-symbols-outlined text-[20px]">psychology</span><span>Generador IA</span></a><a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" data-path="evaluaciones-activas" href="#"><span class="material-symbols-outlined text-[20px]">assignment</span><span>Evaluaciones</span></a><a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" data-path="calificaciones-y-metricas" href="#"><span class="material-symbols-outlined text-[20px]">analytics</span><span>Calificaciones</span></a></nav></div><div class="px-4"><div class="p-3 rounded-lg bg-surface-paper shadow-[0_1px_4px_rgba(0,0,0,0.04)] text-xs text-on-surface-variant space-y-1.5"><div class="flex items-center justify-between text-on-surface font-semibold"><span>Cuota Groq IA</span><span class="font-mono text-primary">84%</span></div><div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden"><div class="bg-primary h-full w-[84%]"></div></div><p class="text-[11px] leading-relaxed pt-1">Modelos de síntesis académica listos para ensamblado.</p></div></div></aside><div class="pl-64"><main class="relative pt-16 min-h-screen bg-background"><div class="flex flex-col w-full">
+<div class="max-w-[1440px] w-full mx-auto px-6 py-8 space-y-8">
+<!-- Top Workspace Header -->
+<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-6 pb-2">
+<div class="space-y-2">
+<div class="flex items-center gap-3">
+<span class="text-xs font-mono uppercase tracking-widest text-on-surface-variant/80 px-2.5 py-1 rounded bg-surface-container-high/80">Ciclo Lectivo 2024-II</span>
+<span class="inline-flex items-center gap-1.5 text-xs text-primary font-mono font-medium">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+            Sincronizado con campus
+          </span>
+</div>
+<h1 class="text-3xl md:text-4xl font-headline font-bold text-on-surface tracking-tight">Mis exámenes</h1>
+<p class="text-sm md:text-base text-on-surface-variant max-w-2xl font-normal">
+          Crea, organiza y califica evaluaciones en minutos mediante síntesis pedagógica asistida por IA y banco modular.
+        </p>
+</div>
+<div class="flex items-center gap-3 flex-wrap">
+<button class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium text-on-surface-variant bg-surface-paper shadow-sm hover:text-on-surface hover:bg-surface-container-low transition-all" type="button">
+<span class="material-symbols-outlined text-[19px]">file_upload</span>
+<span>Importar evaluación</span>
+</button>
+<button class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-on-primary bg-primary shadow-sm hover:shadow-md hover:bg-primary/95 transition-all transform active:scale-[0.98]" type="button">
+<span class="material-symbols-outlined text-[20px]">add_circle</span>
+<span>Nuevo formulario</span>
+</button>
+</div>
+</div>
+<!-- Editorial Stats Strip -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="p-5 rounded-xl bg-surface-paper shadow-sm relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="text-xs font-mono uppercase tracking-wider text-on-surface-variant">Total de exámenes</span>
+<span class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">folder_copy</span>
+</span>
+</div>
+<div class="mt-4 flex items-baseline justify-between">
+<span class="text-4xl font-headline font-bold text-on-surface font-mono tracking-tight">08</span>
+<span class="inline-flex items-center gap-1 text-xs font-mono font-medium text-success bg-success-container px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+            +2 este mes
+          </span>
+</div>
+<div class="mt-3 w-full bg-surface-container-high h-1 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[75%] rounded-full"></div>
+</div>
+</div>
+<div class="p-5 rounded-xl bg-surface-paper shadow-sm relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="text-xs font-mono uppercase tracking-wider text-on-surface-variant">Publicados</span>
+<span class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">assignment_turned_in</span>
+</span>
+</div>
+<div class="mt-4 flex items-baseline justify-between">
+<span class="text-4xl font-headline font-bold text-on-surface font-mono tracking-tight">05</span>
+<span class="inline-flex items-center gap-1.5 text-xs font-mono text-success font-medium bg-success-container/70 px-2 py-0.5 rounded-full">
+<span class="w-2 h-2 rounded-full bg-success"></span>
+            Activos para alumnos
+          </span>
+</div>
+<div class="mt-3 w-full bg-surface-container-high h-1 rounded-full overflow-hidden">
+<div class="bg-success h-full w-[62.5%] rounded-full"></div>
+</div>
+</div>
+<div class="p-5 rounded-xl bg-surface-paper shadow-sm relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="text-xs font-mono uppercase tracking-wider text-on-surface-variant">Respuestas recibidas</span>
+<span class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">inbox</span>
+</span>
+</div>
+<div class="mt-4 flex items-baseline justify-between">
+<span class="text-4xl font-headline font-bold text-on-surface font-mono tracking-tight">142</span>
+<span class="inline-flex items-center gap-1 text-xs font-mono text-on-surface-variant bg-surface-container-low px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[13px]">schedule</span>
+            Última hace 12 min
+          </span>
+</div>
+<div class="mt-3 flex items-center gap-2">
+<div class="flex -space-x-1.5 overflow-hidden">
+<div class="inline-block h-4 w-4 rounded-full bg-primary/80 ring-2 ring-surface-paper"></div>
+<div class="inline-block h-4 w-4 rounded-full bg-accent/80 ring-2 ring-surface-paper"></div>
+<div class="inline-block h-4 w-4 rounded-full bg-success/80 ring-2 ring-surface-paper"></div>
+</div>
+<span class="text-[11px] text-on-surface-variant font-mono">18 entregas hoy</span>
+</div>
+</div>
+</div>
+<!-- Search and Categorization Filter Bar -->
+<div class="p-3 bg-surface-paper rounded-xl shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+<div class="relative flex-1">
+<span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[20px] text-on-surface-variant/70">search</span>
+<input class="w-full bg-surface-container-low/70 hover:bg-surface-container-low focus:bg-surface-paper text-sm text-on-surface placeholder:text-on-surface-variant/60 rounded-lg pl-10 pr-4 py-2.5 focus:outline-none transition-colors" id="search-input" placeholder="Buscar exámenes por título o código de materia..." type="text"/>
+</div>
+<div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0" id="filter-container">
+<button class="filter-pill px-3 py-1.5 rounded-md text-xs font-medium bg-primary text-on-primary transition-all shadow-sm" data-filter="all" type="button">
+          Todos (8)
+        </button>
+<button class="filter-pill px-3 py-1.5 rounded-md text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" data-filter="published" type="button">
+          Publicados (5)
+        </button>
+<button class="filter-pill px-3 py-1.5 rounded-md text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" data-filter="draft" type="button">
+          Borradores (2)
+        </button>
+<button class="filter-pill px-3 py-1.5 rounded-md text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" data-filter="review" type="button">
+          Por calificar (1)
+        </button>
+</div>
+</div>
+<!-- Exam Cards Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="exam-grid">
+<!-- Card 1 -->
+<article class="exam-card group flex flex-col justify-between p-5 rounded-xl bg-surface-paper shadow-sm hover:shadow-md transition-all duration-200" data-status="published">
+<div class="space-y-4">
+<div class="flex items-start justify-between gap-3">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium bg-success-container text-on-success-container">
+<span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+              Publicado
+            </span>
+<span class="text-[11px] font-mono text-on-surface-variant">MAT-201</span>
+</div>
+<div>
+<h2 class="text-base font-headline font-semibold text-on-surface group-hover:text-primary transition-colors line-clamp-1">
+              Parcial de Álgebra Lineal
+            </h2>
+<p class="text-xs text-on-surface-variant mt-1">Álgebra y Geometría Analítica</p>
+</div>
+<div class="p-3 rounded-lg bg-surface-container-low space-y-2">
+<div class="flex items-center justify-between text-xs text-on-surface-variant">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px]">event</span>
+                18 Oct 2024
+              </span>
+<span class="font-mono text-[11px]">Duración: 90 min</span>
+</div>
+<div class="flex items-center justify-between text-xs pt-1 border-t border-surface-container-high">
+<span class="text-on-surface font-semibold font-mono">42 Respuestas</span>
+<span class="text-success font-mono font-medium">Promedio: 8.4/10</span>
+</div>
+</div>
+<div class="flex flex-wrap gap-1.5">
+<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant">Opción múltiple</span>
+<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant">Cálculo matricial</span>
+<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-primary-container text-on-primary-container">Con rúbrica IA</span>
+</div>
+</div>
+<div class="mt-5 pt-3.5 flex items-center justify-between text-on-surface-variant border-t border-surface-container-high">
+<div class="flex items-center gap-2">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-8 h-4.5 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+<span class="text-[11px] font-mono text-on-surface-variant/80">Visible</span>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-1.5 rounded-md hover:bg-surface-container-high hover:text-primary transition-colors" title="Ver Analítica y Métricas" type="button">
+<span class="material-symbols-outlined text-[18px]">query_stats</span>
+</button>
+<button class="p-1.5 rounded-md hover:bg-surface-container-high hover:text-on-surface transition-colors" title="Duplicar examen" type="button">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+</button>
+<button class="p-1.5 rounded-md hover:bg-surface-container-high hover:text-accent transition-colors" title="Más opciones" type="button">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Card 2 -->
+<article class="exam-card group flex flex-col justify-between p-5 rounded-xl bg-surface-paper shadow-sm hover:shadow-md transition-all duration-200" data-status="published">
+<div class="space-y-4">
+<div class="flex items-start justify-between gap-3">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium bg-success-container text-on-success-container">
+<span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+              Publicado
+            </span>
+<span class="text-[11px] font-mono text-on-surface-variant">FIS-102</span>
+</div>
+<div>
+<h2 class="text-base font-headline font-semibold text-on-surface group-hover:text-primary transition-colors line-clamp-1">
+              Física II: Termodinámica
+            </h2>
+<p class="text-xs text-on-surface-variant mt-1">Física General y Aplicada</p>
+</div>
+<div class="p-3 rounded-lg bg-surface-container-low space-y-2">
+<div class="flex items-center justify-between text-xs text-on-surface-variant">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px]">event</span>
+                22 Oct 2024
+              </span>
+<span class="font-mono text-[11px]">Duración: 120 min</span>
+</div>
+<div class="flex items-center justify-between text-xs pt-1 border-t border-surface-container-high">
+<span class="text-on-surface font-semibold font-mono">38 Respuestas</span>
+<span class="text-primary font-mono font-medium">Promedio: 7.6/10</span>
+</div>
+</div>
+<div class="flex flex-wrap gap-1.5">
+<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant">Problemas guiados</span>
+<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant">Ciclo Carnot</span>
+</div>
+</div>
+<div class="mt-5 pt-3.5 flex items-center justify-between text-on-surface-variant border-t border-surface-container-high">
+<div class="flex items-center gap-2">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-8 h-4.5 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+<span class="text-[11px] font-mono text-on-surface-variant/80">Visible</span>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-1.5 rounded-md hover:bg-surface-container-high hover:text-primary transition-colors" title="Ver Analítica y Métricas" type="button">
+<span class="material-symbols-outlined text-[18px]">query_stats</span>
+</button>
+<button class="p-1.5 rounded-md hover:bg-surface-container-high hover:text-on-surface transition-colors" title="Duplicar examen" type="button">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+</button>
+<button class="p-1.5 rounded-md hover:bg-surface-container-high hover:text-accent transition-colors" title="Más opciones" type="button">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Card 3 -->
+<article class="exam-card group flex flex-col justify-between p-5 rounded-xl bg-surface-paper shadow-sm hover:shadow-md transition-all duration-200" data-status="draft">
+<div class="space-y-4">
+<div class="flex items-start justify-between gap-3">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium bg-surface-container-high text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-on-surface-variant"></span>
+              Borrador
+            </span>
+<span class="text-[11px] font-mono text-on-surface-variant">LET-101</span>
+</div>
+<div>
+<h2 class="text-base font-headline font-semibold text-on-surface group-hover:text-primary transition-colors line-clamp-1">
+              Comprensión Lectora y Retórica
+            </h2>
+<p class="text-xs text-on-surface-variant mt-1">Humanidades y Letras Clásicas</p>
+</div>
+<div class="p-3 rounded-lg bg-surface-container-low space-y-2">
+<div class="flex items-center justify-between text-xs text-on-surface-variant">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px]">edit_note</span>
+                Hoy, 10:15
+              </span>
+<span class="font-mono text-[11px] text-accent">Edición en pausa</span>
+</div>
+<div class="flex items-center justify-between text-xs pt-1 border-t border-surface-container-high">
+<span class="text-on-surface font-semibold font-mono">15 Preguntas redactadas</span>
+<span class="text-on-surface-variant font-mono">Sin publicar</span>
+</div>
+</div>
+<div class="flex flex-wrap gap-1.5">
+<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant">Desarrollo</span>
+<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant">Análisis textual</span>
+<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-primary-container text-on-primary-container">Corrección IA</span>
+</div>
+</div>
+<div class="mt-5 pt-3.5 flex items-center justify-between text-on-surface-variant border-t border-surface-container-high">
+<div class="flex items-center gap-2">
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-8 h-4.5 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+<span class="text-[11px] font-mono text-on-surface-variant/80">Oculto</span>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-1.5 rounded-md hover:bg-surface-container-high hover:text-primary transition-colors" title="Continuar edición" type="button">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-1.5 rounded-md hover:bg-surface-container-high hover:text-on-surface transition-colors" title="Duplicar borrador" type="button">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+</button>
+<button class="p-1.5 rounded-md hover:bg-surface-container-high hover:text-accent transition-colors" title="Descartar borrador" type="button">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Card 4 -->
+<article class="exam-card group flex flex-col justify-between p-5 rounded-xl bg-surface-paper shadow-sm hover:shadow-md transition-all duration-200" data-status="published">
+<div class="space-y-4">
+<div class="flex items-start justify-between gap-3">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium bg-success-container text-on-success-container">
+<span class="w-1.5 h-1.5 rounded-full bg-success"></span>
+              Publicado
+            </span>
+<span class="text-[11px] font-mono text-on-surface-variant">MAT-301</span>
+</div>
+<div>
+<h2 class="text-base font-headline font-semibold text-on-surface group-hover:text-primary transition-colors line-clamp-1">
+              Examen Final: Cálculo Multivariable
+            </h2>
+<p class="text-xs text-on-surface-variant mt-1">Ciencias Exactas e Ingeniería</p>
+</div>
+<div class="p-3 rounded-lg bg-surface-container-low space-y-2">
+<div class="flex items-center justify-between text-xs text-on-surface-variant">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px]">event</span>
+                28 Oct 2024
+              </span>
+<span class="font-mono text-[11px]">Duración: 110 min</span>
+</div>
+<div class="flex items-center justify-between text-xs pt-1 border-t border-surface-container-high">
+<span class="text-on-surface font-semibold font-mono">51 Respuestas</span>
+<span class="text-success font-mono font-medium">Promedio: 7.9/10</span>
+</div>
+</div>
+<div class="flex flex-wrap gap-1.5">
+<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant">Integrales dobles</span>
+<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant">Stokes &amp; Green</span>
+</div>
+</div>
+<div class="mt-5 pt-3.5 flex items-center justify-between text-on-surface-variant border-t border-surface-container-high">
+<div class="flex items-center gap-2">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-8 h-4.5 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+<span class="text-[11px] font-mono text-on-surface-variant/80">Visible</span>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-1.5 rounded-md hover:bg-surface-container-high hover:text-primary transition-colors" title="Ver Analítica y Métricas" type="button">
+<span class="material-symbols-outlined text-[18px]">query_stats</span>
+</button>
+<button class="p-1.5 rounded-md hover:bg-surface-container-high hover:text-on-surface transition-colors" title="Duplicar examen" type="button">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+</button>
+<button class="p-1.5 rounded-md hover:bg-surface-container-high hover:text-accent transition-colors" title="Más opciones" type="button">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Card 5 -->
+<article class="exam-card group flex flex-col justify-between p-5 rounded-xl bg-surface-paper shadow-sm hover:shadow-md transition-all duration-200" data-status="draft">
+<div class="space-y-4">
+<div class="flex items-start justify-between gap-3">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium bg-surface-container-high text-on-surface-variant">
+<span class="w-1.5 h-1.5 rounded-full bg-on-surface-variant"></span>
+              Borrador
+            </span>
+<span class="text-[11px] font-mono text-on-surface-variant">QUI-204</span>
+</div>
+<div>
+<h2 class="text-base font-headline font-semibold text-on-surface group-hover:text-primary transition-colors line-clamp-1">
+              Química Orgánica: Hidrocarburos
+            </h2>
+<p class="text-xs text-on-surface-variant mt-1">Laboratorio B · Síntesis y Ensayos</p>
+</div>
+<div class="p-3 rounded-lg bg-surface-container-low space-y-2">
+<div class="flex items-center justify-between text-xs text-on-surface-variant">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px]">sync_saved_locally</span>
+                Ayer, 18:40
+              </span>
+<span class="font-mono text-[11px] text-primary">Autoguardado</span>
+</div>
+<div class="flex items-center justify-between text-xs pt-1 border-t border-surface-container-high">
+<span class="text-on-surface font-semibold font-mono">20 Preguntas</span>
+<span class="text-primary font-mono font-medium">Banco IA Groq</span>
+</div>
+</div>
+<div class="flex flex-wrap gap-1.5">
+<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant">Reacciones SN1/SN2</span>
+<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant">Isomería</span>
+</div>
+</div>
+<div class="mt-5 pt-3.5 flex items-center justify-between text-on-surface-variant border-t border-surface-container-high">
+<div class="flex items-center gap-2">
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-8 h-4.5 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+<span class="text-[11px] font-mono text-on-surface-variant/80">Oculto</span>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-1.5 rounded-md hover:bg-surface-container-high hover:text-primary transition-colors" title="Continuar edición" type="button">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-1.5 rounded-md hover:bg-surface-container-high hover:text-on-surface transition-colors" title="Duplicar borrador" type="button">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+</button>
+<button class="p-1.5 rounded-md hover:bg-surface-container-high hover:text-accent transition-colors" title="Descartar borrador" type="button">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Card 6 -->
+<article class="exam-card group flex flex-col justify-between p-5 rounded-xl bg-surface-paper shadow-sm hover:shadow-md transition-all duration-200" data-status="review">
+<div class="space-y-4">
+<div class="flex items-start justify-between gap-3">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium bg-accent-container text-on-accent-container">
+<span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
+              Por calificar
+            </span>
+<span class="text-[11px] font-mono text-on-surface-variant">CS-105</span>
+</div>
+<div>
+<h2 class="text-base font-headline font-semibold text-on-surface group-hover:text-primary transition-colors line-clamp-1">
+              Historia Universal Contemporánea
+            </h2>
+<p class="text-xs text-on-surface-variant mt-1">Ciencias Sociales e Historiografía</p>
+</div>
+<div class="p-3 rounded-lg bg-surface-container-low space-y-2">
+<div class="flex items-center justify-between text-xs text-on-surface-variant">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px]">event</span>
+                15 Oct 2024
+              </span>
+<span class="font-mono text-[11px]">Duración: 60 min</span>
+</div>
+<div class="flex items-center justify-between text-xs pt-1 border-t border-surface-container-high">
+<span class="text-on-surface font-semibold font-mono">11 Ensayos</span>
+<span class="text-accent font-mono font-medium">Revisión pendiente</span>
+</div>
+</div>
+<div class="flex flex-wrap gap-1.5">
+<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant">Guerra Fría</span>
+<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-accent-container text-on-accent-container">Rúbrica crítica</span>
+</div>
+</div>
+<div class="mt-5 pt-3.5 flex items-center justify-between text-on-surface-variant border-t border-surface-container-high">
+<div class="flex items-center gap-2">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-8 h-4.5 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+<span class="text-[11px] font-mono text-on-surface-variant/80">Cerrado</span>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-1.5 rounded-md hover:bg-surface-container-high hover:text-accent transition-colors" title="Calificar respuestas" type="button">
+<span class="material-symbols-outlined text-[18px]">rate_review</span>
+</button>
+<button class="p-1.5 rounded-md hover:bg-surface-container-high hover:text-on-surface transition-colors" title="Duplicar examen" type="button">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+</button>
+<button class="p-1.5 rounded-md hover:bg-surface-container-high hover:text-accent transition-colors" title="Más opciones" type="button">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Rapid Action Template Slot -->
+<div class="flex flex-col justify-between p-6 rounded-xl bg-surface-container-low/70 border-2 border-dashed border-outline hover:border-primary/50 hover:bg-surface-paper transition-all duration-200 group text-center cursor-pointer">
+<div class="my-auto py-6 space-y-3">
+<div class="w-12 h-12 rounded-full bg-primary-container text-on-primary-container mx-auto flex items-center justify-center group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-[24px]">magic_button</span>
+</div>
+<div>
+<h3 class="text-base font-headline font-semibold text-on-surface">Crear desde plantilla rápida</h3>
+<p class="text-xs text-on-surface-variant mt-1 max-w-[220px] mx-auto">
+              Inicia con esquemas diagnósticos, parciales semestrales o rúbricas de ensayo.
+            </p>
+</div>
+</div>
+<button class="w-full py-2 px-3 rounded-lg text-xs font-semibold font-mono text-primary bg-surface-paper group-hover:bg-primary group-hover:text-on-primary shadow-sm transition-all" type="button">
+          Explorar galería académica →
+        </button>
+</div>
+</div>
+<!-- Supplementary Pedagogical Tools & Quick Banner -->
+<div class="mt-4 p-6 rounded-xl bg-surface-paper shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-on-primary shrink-0">
+<span class="material-symbols-outlined text-[26px]">psychology</span>
+</div>
+<div>
+<h4 class="text-sm md:text-base font-headline font-semibold text-on-surface">Asistente de ensamblado de reactivos</h4>
+<p class="text-xs text-on-surface-variant mt-0.5">
+            Genera conjuntos de preguntas calibradas por taxonomía de Bloom a partir de tus notas de cátedra en segundos.
+          </p>
+</div>
+</div>
+<div class="flex items-center gap-3 shrink-0 w-full md:w-auto">
+<button class="w-full md:w-auto px-4 py-2 rounded-lg text-xs font-mono font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" type="button">
+          Ver documentación
+        </button>
+<button class="w-full md:w-auto px-4 py-2 rounded-lg text-xs font-semibold text-on-primary bg-primary shadow-sm hover:bg-primary/90 transition-colors" type="button">
+          Probar generador
+        </button>
+</div>
+</div>
+</div>
+</div>
+<script>
+  // Simple interactive filter logic
+  const filterButtons = document.querySelectorAll('.filter-pill');
+  const examCards = document.querySelectorAll('.exam-card');
+  const searchInput = document.getElementById('search-input');
+
+  filterButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      // Toggle button active styling
+      filterButtons.forEach(b => {
+        b.className = 'filter-pill px-3 py-1.5 rounded-md text-xs font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all';
+      });
+      btn.className = 'filter-pill px-3 py-1.5 rounded-md text-xs font-medium bg-primary text-on-primary transition-all shadow-sm';
+
+      const filter = btn.getAttribute('data-filter');
+      examCards.forEach(card => {
+        const status = card.getAttribute('data-status');
+        if (filter === 'all' || status === filter) {
+          card.classList.remove('hidden');
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+    });
+  });
+
+  // Simple real-time search logic
+  searchInput.addEventListener('input', (e) => {
+    const term = e.target.value.toLowerCase().trim();
+    examCards.forEach(card => {
+      const text = card.textContent.toLowerCase();
+      if (text.includes(term)) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  });
+</script></main></div></body></html>

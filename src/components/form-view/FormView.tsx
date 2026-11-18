@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { QuestionInput } from './QuestionInput';
+import { QuestionTableView } from './QuestionTableView';
 import { SectionPage } from './SectionPage';
 import { FormHeader } from './FormHeader';
 import { QuizResult } from './QuizResult';
@@ -9,6 +10,7 @@ import { SecurityBanner } from './SecurityBanner';
 import { LatexRenderer } from '../ui/LatexRenderer';
 import { useExamSecurity } from '../../hooks/useExamSecurity';
 import { scoreQuiz } from '../../lib/quizScoring';
+import { isDarkColor, getAutoContrastText } from '../../lib/examThemes';
 import type { Form } from '../../types/form';
 import type { Question, Section } from '../../types/question';
 import type { RespondentInfo } from '../../types/response';
@@ -22,9 +24,34 @@ const RADIUS_MAP: Record<string, string> = {
   xl: '1rem',
 };
 
-function useGlobalTheme(form: Form) {
+function resolveThemeColors(form: Form) {
+  const theme = form.theme ?? {};
+  const primary = theme.primaryColor ?? '#1B3B6F';
+  const bg = theme.backgroundColor ?? '#F7F5F0';
+  const cardBg = theme.cardBackgroundColor ?? (isDarkColor(bg) ? '#1E293B' : '#FFFFFF');
+  const textColor = theme.textColor ?? getAutoContrastText(cardBg);
+  const font = theme.fontFamily ?? "'Plus Jakarta Sans', system-ui, sans-serif";
+  const radius = RADIUS_MAP[theme.borderRadius ?? ''] ?? '0.75rem';
+  return { primary, bg, cardBg, textColor, font, radius };
+}
+
+function buildThemeVars(form: Form): React.CSSProperties {
+  const { primary, bg, cardBg, textColor, font, radius } = resolveThemeColors(form);
+  return {
+    '--form-primary': primary,
+    '--form-bg': bg,
+    '--form-card-bg': cardBg,
+    '--form-font': font,
+    '--form-text': textColor,
+    '--form-radius': radius,
+    color: textColor,
+  } as React.CSSProperties;
+}
+
+function useGlobalTheme(form: Form, enabled: boolean) {
   useEffect(() => {
-    const theme = form.theme ?? {};
+    if (!enabled) return;
+    const { primary, bg, cardBg, textColor, font, radius } = resolveThemeColors(form);
     const root = document.documentElement;
     const prev: [string, string][] = [];
 
@@ -34,12 +61,11 @@ function useGlobalTheme(form: Form) {
       root.style.setProperty(name, value);
     }
 
-    setVar('--form-primary', theme.primaryColor ?? '#6366f1');
-    setVar('--form-bg', theme.backgroundColor ?? '#ffffff');
-    setVar('--form-font', theme.fontFamily ?? 'Inter, system-ui, sans-serif');
-    setVar('--form-text', '#111827');
-
-    const radius = RADIUS_MAP[theme.borderRadius ?? ''] ?? '0.75rem';
+    setVar('--form-primary', primary);
+    setVar('--form-bg', bg);
+    setVar('--form-card-bg', cardBg);
+    setVar('--form-font', font);
+    setVar('--form-text', textColor);
     setVar('--form-radius', radius);
 
     return () => {
@@ -48,7 +74,15 @@ function useGlobalTheme(form: Form) {
         else root.style.removeProperty(name);
       });
     };
-  }, [form.theme?.primaryColor, form.theme?.backgroundColor, form.theme?.fontFamily, form.theme?.borderRadius]);
+  }, [
+    enabled,
+    form.theme?.primaryColor,
+    form.theme?.backgroundColor,
+    form.theme?.cardBackgroundColor,
+    form.theme?.textColor,
+    form.theme?.fontFamily,
+    form.theme?.borderRadius,
+  ]);
 }
 
 interface FormViewProps {
@@ -59,10 +93,21 @@ interface FormViewProps {
   onSubmit: (answers: Record<string, any>, respondent?: RespondentInfo) => Promise<void>;
   initialAnswers?: Record<string, any>;
   autoSubmit?: boolean;
+  previewMode?: boolean;
 }
 
-export function FormView({ form, questions, sections, respondent, onSubmit, initialAnswers, autoSubmit }: FormViewProps) {
-  useGlobalTheme(form);
+export function FormView({
+  form,
+  questions,
+  sections,
+  respondent,
+  onSubmit,
+  initialAnswers,
+  autoSubmit,
+  previewMode = false,
+}: FormViewProps) {
+  useGlobalTheme(form, !previewMode);
+  const scopedThemeStyle = useMemo(() => (previewMode ? buildThemeVars(form) : undefined), [previewMode, form]);
   const [answers, setAnswers] = useState<Record<string, any>>(initialAnswers ?? {});
   const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -71,7 +116,8 @@ export function FormView({ form, questions, sections, respondent, onSubmit, init
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [violations, setViolations] = useState(0);
 
-  const security = form.settings?.securityEnabled;
+  const hasSecurityConfigured = Boolean(form.settings?.securityEnabled);
+  const security = Boolean(hasSecurityConfigured && !previewMode);
   const securityConfig = useMemo(() => ({
     enabled: security,
     maxViolations: form.settings?.maxViolations ?? 3,
@@ -138,8 +184,15 @@ export function FormView({ form, questions, sections, respondent, onSubmit, init
 
   const hasSections = sections.length > 0;
   const totalPages = hasSections ? sections.length : 1;
-  const currentSection = hasSections ? sections[currentSectionIndex] : null;
+  const safeSectionIndex = Math.min(currentSectionIndex, Math.max(0, totalPages - 1));
+  const currentSection = hasSections ? sections[safeSectionIndex] : null;
   const currentQuestions = hasSections ? (sectionQuestions[currentSection?.id ?? ''] ?? []) : unassigned;
+
+  useEffect(() => {
+    if (currentSectionIndex >= totalPages) {
+      setCurrentSectionIndex(Math.max(0, totalPages - 1));
+    }
+  }, [totalPages, currentSectionIndex]);
 
   function isQuestionVisible(q: Question): boolean {
     if (!q.conditions?.enabled || !q.conditions.questionId) return true;
@@ -162,17 +215,35 @@ export function FormView({ form, questions, sections, respondent, onSubmit, init
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   }
 
+  function resetPreview() {
+    setAnswers(initialAnswers ?? {});
+    setSubmitted(false);
+    setQuizScore(null);
+    setError('');
+    setCurrentSectionIndex(0);
+  }
+
   if (submitted) {
     return (
-      <div className="max-w-2xl mx-auto">
+      <div
+        className={previewMode ? 'theme-page max-w-2xl mx-auto space-y-4 rounded-xl p-4 sm:p-6' : 'max-w-2xl mx-auto space-y-4'}
+        style={previewMode ? { ...scopedThemeStyle, minHeight: 'auto' } : { color: 'var(--form-text, #1C1917)' }}
+      >
         {form.settings?.isQuiz && quizScore ? (
-          <QuizResult score={quizScore} />
+          <QuizResult score={quizScore} gradeRounding={form.settings?.gradeRounding ?? 'quarter'} />
         ) : (
           <Card className="p-8 text-center max-w-lg mx-auto">
             <div className="text-4xl mb-4">&#127881;</div>
             <h2 className="text-xl font-semibold mb-2">{form.settings.confirmationMessage}</h2>
             <p className="text-gray-600">Tu respuesta ha sido registrada.</p>
           </Card>
+        )}
+        {previewMode && (
+          <div className="flex justify-center pt-2">
+            <Button variant="secondary" onClick={resetPreview}>
+              Volver a probar vista previa
+            </Button>
+          </div>
         )}
       </div>
     );
@@ -181,8 +252,20 @@ export function FormView({ form, questions, sections, respondent, onSubmit, init
   const cardStyle = form.theme?.cardStyle ?? 'shadow';
 
   const content = (child: React.ReactNode) => (
-    <div className="theme-page max-w-2xl mx-auto space-y-4 px-4 sm:px-0">
+    <div
+      className={
+        previewMode
+          ? 'theme-page max-w-2xl mx-auto space-y-4 rounded-xl p-4 sm:p-6'
+          : 'theme-page max-w-2xl mx-auto space-y-4 px-4 sm:px-0'
+      }
+      style={previewMode ? { ...scopedThemeStyle, minHeight: 'auto' } : { color: 'var(--form-text, #1C1917)' }}
+    >
       {security && <SecurityBanner violations={violations} maxViolations={securityConfig.maxViolations} started={securityStarted} />}
+      {previewMode && hasSecurityConfigured && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          Modo seguro activo para los alumnos (en esta vista previa no bloquea pantalla ni pestañas).
+        </div>
+      )}
       <FormHeader title={form.title} description={form.description} theme={form.theme} />
       {child}
     </div>
@@ -190,9 +273,15 @@ export function FormView({ form, questions, sections, respondent, onSubmit, init
 
   // No sections: single page mode
   if (!hasSections) {
+    const visibleQuestions = questions.filter(isQuestionVisible);
     return content(
       <>
-        {questions.filter(isQuestionVisible).map((q) => (
+        {previewMode && visibleQuestions.length === 0 && (
+          <Card className="p-8 text-center text-sm text-gray-500" data-style={cardStyle}>
+            Aún no hay preguntas en este examen. Agrégalas desde el editor para previsualizarlas aquí.
+          </Card>
+        )}
+        {visibleQuestions.map((q) => (
           <Card key={q.id} className="p-6" data-style={cardStyle}>
             {q.settings?.imageUrl && (
               <img src={q.settings.imageUrl} alt="" className="w-full max-h-48 object-cover mb-3"
@@ -203,6 +292,15 @@ export function FormView({ form, questions, sections, respondent, onSubmit, init
               <span className="text-sm font-medium"><LatexRenderer text={q.title} /></span>
               {q.required && <span className="text-red-500 ml-1">*</span>}
             </label>
+            {q.settings?.table && (
+              <div className="mb-3">
+                <QuestionTableView
+                  table={q.settings.table}
+                  value={answers[q.id]}
+                  onChange={(v) => setAnswer(q.id, v)}
+                />
+              </div>
+            )}
             <QuestionInput question={q} value={answers[q.id]} onChange={(v) => setAnswer(q.id, v)} />
           </Card>
         ))}
@@ -221,7 +319,7 @@ export function FormView({ form, questions, sections, respondent, onSubmit, init
         <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
           <div
             className="progress-bar h-full transition-all duration-300"
-            style={{ width: `${((currentSectionIndex + 1) / totalPages) * 100}%` }}
+            style={{ width: `${((safeSectionIndex + 1) / totalPages) * 100}%` }}
           />
         </div>
       )}
@@ -232,8 +330,8 @@ export function FormView({ form, questions, sections, respondent, onSubmit, init
           questions={currentQuestions.filter(isQuestionVisible)}
           answers={answers}
           onAnswer={setAnswer}
-          isFirst={currentSectionIndex === 0}
-          isLast={currentSectionIndex === totalPages - 1}
+          isFirst={safeSectionIndex === 0}
+          isLast={safeSectionIndex === totalPages - 1}
           onNext={() => setCurrentSectionIndex((i) => Math.min(i + 1, totalPages - 1))}
           onPrev={() => setCurrentSectionIndex((i) => Math.max(i - 1, 0))}
           onSubmit={() => handleSubmit()}

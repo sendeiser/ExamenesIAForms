@@ -95,14 +95,14 @@ export function MathToolbar({ onInsert }: MathToolbarProps) {
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 transition-colors"
+        className="flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors"
       >
         <Sigma className="h-3 w-3" />
         {open ? 'Ocultar herramientas matemáticas' : 'Herramientas matemáticas'}
       </button>
 
       {open && (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-1.5">
+        <div className="bg-sand-50 border border-sand-300 rounded-lg p-1.5">
           <div className="flex flex-wrap gap-0.5">
             {QUICK_SYMBOLS.map((sym, i) => (
               <button
@@ -110,7 +110,7 @@ export function MathToolbar({ onInsert }: MathToolbarProps) {
                 type="button"
                 onClick={() => onInsert(sym.latex)}
                 title={sym.title ?? sym.label}
-                className="h-7 min-w-[1.75rem] px-1 text-xs rounded hover:bg-indigo-100 hover:text-indigo-700 transition-colors font-mono flex items-center justify-center"
+                className="h-7 min-w-[1.75rem] px-1 text-xs rounded hover:bg-brand-100 hover:text-brand-700 transition-colors font-mono flex items-center justify-center"
               >
                 {sym.label}
               </button>

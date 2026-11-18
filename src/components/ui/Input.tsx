@@ -7,20 +7,28 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, label, error, id, ...props }, ref) => {
+  ({ className, label, error, id, style, ...props }, ref) => {
+    const hasCustomBg = Boolean(className && /\bbg-/.test(className));
+    const hasCustomText = Boolean(
+      style?.color ||
+        (className && /\btext-(?!xs\b|sm\b|base\b|lg\b|xl\b|2xl\b|3xl\b|left\b|center\b|right\b)/.test(className))
+    );
+
     return (
       <div className="space-y-1">
         {label && (
-          <label htmlFor={id} className="block text-sm font-medium text-gray-700">
+          <label htmlFor={id} className="block text-sm font-medium text-ink-muted">
             {label}
           </label>
         )}
         <input
           ref={ref}
           id={id}
+          style={style}
           className={clsx(
-            'block w-full rounded-lg border px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500',
-            error ? 'border-red-300 text-red-900' : 'border-gray-300 text-gray-900',
+            'block w-full rounded-lg border px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-ink-light/70 focus:outline-none focus:ring-2 focus:ring-brand-500/25 focus:border-brand-600',
+            !hasCustomBg && 'bg-white',
+            error ? 'border-red-300 text-red-900' : clsx('border-sand-400', !hasCustomText && 'text-ink'),
             className,
           )}
           {...props}

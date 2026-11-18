@@ -25,16 +25,16 @@ export function SectionCard({ section }: SectionCardProps) {
   const style = { transform: CSS.Transform.toString(transform), transition };
 
   return (
-    <div ref={setNodeRef} style={style} className="border-2 border-indigo-200 rounded-xl bg-indigo-50/30 p-4 space-y-4">
+    <div ref={setNodeRef} style={style} className="border-2 border-brand-200 rounded-xl bg-brand-50/40 p-4 space-y-4">
       <div className="flex items-start gap-3">
-        <button className="mt-2 cursor-grab text-gray-400" {...attributes} {...listeners}>
+        <button className="mt-2 cursor-grab text-ink-light hover:text-ink" {...attributes} {...listeners}>
           <GripVertical className="h-5 w-5" />
         </button>
         <div className="flex-1 space-y-2">
           <Input
             value={section.title}
             onChange={(e) => updateSection(section.id, { title: e.target.value })}
-            className="font-semibold border-indigo-200"
+            className="font-display font-semibold border-brand-200"
             placeholder="Título de sección"
           />
           <Input

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useEditorStore } from '../../store/editorStore';
 import { Button } from '../ui/Button';
-import { Type, AlignLeft, List, CheckSquare, ChevronDown, Minus, Calendar, Clock, Layers, Sparkles, WandSparkles } from 'lucide-react';
+import { Type, AlignLeft, List, CheckSquare, ChevronDown, Minus, Calendar, Clock, Layers, Sparkles, WandSparkles, Table2 } from 'lucide-react';
 import { AiGenerateModal } from './AiGenerateModal';
 import { AiModifyAllModal } from './AiModifyAllModal';
+import { createDefaultQuestionTable } from '../../lib/tableUtils';
 
 const questionTypes = [
   { type: 'text' as const, icon: Type, label: 'Texto' },
@@ -24,23 +25,38 @@ export function QuestionToolbar() {
 
   return (
     <>
-      <div className="flex gap-2 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible">
+      <div className="rounded-xl border border-sand-300 bg-white p-3 shadow-paper flex gap-2 overflow-x-auto sm:flex-wrap sm:overflow-visible items-center">
         {questionTypes.map(({ type, icon: Icon, label }) => (
-          <Button key={type} variant="secondary" onClick={() => addQuestion(type)} className="shrink-0 sm:shrink">
-            <Icon className="h-4 w-4" />
+          <Button key={type} variant="secondary" onClick={() => addQuestion(type)} className="shrink-0 sm:shrink px-3 py-1.5 text-xs">
+            <Icon className="h-3.5 w-3.5 text-ink-subtle" />
             <span className="hidden sm:inline">{label}</span>
           </Button>
         ))}
-        <Button variant="secondary" onClick={() => addSection()} className="shrink-0 sm:shrink">
-          <Layers className="h-4 w-4" />
+        <Button variant="secondary" onClick={() => addSection()} className="shrink-0 sm:shrink px-3 py-1.5 text-xs">
+          <Layers className="h-3.5 w-3.5 text-ink-subtle" />
           <span className="hidden sm:inline">Sección</span>
         </Button>
-        <Button variant="secondary" onClick={() => setAiOpen(true)} className="shrink-0 sm:shrink">
-          <Sparkles className="h-4 w-4" />
+        <Button
+          variant="secondary"
+          onClick={() =>
+            addQuestion('text', {
+              title: 'Completa o analiza la siguiente tabla:',
+              settings: { table: createDefaultQuestionTable(2, 3) },
+            })
+          }
+          className="shrink-0 sm:shrink px-3 py-1.5 text-xs"
+          title="Agregar actividad con tabla"
+        >
+          <Table2 className="h-3.5 w-3.5 text-brand-600" />
+          <span className="hidden sm:inline">Tabla</span>
+        </Button>
+        <div className="h-5 w-px bg-sand-300 hidden sm:block mx-0.5" />
+        <Button onClick={() => setAiOpen(true)} className="shrink-0 sm:shrink px-3.5 py-1.5 text-xs">
+          <Sparkles className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Generar con IA</span>
         </Button>
-        <Button variant="secondary" onClick={() => setModifyAllOpen(true)} className="shrink-0 sm:shrink">
-          <WandSparkles className="h-4 w-4" />
+        <Button variant="secondary" onClick={() => setModifyAllOpen(true)} className="shrink-0 sm:shrink px-3 py-1.5 text-xs border-terracotta-200 text-terracotta-700 hover:bg-terracotta-50">
+          <WandSparkles className="h-3.5 w-3.5 text-terracotta-500" />
           <span className="hidden sm:inline">Modificar todo</span>
         </Button>
       </div>

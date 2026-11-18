@@ -39,6 +39,7 @@ import {
   type PreparedDocument,
 } from '../../lib/documentParser';
 import { AiStatusBar } from './AiStatusBar';
+import { extractTableFromQuestionPayload } from '../../lib/tableUtils';
 
 interface AiGenerateModalProps {
   open: boolean;
@@ -232,21 +233,22 @@ export function AiGenerateModal({ open, onClose }: AiGenerateModalProps) {
       );
       for (let i = 0; i < questionsData.length; i++) {
         const q = questionsData[i];
+        const extracted = extractTableFromQuestionPayload(q);
         const currentLen = useEditorStore.getState().questions.length;
         await addQuestion(q.type);
         const updatedQuestions = useEditorStore.getState().questions;
         const newQuestion = updatedQuestions.find((_, idx) => idx === currentLen);
         if (newQuestion) {
           const updates: Record<string, any> = {
-            title: q.title,
+            title: extracted.title,
             options: (q.options ?? []).map((o: any) => (typeof o === 'string' ? { label: o } : o)),
             order: currentLen,
             sectionId: sections.length > 0 ? sections[0].id : null,
-            settings: q.settings ?? {},
+            settings: extracted.settings,
           };
-          if (q.correctAnswer) {
+          if (extracted.correctAnswer !== undefined && extracted.correctAnswer !== null && extracted.correctAnswer !== '') {
             updates.quizSettings = {
-              correctAnswer: q.correctAnswer,
+              correctAnswer: extracted.correctAnswer,
               points: q.points ?? 1,
             };
           }
@@ -287,8 +289,8 @@ export function AiGenerateModal({ open, onClose }: AiGenerateModalProps) {
                 onClick={() => selectTemplate(tpl)}
                 className={`flex flex-col items-center gap-1 p-2 rounded-lg border text-xs transition-all ${
                   selectedTemplate === tpl.name
-                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                    : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                    ? 'border-brand-600 bg-brand-50 text-brand-700 font-medium'
+                    : 'border-sand-300 text-ink-subtle hover:border-sand-400 hover:bg-sand-50'
                 }`}
               >
                 {tpl.icon}
@@ -313,13 +315,13 @@ export function AiGenerateModal({ open, onClose }: AiGenerateModalProps) {
             value={customInstructions}
             onChange={(e) => { setCustomInstructions(e.target.value); setSelectedTemplate(null); }}
             placeholder="Ej: Nivel universitario, incluir ejercicios de aplicación, las preguntas deben ser desafiantes..."
-            className="block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            className="block w-full rounded-lg border border-sand-400 px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-ink-light/70 focus:outline-none focus:ring-2 focus:ring-brand-500/25 focus:border-brand-600"
             rows={3}
           />
         </div>
 
-        <div className="border-t pt-3 space-y-2.5">
-          <p className="text-xs text-gray-500">
+        <div className="border-t border-sand-300 pt-3 space-y-2.5">
+          <p className="text-xs text-ink-light">
             O sube un documento (PDF, DOCX, TXT o MD — se convierte a Markdown automáticamente):
           </p>
           <input
@@ -331,17 +333,17 @@ export function AiGenerateModal({ open, onClose }: AiGenerateModalProps) {
           />
 
           {parsingFile ? (
-            <div className="flex items-center justify-center gap-2 p-3 bg-indigo-50 rounded-lg text-sm text-indigo-700">
+            <div className="flex items-center justify-center gap-2 p-3 bg-brand-50 rounded-lg text-sm text-brand-700">
               <Loader2 className="h-4 w-4 animate-spin" />
               <span>Convirtiendo documento a Markdown...</span>
             </div>
           ) : preparedDoc ? (
-            <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-3 space-y-2.5">
+            <div className="rounded-lg border border-brand-200 bg-brand-50/50 p-3 space-y-2.5">
               <div className="flex items-center gap-2 text-sm">
-                <FileText className="h-4 w-4 text-indigo-600 shrink-0" />
-                <span className="flex-1 truncate font-medium text-gray-800">{preparedDoc.filename}</span>
+                <FileText className="h-4 w-4 text-brand-600 shrink-0" />
+                <span className="flex-1 truncate font-medium text-ink">{preparedDoc.filename}</span>
                 {!preparedDoc.isScannedPdf && (
-                  <span className="px-2 py-0.5 rounded bg-white border border-indigo-200 text-[11px] font-mono text-indigo-700 shrink-0">
+                  <span className="px-2 py-0.5 rounded bg-white border border-brand-200 text-[11px] font-mono text-brand-700 shrink-0">
                     ~{estimatedTokens.toLocaleString()} tokens
                   </span>
                 )}
@@ -377,13 +379,13 @@ export function AiGenerateModal({ open, onClose }: AiGenerateModalProps) {
                         value={pageRange}
                         onChange={(e) => applyPageRange(preparedDoc, e.target.value)}
                         placeholder={`Todas (1-${preparedDoc.totalPages})`}
-                        className="w-36 rounded border border-gray-300 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-36 rounded border border-sand-400 bg-white px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500/25 focus:border-brand-600"
                       />
                       {preparedDoc.totalPages > 5 && (
                         <button
                           type="button"
                           onClick={() => applyPageRange(preparedDoc, '1-5')}
-                          className="px-2 py-1 rounded border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                          className="px-2 py-1 rounded border border-sand-300 bg-white text-ink-subtle hover:bg-sand-50"
                         >
                           1-5
                         </button>
@@ -392,7 +394,7 @@ export function AiGenerateModal({ open, onClose }: AiGenerateModalProps) {
                         <button
                           type="button"
                           onClick={() => applyPageRange(preparedDoc, '1-10')}
-                          className="px-2 py-1 rounded border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+                          className="px-2 py-1 rounded border border-sand-300 bg-white text-ink-subtle hover:bg-sand-50"
                         >
                           1-10
                         </button>
@@ -401,7 +403,7 @@ export function AiGenerateModal({ open, onClose }: AiGenerateModalProps) {
                         <button
                           type="button"
                           onClick={() => applyPageRange(preparedDoc, '')}
-                          className="px-2 py-1 rounded border border-gray-200 bg-white text-indigo-600 hover:bg-gray-50"
+                          className="px-2 py-1 rounded border border-sand-300 bg-white text-brand-600 hover:bg-sand-50"
                         >
                           Todas
                         </button>
@@ -420,7 +422,7 @@ export function AiGenerateModal({ open, onClose }: AiGenerateModalProps) {
                   )}
 
                   {showLargeDocHint && (
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-ink-subtle">
                       Documento extenso (~{estimatedTokens.toLocaleString()} tokens). Elegir un rango específico de
                       páginas mejora la precisión de las preguntas.
                     </p>
@@ -430,7 +432,7 @@ export function AiGenerateModal({ open, onClose }: AiGenerateModalProps) {
                     <button
                       type="button"
                       onClick={() => setShowMarkdownPreview((prev) => !prev)}
-                      className="inline-flex items-center gap-1 text-xs font-medium text-indigo-700 hover:text-indigo-800"
+                      className="inline-flex items-center gap-1 text-xs font-medium text-brand-700 hover:text-brand-800"
                     >
                       {showMarkdownPreview ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                       {showMarkdownPreview
@@ -441,7 +443,7 @@ export function AiGenerateModal({ open, onClose }: AiGenerateModalProps) {
                       type="button"
                       onClick={handleDownloadMarkdown}
                       disabled={!markdownText.trim()}
-                      className="inline-flex items-center gap-1 text-xs text-gray-600 hover:text-gray-800 disabled:opacity-40"
+                      className="inline-flex items-center gap-1 text-xs text-ink-subtle hover:text-ink disabled:opacity-40"
                     >
                       <Download className="h-3.5 w-3.5" />
                       Descargar .md
@@ -453,7 +455,7 @@ export function AiGenerateModal({ open, onClose }: AiGenerateModalProps) {
                       value={markdownText}
                       onChange={(e) => setMarkdownText(e.target.value)}
                       rows={7}
-                      className="block w-full rounded-lg border border-indigo-200 bg-white px-3 py-2 text-xs font-mono text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="block w-full rounded-lg border border-brand-200 bg-white px-3 py-2 text-xs font-mono text-ink focus:outline-none focus:ring-2 focus:ring-brand-500/25 focus:border-brand-600"
                     />
                   )}
                 </>
@@ -539,7 +541,8 @@ Cada objeto en el array debe tener esta estructura:
   "type": "multipleChoice" | "checkbox" | "text" | "paragraph" | "dropdown" | "linearScale",
   "options": ["opción1", "opción2", ...], // solo para multipleChoice, checkbox, dropdown
   "correctAnswer": "opción correcta" | ["opciones correctas"], // RESPUESTA CORRECTA para autoevaluación
-  "points": 1 // puntos que vale la pregunta (opcional, por defecto 1)
+  "points": 1, // puntos que vale la pregunta (opcional, por defecto 1)
+  "settings": {} // opcional; usa settings.table para incluir tablas en la actividad
 }
 
 ${typeConstraint}
@@ -547,6 +550,7 @@ ${linearScaleHint}
 
 IMPORTANTE:
 - Usa notación LaTeX entre $...$ para fórmulas matemáticas y símbolos. Por ejemplo: "$E = mc^2$", "$\\frac{a}{b}$", "$\\sqrt{x^2 + y^2}$"
+- Si la actividad necesita una tabla, cuadro comparativo o tabla de valores para analizar o completar, inclúyela SIEMPRE de forma estructurada en "settings": { "table": { "caption": "opcional", "headers": ["Col 1", "Col 2"], "rows": [{ "cells": ["dato", "valor"] }], "editableCells": ["0:1"] } } (usa "editableCells" con coordenadas "fila:columna" base 0 únicamente si el alumno debe completar celdas). Si excepcionalmente incluyes una tabla en LaTeX dentro del enunciado, dibuja SIEMPRE todas las líneas de columnas ({|c|c|...|}) y todas las líneas de filas (\\hline).
 - SIEMPRE incluye "correctAnswer" con la respuesta correcta para cada pregunta
 - Para multipleChoice/dropdown: correctAnswer debe ser un string igual a una opción
 - Para checkbox: correctAnswer debe ser un array de strings con las opciones correctas

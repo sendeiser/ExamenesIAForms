@@ -5,8 +5,12 @@ import { Button } from '../ui/Button';
 import { Select } from '../ui/Select';
 import { ImageSearchModal } from './ImageSearchModal';
 import { ImagePlus, X, Link as LinkIcon } from 'lucide-react';
+import { ensureReadableTextColor } from '../../lib/examThemes';
 
 const FONT_OPTIONS = [
+  { value: "'Plus Jakarta Sans', system-ui, sans-serif", label: 'Plus Jakarta Sans' },
+  { value: "'Bricolage Grotesque', sans-serif", label: 'Bricolage Grotesque' },
+  { value: "'JetBrains Mono', monospace", label: 'JetBrains Mono' },
   { value: 'Inter, system-ui, sans-serif', label: 'Inter' },
   { value: 'system-ui, sans-serif', label: 'System UI' },
   { value: 'Arial, sans-serif', label: 'Arial' },
@@ -49,17 +53,17 @@ export function HeaderCard() {
   if (!form) return null;
 
   const theme = form.theme ?? {};
-  const bgColor = theme.headerBgColor || theme.primaryColor || '#6366f1';
+  const bgColor = theme.headerBgColor || theme.primaryColor || '#1B3B6F';
   const hasImage = !!theme.headerImageUrl;
-  const textColor = theme.headerTextColor || '#ffffff';
-  const fontFamily = theme.headerFontFamily || 'Inter, system-ui, sans-serif';
+  const textColor = ensureReadableTextColor(bgColor, theme.headerTextColor);
+  const fontFamily = theme.headerFontFamily || "'Bricolage Grotesque', sans-serif";
   const fontSizeKey = theme.headerFontSize ?? 'md';
   const fontSize = FONT_SIZE_MAP[fontSizeKey] ?? FONT_SIZE_MAP.md;
 
   return (
     <>
       <div
-        className="relative overflow-hidden rounded-xl p-6 border"
+        className="relative overflow-hidden rounded-xl p-6 border border-sand-300 shadow-paper"
         style={{
           backgroundColor: bgColor,
           backgroundImage: hasImage ? `url(${theme.headerImageUrl})` : undefined,
@@ -71,19 +75,21 @@ export function HeaderCard() {
           <div className="absolute inset-0" style={{ backgroundColor: bgColor, opacity: 0.55 }} />
         )}
 
-        <div className="relative z-10 space-y-3" style={{ fontFamily }}>
-          <Input
+        <div className="relative z-10 space-y-2.5" style={{ fontFamily }}>
+          <input
+            aria-label="Título del examen en encabezado"
             value={form.title}
             onChange={(e) => updateForm({ title: e.target.value })}
-            className="text-xl font-bold border-0 px-0 bg-transparent focus:ring-0"
+            className="w-full font-bold border-0 px-1.5 py-0.5 bg-transparent focus:outline-none focus:ring-2 focus:ring-white/30 rounded placeholder:text-current placeholder:opacity-70"
             style={{ color: textColor, fontSize: fontSize.title }}
             placeholder="Título del examen"
           />
-          <Input
+          <input
+            aria-label="Descripción del examen"
             value={form.description}
             onChange={(e) => updateForm({ description: e.target.value })}
-            className="text-sm border-0 px-0 bg-transparent focus:ring-0"
-            style={{ color: textColor, fontSize: fontSize.desc }}
+            className="w-full border-0 px-1.5 py-0.5 bg-transparent focus:outline-none focus:ring-2 focus:ring-white/30 rounded placeholder:text-current placeholder:opacity-70"
+            style={{ color: textColor, fontSize: fontSize.desc, opacity: 0.92 }}
             placeholder="Descripción del examen (opcional)"
           />
         </div>

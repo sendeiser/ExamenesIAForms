@@ -50,7 +50,7 @@ export function QuizSettings({ question, updateQuestion }: QuizSettingsProps) {
                         const next = e.target.checked ? [...current, opt.label] : current.filter((v) => v !== opt.label);
                         update('correctAnswer', next.length > 0 ? next : null);
                       }}
-                      className="rounded text-indigo-600"
+                      className="rounded text-brand-600"
                     />
                     {opt.label}
                   </label>

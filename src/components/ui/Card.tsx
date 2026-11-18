@@ -3,7 +3,7 @@ import type { HTMLAttributes } from 'react';
 
 export function Card({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={clsx('card bg-white rounded-xl shadow-sm border border-gray-200', className)} {...props}>
+    <div className={clsx('card bg-white rounded-xl shadow-paper border border-sand-300', className)} {...props}>
       {children}
     </div>
   );

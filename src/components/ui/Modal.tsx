@@ -48,20 +48,20 @@ export function Modal({ open, onClose, title, children, size = 'md', zIndexClass
       aria-modal="true"
       aria-labelledby={titleId}
     >
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+      <div className="fixed inset-0 bg-ink/40 backdrop-blur-[2px]" onClick={onClose} />
       <div
         ref={overlayRef}
         className={clsx(
-          'relative z-10 w-full bg-white rounded-xl shadow-xl max-h-[90vh] overflow-y-auto mx-4',
+          'relative z-10 w-full bg-white rounded-xl border border-sand-300 shadow-xl max-h-[90vh] overflow-y-auto mx-4',
           { 'max-w-sm': size === 'sm', 'max-w-lg': size === 'md', 'max-w-2xl': size === 'lg' },
         )}
       >
-        <div className="flex items-center justify-between border-b px-6 py-4">
-          <h2 id={titleId} className="text-lg font-semibold">{title}</h2>
+        <div className="flex items-center justify-between border-b border-sand-300 bg-sand-50/70 px-6 py-4">
+          <h2 id={titleId} className="font-display text-lg font-bold text-ink">{title}</h2>
           <button
             onClick={onClose}
             aria-label="Cerrar"
-            className="p-1 hover:bg-gray-100 transition-colors"
+            className="rounded-lg p-1.5 text-ink-subtle hover:bg-sand-200/70 hover:text-ink transition-colors"
           >
             <X className="h-5 w-5" />
           </button>

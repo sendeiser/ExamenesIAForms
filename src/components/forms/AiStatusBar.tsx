@@ -35,15 +35,15 @@ export function AiStatusBar() {
   }
 
   return (
-    <div className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200 text-xs text-gray-600">
+    <div className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg bg-sand-100 border border-sand-300 text-xs text-ink-subtle">
       <div className="truncate">
-        <span className="font-medium text-gray-800">{providerLabel}</span> ·{' '}
-        <span className="font-mono text-gray-700">{model}</span>
+        <span className="font-medium text-ink">{providerLabel}</span> ·{' '}
+        <span className="font-mono text-ink-muted">{model}</span>
       </div>
       <button
         type="button"
         onClick={openSettingsModal}
-        className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-700 font-medium shrink-0"
+        className="inline-flex items-center gap-1 text-brand-600 hover:text-brand-700 font-medium shrink-0"
       >
         <Settings2 className="h-3.5 w-3.5" />
         Cambiar
