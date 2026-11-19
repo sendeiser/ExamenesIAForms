@@ -19,7 +19,7 @@ import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { exportToCsv } from '../utils/export-csv';
-import { ArrowLeft, Download, CheckCircle2, XCircle, Trash2, Edit3, Save, X, Users, FileDown, Eye, Camera, ZoomIn, Clock, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Download, CheckCircle2, XCircle, Trash2, Edit3, Save, X, Users, FileDown, Eye, Camera, ZoomIn, Clock, RotateCcw, Link2, Check } from 'lucide-react';
 import { LatexRenderer } from '../components/ui/LatexRenderer';
 import { QuestionTableView } from '../components/form-view/QuestionTableView';
 import { toOptionItem } from '../types/question';
@@ -86,8 +86,20 @@ export default function ExamResultsPage() {
   const [gradeRounding, setGradeRounding] = useState<GradeRoundingMode>('quarter');
   const [validatingKey, setValidatingKey] = useState<string | null>(null);
   const [zoomedProcedurePhoto, setZoomedProcedurePhoto] = useState<{ src: string; title: string } | null>(null);
+  const [copiedResultLinkId, setCopiedResultLinkId] = useState<string | null>(null);
 
   useEffect(() => { if (formId) loadForm(formId); }, [formId]);
+
+  useEffect(() => {
+    const nextScores: Record<string, number> = {};
+    const nextGrades: Record<string, number> = {};
+    for (const r of responses) {
+      if (typeof r.scoreOverride === 'number') nextScores[r.id] = r.scoreOverride;
+      if (typeof r.gradeOverride === 'number') nextGrades[r.id] = r.gradeOverride;
+    }
+    setScoreOverrides(nextScores);
+    setGradeOverrides(nextGrades);
+  }, [responses]);
 
   useEffect(() => {
     if (form?.settings?.gradeRounding) {
@@ -100,6 +112,28 @@ export default function ExamResultsPage() {
     if (form?.settings) {
       updateForm({ settings: { ...form.settings, gradeRounding: nextMode } });
     }
+  }
+
+  async function resetAllOverrides() {
+    const affectedIds = new Set([
+      ...Object.keys(scoreOverrides),
+      ...Object.keys(gradeOverrides),
+    ]);
+    setScoreOverrides({});
+    setGradeOverrides({});
+    await Promise.all(
+      Array.from(affectedIds).map((id) =>
+        updateResponse(id, { scoreOverride: null, gradeOverride: null })
+      )
+    );
+  }
+
+  async function handleCopyResultLink(responseId: string) {
+    if (!formId) return;
+    const url = `${window.location.origin}/view/${formId}?result=${responseId}`;
+    await navigator.clipboard.writeText(url);
+    setCopiedResultLinkId(responseId);
+    setTimeout(() => setCopiedResultLinkId((prev) => (prev === responseId ? null : prev)), 2000);
   }
 
   const scored = useMemo(() => {
@@ -552,10 +586,7 @@ export default function ExamResultsPage() {
           {hasManualOverrides && (
             <Button
               variant="ghost"
-              onClick={() => {
-                setScoreOverrides({});
-                setGradeOverrides({});
-              }}
+              onClick={resetAllOverrides}
               className="text-xs text-amber-700 hover:bg-amber-50"
             >
               Restablecer notas
@@ -708,6 +739,7 @@ export default function ExamResultsPage() {
                                   delete next[r.id];
                                   return next;
                                 });
+                                void updateResponse(r.id, { scoreOverride: v, gradeOverride: null });
                               }}
                               className="w-16 text-center border rounded px-1 py-0.5 text-sm font-mono"
                             />
@@ -732,10 +764,12 @@ export default function ExamResultsPage() {
                               onChange={(e) => {
                                 const parsed = Number(e.target.value);
                                 if (Number.isNaN(parsed)) return;
+                                const snapped = snapGrade1to10(parsed, gradeRounding);
                                 setGradeOverrides((prev) => ({
                                   ...prev,
-                                  [r.id]: snapGrade1to10(parsed, gradeRounding),
+                                  [r.id]: snapped,
                                 }));
+                                void updateResponse(r.id, { gradeOverride: snapped });
                               }}
                               className="w-16 text-center border rounded px-1 py-0.5 text-sm font-mono font-bold"
                             />
@@ -1217,7 +1251,7 @@ export default function ExamResultsPage() {
 
               {/* Modal footer actions */}
               <div className="pt-3 border-t border-sand-200 flex items-center justify-between gap-2 flex-wrap">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   {editing ? (
                     <>
                       <Button onClick={saveEdit}>
@@ -1229,10 +1263,24 @@ export default function ExamResultsPage() {
                       </Button>
                     </>
                   ) : (
-                    <Button variant="secondary" onClick={() => startEdit(r)}>
-                      <Edit3 className="h-4 w-4" />
-                      Editar respuestas
-                    </Button>
+                    <>
+                      <Button variant="secondary" onClick={() => startEdit(r)}>
+                        <Edit3 className="h-4 w-4" />
+                        Editar respuestas
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => handleCopyResultLink(r.id)}
+                      >
+                        {copiedResultLinkId === r.id ? (
+                          <Check className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <Link2 className="h-4 w-4" />
+                        )}
+                        {copiedResultLinkId === r.id ? 'Link copiado' : 'Copiar link de resultado'}
+                      </Button>
+                    </>
                   )}
                 </div>
                 <Button variant="ghost" onClick={closeStudentModal}>

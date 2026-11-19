@@ -49,13 +49,14 @@ export function useExamSecurity({ config, onViolation, onMaxViolations, onStart 
   function stop() {
     startedRef.current = false;
     setStarted(false);
-    wakeLockRef.current?.release();
+    wakeLockRef.current?.release().catch(() => {});
     wakeLockRef.current = null;
   }
 
   const lastViolation = useRef(0);
 
   function countViolation() {
+    if (!startedRef.current) return;
     const now = Date.now();
     if (now - lastViolation.current < 3000) return; // ignore duplicate within 3s
     lastViolation.current = now;

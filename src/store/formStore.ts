@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { collection, query, where, orderBy, addDoc, deleteDoc, getDocs, getDoc, updateDoc, doc, Timestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { generateShortCode } from '../lib/shortLink';
 import type { Form } from '../types/form';
 
 interface FormStore {
@@ -51,6 +52,7 @@ export const useFormStore = create<FormStore>((set) => ({
       ownerId,
       title,
       description: '',
+      shortCode: generateShortCode(5),
       settings: defaultSettings,
       theme: defaultTheme,
       published: false,
@@ -84,6 +86,7 @@ export const useFormStore = create<FormStore>((set) => ({
     const newFormRef = await addDoc(collection(db, 'forms'), {
       ...formData,
       title: `${formData.title} (copia)`,
+      shortCode: generateShortCode(5),
       published: false,
       createdAt: now,
       updatedAt: now,

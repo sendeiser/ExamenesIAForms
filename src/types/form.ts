@@ -34,6 +34,7 @@ export interface Form {
   ownerId: string;
   title: string;
   description: string;
+  shortCode?: string;
   settings: FormSettings;
   theme: FormTheme;
   published: boolean;

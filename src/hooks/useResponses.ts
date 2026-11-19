@@ -20,7 +20,7 @@ export function useResponses(formId: string) {
     answers: Record<string, any>,
     respondent?: RespondentInfo | null,
     procedurePhotos?: Record<string, string[]>
-  ) {
+  ): Promise<string> {
     const clean: Record<string, any> = {};
     for (const [k, v] of Object.entries(answers)) {
       if (v !== undefined) clean[k] = v;
@@ -35,7 +35,7 @@ export function useResponses(formId: string) {
       }
     }
 
-    await addDoc(collection(db, 'forms', formId, 'responses'), {
+    const docRef = await addDoc(collection(db, 'forms', formId, 'responses'), {
       respondentId: null,
       respondentEmail: respondent?.email ?? null,
       respondent: respondent ?? null,
@@ -43,6 +43,7 @@ export function useResponses(formId: string) {
       ...(Object.keys(cleanPhotos).length > 0 ? { procedurePhotos: cleanPhotos } : {}),
       submittedAt: Timestamp.now(),
     });
+    return docRef.id;
   }
 
   async function deleteResponse(responseId: string) {
@@ -56,6 +57,8 @@ export function useResponses(formId: string) {
       respondent?: RespondentInfo;
       procedurePhotos?: Record<string, string[]>;
       procedureValidations?: Record<string, ProcedureValidationStatus>;
+      scoreOverride?: number | null;
+      gradeOverride?: number | null;
     }
   ) {
     await updateDoc(doc(db, 'forms', formId, 'responses', responseId), JSON.parse(JSON.stringify(updates)));

@@ -124,7 +124,7 @@ export function FormView({
   const [violations, setViolations] = useState(0);
 
   const hasSecurityConfigured = Boolean(form.settings?.securityEnabled);
-  const security = Boolean(hasSecurityConfigured && !previewMode);
+  const security = Boolean(hasSecurityConfigured && !previewMode && !submitted);
   const securityConfig = useMemo(() => ({
     enabled: security,
     maxViolations: form.settings?.maxViolations ?? 3,
@@ -133,6 +133,8 @@ export function FormView({
     preventTabSwitch: form.settings?.preventTabSwitch ?? true,
   }), [security, form.settings?.maxViolations, form.settings?.fullscreen, form.settings?.disableCopy, form.settings?.preventTabSwitch]);
 
+  const submittingRef = useRef(false);
+  const submittedRef = useRef(false);
   const handleSubmitRef = useRef<(...args: any[]) => Promise<void>>();
 
   const { start: startSecurity, stop: stopSecurity, started: securityStarted } = useExamSecurity({
@@ -153,6 +155,7 @@ export function FormView({
   }
 
   const handleSubmit = useCallback(async (auto?: boolean) => {
+    if (submittingRef.current || submittedRef.current) return;
     setError('');
 
     if (!auto) {
@@ -177,15 +180,18 @@ export function FormView({
       }
     }
 
+    submittingRef.current = true;
     setSaving(true);
     try {
       await onSubmit(answers, respondent, procedurePhotos);
-      setSubmitted(true);
+      submittedRef.current = true;
       stopSecurity();
+      setSubmitted(true);
       if (form.settings?.isQuiz) {
         setQuizScore(scoreQuiz(questions, answers));
       }
     } catch (e: any) {
+      submittingRef.current = false;
       console.error('Submit error:', e);
       const code = e?.code || e?.message || '';
       if (code.includes('permission-denied')) {
@@ -273,6 +279,8 @@ export function FormView({
   }
 
   function resetPreview() {
+    submittingRef.current = false;
+    submittedRef.current = false;
     setAnswers(initialAnswers ?? {});
     setProcedurePhotos({});
     setShowPhotoValidationError(false);
@@ -285,11 +293,24 @@ export function FormView({
   if (submitted) {
     return (
       <div
-        className={previewMode ? 'theme-page max-w-2xl mx-auto space-y-4 rounded-xl p-4 sm:p-6' : 'max-w-2xl mx-auto space-y-4'}
-        style={previewMode ? { ...scopedThemeStyle, minHeight: 'auto' } : { color: 'var(--form-text, #1C1917)' }}
+        className={previewMode ? 'max-w-2xl mx-auto space-y-4 rounded-xl p-4 sm:p-6 bg-paper-grid' : 'max-w-2xl mx-auto space-y-4'}
       >
         {form.settings?.isQuiz && quizScore ? (
-          <QuizResult score={quizScore} gradeRounding={form.settings?.gradeRounding ?? 'quarter'} />
+          <QuizResult
+            score={quizScore}
+            gradeRounding={form.settings?.gradeRounding ?? 'quarter'}
+            questions={questions}
+            response={{
+              id: '',
+              formId: form.id,
+              respondentId: null,
+              respondentEmail: respondent?.email ?? null,
+              respondent,
+              answers,
+              procedurePhotos,
+              submittedAt: new Date(),
+            }}
+          />
         ) : (
           <Card className="p-8 text-center max-w-lg mx-auto">
             <div className="text-4xl mb-4">&#127881;</div>

@@ -7,11 +7,13 @@ import ResponsesPage from './pages/ResponsesPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import ExamResultsPage from './pages/ExamResultsPage';
 import LoginPage from './pages/LoginPage';
+import ShortLinkRedirectPage from './pages/ShortLinkRedirectPage';
 
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/e/:code" element={<ShortLinkRedirectPage />} />
       <Route path="/view/:formId" element={<FormViewPage />} />
       <Route element={<AppLayout />}>
         <Route path="/" element={<DashboardPage />} />

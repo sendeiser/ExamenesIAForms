@@ -1,13 +1,25 @@
-import { Navigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Button } from '../components/ui/Button';
-import { Sparkles, Eye, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Input } from '../components/ui/Input';
+import { normalizeShortCode } from '../lib/shortLink';
+import { Sparkles, Eye, ShieldCheck, CheckCircle2, KeyRound, ArrowRight } from 'lucide-react';
 
 export default function LoginPage() {
   const { user, loading, signInWithGoogle } = useAuth();
+  const navigate = useNavigate();
+  const [examCode, setExamCode] = useState('');
 
   if (loading) return null;
   if (user) return <Navigate to="/" replace />;
+
+  function handleEnterWithCode(e: React.FormEvent) {
+    e.preventDefault();
+    const cleaned = normalizeShortCode(examCode);
+    if (!cleaned) return;
+    navigate(`/e/${cleaned}`);
+  }
 
   return (
     <div className="min-h-screen bg-paper-grid flex items-center justify-center p-4 sm:p-8">
@@ -74,6 +86,28 @@ export default function LoginPage() {
           <p className="text-xs text-ink-light text-center">
             Los estudiantes acceden directamente mediante el enlace público de cada examen.
           </p>
+
+          <div className="pt-5 border-t border-sand-200 space-y-3">
+            <div className="flex items-center gap-2 text-xs font-semibold text-ink">
+              <KeyRound className="h-4 w-4 text-brand-600" />
+              <span>¿Eres estudiante? Ingresa con código</span>
+            </div>
+            <form onSubmit={handleEnterWithCode} className="flex gap-2">
+              <Input
+                value={examCode}
+                onChange={(e) => setExamCode(e.target.value.toUpperCase())}
+                placeholder="Ej: MATE1"
+                className="flex-1 font-mono uppercase tracking-widest text-center font-bold"
+              />
+              <Button type="submit" variant="secondary" disabled={!normalizeShortCode(examCode)}>
+                Entrar
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </form>
+            <p className="text-[11px] text-ink-subtle leading-snug">
+              Escribe el código corto que compartió tu docente (también sirve para revisar tu nota y examen).
+            </p>
+          </div>
         </div>
       </div>
     </div>

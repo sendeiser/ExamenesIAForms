@@ -14,5 +14,7 @@ export interface FormResponse {
   answers: Record<string, any>;
   procedurePhotos?: Record<string, string[]>;
   procedureValidations?: Record<string, ProcedureValidationStatus>;
+  scoreOverride?: number | null;
+  gradeOverride?: number | null;
   submittedAt: Date;
 }
