@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Monitor, Smartphone, RotateCcw, ExternalLink, Eye } from 'lucide-react';
 import { useEditorStore } from '../../store/editorStore';
+import { getVersionLabel, hasMultipleVersions } from '../../lib/examVersions';
 import { FormView } from '../form-view/FormView';
 import { Button } from '../ui/Button';
 
@@ -12,10 +13,14 @@ export function ExamPreviewPanel({ previewUrl }: ExamPreviewPanelProps) {
   const form = useEditorStore((s) => s.form);
   const questions = useEditorStore((s) => s.questions);
   const sections = useEditorStore((s) => s.sections);
+  const activeVersionId = useEditorStore((s) => s.activeVersionId);
   const [viewport, setViewport] = useState<'desktop' | 'mobile'>('desktop');
   const [previewKey, setPreviewKey] = useState(0);
 
   if (!form) return null;
+  const activeVersionLabel = hasMultipleVersions(form)
+    ? getVersionLabel(form, activeVersionId)
+    : undefined;
 
   return (
     <section
@@ -95,12 +100,13 @@ export function ExamPreviewPanel({ previewUrl }: ExamPreviewPanelProps) {
           }`}
         >
           <FormView
-            key={previewKey}
+            key={`${previewKey}-${activeVersionId}`}
             form={form}
             questions={questions}
             sections={sections}
             respondent={{ name: 'Vista previa', email: 'docente@ejemplo.com' }}
             onSubmit={async () => {}}
+            versionLabel={activeVersionLabel}
             previewMode
           />
         </div>

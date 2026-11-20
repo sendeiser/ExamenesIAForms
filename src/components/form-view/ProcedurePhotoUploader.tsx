@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Camera, Upload, Trash2, ZoomIn, RefreshCw, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
+import { ProcedurePhotoViewerModal } from '../ui/ProcedurePhotoViewerModal';
 import { Button } from '../ui/Button';
 
 export const MAX_PROCEDURE_PHOTOS = 3;
@@ -59,7 +60,7 @@ export function ProcedurePhotoUploader({
   const [cameraOpen, setCameraOpen] = useState(false);
   const [cameraError, setCameraError] = useState('');
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
-  const [zoomPhoto, setZoomPhoto] = useState<string | null>(null);
+  const [zoomPhoto, setZoomPhoto] = useState<number | null>(null);
 
   const remainingSlots = Math.max(0, MAX_PROCEDURE_PHOTOS - photos.length);
 
@@ -286,12 +287,12 @@ export function ProcedurePhotoUploader({
               <img
                 src={src}
                 alt={`Procedimiento ${idx + 1}`}
-                onClick={() => setZoomPhoto(src)}
+                onClick={() => setZoomPhoto(idx)}
                 className="h-full w-full object-cover cursor-pointer"
               />
               <button
                 type="button"
-                onClick={() => setZoomPhoto(src)}
+                onClick={() => setZoomPhoto(idx)}
                 title="Ampliar foto"
                 className="absolute bottom-1.5 left-1.5 rounded-full bg-black/60 p-1 text-white opacity-90 hover:bg-black/80 transition-opacity"
               >
@@ -382,28 +383,14 @@ export function ProcedurePhotoUploader({
         </div>
       </Modal>
 
-      {/* Lightbox zoom modal */}
-      <Modal
+      {/* Enhanced zoom viewer modal */}
+      <ProcedurePhotoViewerModal
         open={zoomPhoto !== null}
         onClose={() => setZoomPhoto(null)}
+        photos={photos}
+        initialIndex={zoomPhoto ?? 0}
         title="Evidencia del procedimiento"
-        size="lg"
-      >
-        {zoomPhoto && (
-          <div className="space-y-3">
-            <img
-              src={zoomPhoto}
-              alt="Foto del procedimiento ampliada"
-              className="w-full max-h-[70vh] object-contain rounded-lg border border-sand-200 bg-sand-50"
-            />
-            <div className="flex justify-end">
-              <Button type="button" variant="secondary" onClick={() => setZoomPhoto(null)}>
-                Cerrar
-              </Button>
-            </div>
-          </div>
-        )}
-      </Modal>
+      />
     </div>
   );
 }

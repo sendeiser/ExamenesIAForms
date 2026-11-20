@@ -66,6 +66,7 @@ export interface QuizQuestionSettings {
 export interface Question {
   id: string;
   formId: string;
+  versionId?: string | null;
   type: QuestionType;
   title: string;
   description: string;
@@ -81,6 +82,7 @@ export interface Question {
 export interface Section {
   id: string;
   formId: string;
+  versionId?: string | null;
   title: string;
   description: string;
   order: number;

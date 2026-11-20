@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
-import { Modal } from '../ui/Modal';
+import { ProcedurePhotoViewerModal } from '../ui/ProcedurePhotoViewerModal';
 import { LatexRenderer } from '../ui/LatexRenderer';
 import { QuestionTableView } from './QuestionTableView';
 import {
@@ -47,7 +47,11 @@ export function QuizResult({
   const [feedback, setFeedback] = useState<Record<string, string> | null>(null);
   const [loadingFeedback, setLoadingFeedback] = useState(false);
   const [feedbackError, setFeedbackError] = useState('');
-  const [zoomedPhoto, setZoomedPhoto] = useState<{ src: string; title: string } | null>(null);
+  const [zoomedPhoto, setZoomedPhoto] = useState<{
+    photos: string[];
+    index: number;
+    title: string;
+  } | null>(null);
 
   const effectiveEarned =
     response?.scoreOverride !== undefined && response?.scoreOverride !== null
@@ -104,9 +108,16 @@ export function QuizResult({
       {response && (
         <Card className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-sand-50/70">
           <div className="min-w-0">
-            <p className="font-display text-sm font-bold text-ink truncate">
-              {response.respondent?.name || 'Estudiante'}
-            </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="font-display text-sm font-bold text-ink truncate">
+                {response.respondent?.name || 'Estudiante'}
+              </p>
+              {response.versionLabel && (
+                <span className="inline-flex items-center rounded-full bg-purple-100 border border-purple-200 px-2 py-0.5 text-[10px] font-mono font-semibold text-purple-800">
+                  {response.versionLabel}
+                </span>
+              )}
+            </div>
             <p className="text-xs text-ink-light truncate">
               {response.respondent?.email || response.respondentEmail || '—'}
             </p>
@@ -276,7 +287,11 @@ export function QuizResult({
                             key={pIdx}
                             type="button"
                             onClick={() =>
-                              setZoomedPhoto({ src, title: `Actividad ${idx + 1} · Foto ${pIdx + 1}` })
+                              setZoomedPhoto({
+                                photos,
+                                index: pIdx,
+                                title: `Actividad ${idx + 1}`,
+                              })
                             }
                             className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-sand-300 bg-white hover:border-brand-500"
                           >
@@ -341,28 +356,14 @@ export function QuizResult({
             ))}
       </div>
 
-      <Modal
+      <ProcedurePhotoViewerModal
         open={zoomedPhoto !== null}
         onClose={() => setZoomedPhoto(null)}
+        photos={zoomedPhoto?.photos ?? []}
+        initialIndex={zoomedPhoto?.index ?? 0}
         title={zoomedPhoto?.title ?? 'Foto del procedimiento'}
-        size="lg"
         zIndexClass="z-[60]"
-      >
-        {zoomedPhoto && (
-          <div className="space-y-3">
-            <img
-              src={zoomedPhoto.src}
-              alt={zoomedPhoto.title}
-              className="w-full max-h-[75vh] object-contain rounded-lg border border-sand-200 bg-sand-50"
-            />
-            <div className="flex justify-end">
-              <Button type="button" variant="secondary" onClick={() => setZoomedPhoto(null)}>
-                Cerrar
-              </Button>
-            </div>
-          </div>
-        )}
-      </Modal>
+      />
     </div>
   );
 }

@@ -45,6 +45,27 @@ export function getGrade1to10Label(grade: number): string {
   return 'Insuficiente';
 }
 
+/** Cuenta cuántas actividades del examen tienen una respuesta no vacía. */
+export function countCompletedActivities(
+  questions: Question[],
+  answers: Record<string, any> | undefined | null
+): number {
+  if (!answers) return 0;
+  let count = 0;
+  for (const q of questions) {
+    const val = answers[q.id];
+    if (val === undefined || val === null) continue;
+    if (Array.isArray(val)) {
+      if (val.length > 0) count++;
+    } else if (typeof val === 'object') {
+      if (Object.values(val).some((v) => String(v ?? '').trim() !== '')) count++;
+    } else if (String(val).trim() !== '') {
+      count++;
+    }
+  }
+  return count;
+}
+
 export interface QuizScore {
   totalPoints: number;
   earnedPoints: number;

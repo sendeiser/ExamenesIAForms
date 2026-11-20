@@ -10,16 +10,26 @@ import {
   formatGrade1to10,
   snapGrade1to10,
   getGrade1to10Label,
+  countCompletedActivities,
   type GradeRoundingMode,
   type QuizScore,
 } from '../lib/quizScoring';
+import {
+  filterQuestionsByVersion,
+  getFormVersions,
+  getQuestionsForResponse,
+  getVersionLabel,
+  hasMultipleVersions,
+  normalizeVersionId,
+} from '../lib/examVersions';
 import { generateExamResultsPdf } from '../lib/pdfReportGenerator';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
+import { ProcedurePhotoViewerModal } from '../components/ui/ProcedurePhotoViewerModal';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { exportToCsv } from '../utils/export-csv';
-import { ArrowLeft, Download, CheckCircle2, XCircle, Trash2, Edit3, Save, X, Users, FileDown, Eye, Camera, ZoomIn, Clock, RotateCcw, Link2, Check } from 'lucide-react';
+import { ArrowLeft, Download, CheckCircle2, XCircle, Trash2, Edit3, Save, X, Users, FileDown, Eye, Camera, ZoomIn, Clock, RotateCcw, Link2, Check, Layers } from 'lucide-react';
 import { LatexRenderer } from '../components/ui/LatexRenderer';
 import { QuestionTableView } from '../components/form-view/QuestionTableView';
 import { toOptionItem } from '../types/question';
@@ -57,11 +67,12 @@ function buildSimulatedProcedurePhoto(studentName: string, activityTitle: string
 export default function ExamResultsPage() {
   const { formId } = useParams<{ formId: string }>();
   const form = useEditorStore((s) => s.form);
-  const questions = useEditorStore((s) => s.questions);
+  const allQuestions = useEditorStore((s) => s.allQuestions);
   const loadForm = useEditorStore((s) => s.loadForm);
   const updateForm = useEditorStore((s) => s.updateForm);
   const { responses, loading, deleteResponse, updateResponse } = useResponses(formId!);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+  const [versionFilter, setVersionFilter] = useState<'all' | string>('all');
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [editTarget, setEditTarget] = useState<string | null>(null);
   const [editAnswers, setEditAnswers] = useState<Record<string, any>>({});
@@ -85,10 +96,17 @@ export default function ExamResultsPage() {
   const [gradeOverrides, setGradeOverrides] = useState<Record<string, number>>({});
   const [gradeRounding, setGradeRounding] = useState<GradeRoundingMode>('quarter');
   const [validatingKey, setValidatingKey] = useState<string | null>(null);
-  const [zoomedProcedurePhoto, setZoomedProcedurePhoto] = useState<{ src: string; title: string } | null>(null);
+  const [zoomedProcedurePhoto, setZoomedProcedurePhoto] = useState<{
+    photos: string[];
+    index: number;
+    title: string;
+  } | null>(null);
   const [copiedResultLinkId, setCopiedResultLinkId] = useState<string | null>(null);
 
-  useEffect(() => { if (formId) loadForm(formId); }, [formId]);
+  useEffect(() => {
+    setVersionFilter('all');
+    if (formId) loadForm(formId);
+  }, [formId]);
 
   useEffect(() => {
     const nextScores: Record<string, number> = {};
@@ -136,13 +154,38 @@ export default function ExamResultsPage() {
     setTimeout(() => setCopiedResultLinkId((prev) => (prev === responseId ? null : prev)), 2000);
   }
 
+  const versions = useMemo(() => getFormVersions(form), [form]);
+  const multiVersion = hasMultipleVersions(form);
+
+  const responseVersionMap = useMemo(() => {
+    const map = new Map<string, { versionId: string; versionLabel: string; questions: Question[] }>();
+    for (const r of responses) {
+      const studentQs = getQuestionsForResponse(allQuestions, r);
+      const vId = normalizeVersionId(r.versionId ?? studentQs[0]?.versionId);
+      const vLabel = getVersionLabel(form, vId, r.versionLabel);
+      map.set(r.id, { versionId: vId, versionLabel: vLabel, questions: studentQs });
+    }
+    return map;
+  }, [responses, allQuestions, form]);
+
+  const versionCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const entry of responseVersionMap.values()) {
+      counts[entry.versionId] = (counts[entry.versionId] ?? 0) + 1;
+    }
+    return counts;
+  }, [responseVersionMap]);
+
   const scored = useMemo(() => {
     if (!form?.settings?.isQuiz) return null;
-    return responses.map((r) => ({
-      response: r,
-      score: scoreQuiz(questions, r.answers, r.procedureValidations),
-    }));
-  }, [responses, questions, form]);
+    return responses.map((r) => {
+      const studentQs = responseVersionMap.get(r.id)?.questions ?? allQuestions;
+      return {
+        response: r,
+        score: scoreQuiz(studentQs, r.answers, r.procedureValidations),
+      };
+    });
+  }, [responses, allQuestions, responseVersionMap, form]);
 
   const displayScores = useMemo(() => {
     if (!scored) return null;
@@ -160,6 +203,19 @@ export default function ExamResultsPage() {
     });
   }, [scored, scoreOverrides]);
 
+  const filteredResponses = useMemo(() => {
+    if (!multiVersion || versionFilter === 'all') return responses;
+    return responses.filter((r) => responseVersionMap.get(r.id)?.versionId === versionFilter);
+  }, [responses, multiVersion, versionFilter, responseVersionMap]);
+
+  const filteredDisplayScores = useMemo(() => {
+    if (!displayScores) return null;
+    if (!multiVersion || versionFilter === 'all') return displayScores;
+    return displayScores.filter(
+      (item) => responseVersionMap.get(item.response.id)?.versionId === versionFilter
+    );
+  }, [displayScores, multiVersion, versionFilter, responseVersionMap]);
+
   const selectedStudentItem = useMemo(() => {
     if (!selectedStudentId) return null;
     const items: any[] = displayScores ?? scored ?? responses;
@@ -174,7 +230,8 @@ export default function ExamResultsPage() {
   if (loading) return <LoadingSpinner />;
 
   function getStudentProcedureSummary(r: FormResponse) {
-    const photoQs = questions.filter((q) => q.settings?.requireProcedurePhoto);
+    const studentQs = responseVersionMap.get(r.id)?.questions ?? allQuestions;
+    const photoQs = studentQs.filter((q) => q.settings?.requireProcedurePhoto);
     if (photoQs.length === 0) return { total: 0, pending: 0, validated: 0, rejected: 0 };
     let pending = 0;
     let validated = 0;
@@ -217,17 +274,20 @@ export default function ExamResultsPage() {
     return computeGrade1to10(earned, total, gradeRounding);
   }
 
-  const totalRespondents = scored?.length ?? responses.length;
-  const totalPoints = (displayScores ?? scored)?.[0]?.score.totalPoints ?? 0;
-  const avgEarned = displayScores && displayScores.length > 0
-    ? displayScores.reduce((s, r) => s + r.score.earnedPoints, 0) / displayScores.length
+  const activeScoredList = filteredDisplayScores;
+  const activeResponsesList = filteredResponses;
+
+  const totalRespondents = activeScoredList?.length ?? activeResponsesList.length;
+  const totalPoints = activeScoredList?.[0]?.score.totalPoints ?? 0;
+  const avgEarned = activeScoredList && activeScoredList.length > 0
+    ? activeScoredList.reduce((s, r) => s + r.score.earnedPoints, 0) / activeScoredList.length
     : 0;
-  const sorted = displayScores ? [...displayScores].sort((a, b) => b.score.earnedPoints - a.score.earnedPoints) : [];
+  const sorted = activeScoredList ? [...activeScoredList].sort((a, b) => b.score.earnedPoints - a.score.earnedPoints) : [];
   const highestEarned = sorted[0]?.score.earnedPoints ?? 0;
   const lowestEarned = sorted[sorted.length - 1]?.score.earnedPoints ?? 0;
 
-  const studentGrades = displayScores
-    ? displayScores.map((item) => getStudentGrade(item.response.id, item.score.earnedPoints, item.score.totalPoints))
+  const studentGrades = activeScoredList
+    ? activeScoredList.map((item) => getStudentGrade(item.response.id, item.score.earnedPoints, item.score.totalPoints))
     : [];
   const avgGrade = studentGrades.length > 0
     ? studentGrades.reduce((sum, g) => sum + g, 0) / studentGrades.length
@@ -235,25 +295,63 @@ export default function ExamResultsPage() {
   const highestGrade = studentGrades.length > 0 ? Math.max(...studentGrades) : 1;
   const lowestGrade = studentGrades.length > 0 ? Math.min(...studentGrades) : 1;
   const passed = studentGrades.filter((g) => g >= 6).length;
-  const passRate = displayScores && displayScores.length > 0 ? (passed / displayScores.length) * 100 : 0;
+  const passRate = activeScoredList && activeScoredList.length > 0 ? (passed / activeScoredList.length) * 100 : 0;
 
   function handleExport() {
-    if (!form?.settings?.isQuiz || !(displayScores ?? scored)) {
-      const headers = ['Nombre', 'Email', 'Fecha', ...questions.map((q) => q.title)];
-      const rows = responses.map((r) => [
-        r.respondent?.name ?? '',
-        r.respondent?.email ?? r.respondentEmail ?? '',
-        r.submittedAt?.toLocaleString() ?? '',
-        ...questions.map((q) => String(r.answers[q.id] ?? '')),
-      ]);
+    if (!form?.settings?.isQuiz || !activeScoredList) {
+      const headers = multiVersion
+        ? ['Nombre', 'Tema', 'Email', 'Actividades', 'Fecha']
+        : ['Nombre', 'Email', 'Fecha', ...allQuestions.map((q) => q.title)];
+      const rows = activeResponsesList.map((r) => {
+        const meta = responseVersionMap.get(r.id);
+        const studentQs = meta?.questions ?? allQuestions;
+        if (multiVersion) {
+          return [
+            r.respondent?.name ?? '',
+            meta?.versionLabel ?? 'Tema 1',
+            r.respondent?.email ?? r.respondentEmail ?? '',
+            `${countCompletedActivities(studentQs, r.answers)}/${studentQs.length}`,
+            r.submittedAt?.toLocaleString('es-ES') ?? '',
+          ];
+        }
+        return [
+          r.respondent?.name ?? '',
+          r.respondent?.email ?? r.respondentEmail ?? '',
+          r.submittedAt?.toLocaleString('es-ES') ?? '',
+          ...allQuestions.map((q) => String(r.answers[q.id] ?? '')),
+        ];
+      });
       exportToCsv(`${form?.title ?? 'resultados'}.csv`, [headers, ...rows]);
       return;
     }
 
-    const list = displayScores ?? scored!;
+    const list = activeScoredList;
+    if (multiVersion) {
+      const headers = ['Nombre', 'Tema', 'Email', 'Actividades', 'Puntaje', 'Total', 'Nota (1-10)', 'Porcentaje', 'Aprobado', 'Fecha'];
+      const rows = list.map(({ response: r, score: s }) => {
+        const meta = responseVersionMap.get(r.id);
+        const studentQs = meta?.questions ?? allQuestions;
+        const grade = getStudentGrade(r.id, s.earnedPoints, s.totalPoints);
+        return [
+          r.respondent?.name ?? '',
+          meta?.versionLabel ?? 'Tema 1',
+          r.respondent?.email ?? r.respondentEmail ?? '',
+          `${countCompletedActivities(studentQs, r.answers)}/${studentQs.length}`,
+          String(s.earnedPoints),
+          String(s.totalPoints),
+          formatGrade1to10(grade, gradeRounding),
+          `${s.percentage.toFixed(0)}%`,
+          grade >= 6 ? 'Sí' : 'No',
+          r.submittedAt?.toLocaleString('es-ES') ?? '',
+        ];
+      });
+      exportToCsv(`${form?.title ?? 'resultados'}_calificaciones.csv`, [headers, ...rows]);
+      return;
+    }
+
     const headers = [
       'Nombre', 'Email', 'Puntaje', 'Total', 'Nota (1-10)', 'Porcentaje', 'Aprobado',
-      ...questions.flatMap((q) => [
+      ...allQuestions.flatMap((q) => [
         `${q.title} (respuesta)`,
         `${q.title} (correcta)`,
         `${q.title} (puntos)`,
@@ -305,6 +403,7 @@ export default function ExamResultsPage() {
     if (selectedStudentItem && editTarget === selectedStudentItem.response.id) {
       cancelEdit();
     }
+    setZoomedProcedurePhoto(null);
     setSelectedStudentId(null);
   }
 
@@ -457,7 +556,6 @@ export default function ExamResultsPage() {
   async function handleSimulate() {
     if (!formId || !form?.settings?.isQuiz) return;
     setSimulating(true);
-    const quizQuestions = questions.filter((q) => q.quizSettings || q.settings?.requireProcedurePhoto);
 
     // Determine which students pass/fail
     const passCount = Math.min(simConfig.pass, simConfig.total);
@@ -468,12 +566,15 @@ export default function ExamResultsPage() {
     for (let i = 0; i < failCount; i++) students.push({ name: randomName(), pass: false });
     students.sort(() => Math.random() - 0.5);
 
-    const submissions = students.map((student) => {
+    const submissions = students.map((student, sIdx) => {
+      const chosenVersion = versions[sIdx % versions.length];
+      const versionQs = filterQuestionsByVersion(allQuestions, chosenVersion.id).filter(
+        (q) => q.quizSettings || q.settings?.requireProcedurePhoto
+      );
       const answers: Record<string, any> = {};
       const procedurePhotos: Record<string, string[]> = {};
-      for (const q of quizQuestions) {
+      for (const q of versionQs) {
         if (q.quizSettings) {
-          // Determine if this specific question should be correct
           // Pass students: 90% chance correct; Fail students: 10% chance correct
           const shouldBeCorrect = student.pass ? Math.random() < 0.9 : Math.random() < 0.1;
           answers[q.id] = shouldBeCorrect ? generateCorrectAnswer(q) : generateWrongAnswer(q);
@@ -486,6 +587,8 @@ export default function ExamResultsPage() {
         respondentId: null,
         respondentEmail: `${student.name.toLowerCase().replace(/\s+/g, '.')}@email.com`,
         respondent: { name: student.name, email: `${student.name.toLowerCase().replace(/\s+/g, '.')}@email.com` },
+        versionId: chosenVersion.id,
+        versionLabel: chosenVersion.label,
         answers,
         ...(Object.keys(procedurePhotos).length > 0 ? { procedurePhotos } : {}),
         submittedAt: Timestamp.now(),
@@ -506,14 +609,15 @@ export default function ExamResultsPage() {
 
     try {
       await new Promise((r) => setTimeout(r, 0));
-      const rawItems = displayScores ?? scored;
+      const rawItems = activeScoredList;
       const itemsForPdf = rawItems
         ? rawItems.map((it) => ({ response: it.response, score: it.score }))
-        : responses.map((r) => ({ response: r, score: null }));
+        : activeResponsesList.map((r) => ({ response: r, score: null }));
 
       generateExamResultsPdf({
         form,
-        questions,
+        questions: allQuestions,
+        allQuestions,
         items: itemsForPdf,
         scoreOverrides,
         gradeOverrides,
@@ -622,6 +726,41 @@ export default function ExamResultsPage() {
         <p className="text-xs text-gray-500">Generado el {new Date().toLocaleString()}</p>
       </div>
 
+      {/* ── Version filter chips ── */}
+      {multiVersion && (
+        <div className="flex flex-wrap items-center gap-1.5 print:hidden">
+          <span className="inline-flex items-center gap-1 text-xs font-mono uppercase tracking-wider text-ink-light mr-1">
+            <Layers className="h-3.5 w-3.5 text-brand-600" />
+            Filtrar tema:
+          </span>
+          <button
+            type="button"
+            onClick={() => setVersionFilter('all')}
+            className={`rounded-lg px-3 py-1.5 text-xs font-semibold border transition-colors ${
+              versionFilter === 'all'
+                ? 'bg-brand-600 text-white border-brand-600 shadow-sm'
+                : 'bg-white text-ink border-sand-300 hover:bg-sand-100'
+            }`}
+          >
+            Todos ({responses.length})
+          </button>
+          {versions.map((v) => (
+            <button
+              key={v.id}
+              type="button"
+              onClick={() => setVersionFilter(v.id)}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold border transition-colors ${
+                versionFilter === v.id
+                  ? 'bg-brand-600 text-white border-brand-600 shadow-sm'
+                  : 'bg-white text-ink border-sand-300 hover:bg-sand-100'
+              }`}
+            >
+              {v.label} ({versionCounts[v.id] ?? 0})
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* ── Stats cards ── */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 print:grid-cols-5 print:gap-2">
         <Card className="p-4 text-center">
@@ -656,13 +795,17 @@ export default function ExamResultsPage() {
 
       {/* ── Responses table ── */}
       <Card className="overflow-hidden">
-        <div>
+        <div className="overflow-x-auto">
           <table className="w-full text-sm hidden sm:table">
             <thead>
               <tr className="bg-gray-50 border-b">
                 <th className="text-left px-4 py-3 font-medium text-gray-600 w-8 print:hidden" />
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Nombre</th>
+                {multiVersion && (
+                  <th className="text-center px-4 py-3 font-medium text-gray-600">Tema</th>
+                )}
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Email</th>
+                <th className="text-center px-4 py-3 font-medium text-gray-600">Actividades</th>
                 {scored && (
                   <>
                     <th className="text-center px-4 py-3 font-medium text-gray-600">Puntaje</th>
@@ -671,12 +814,12 @@ export default function ExamResultsPage() {
                     <th className="text-center px-4 py-3 font-medium text-gray-600">Aprobado</th>
                   </>
                 )}
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Fecha</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Fecha y hora</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600 w-24 print:hidden">Acciones</th>
               </tr>
             </thead>
               <tbody>
-                {(displayScores ?? scored ?? responses).map((item: any) => {
+                {(activeScoredList ?? activeResponsesList).map((item: any) => {
                   const r: FormResponse = item.response ?? item;
                   const s: QuizScore | null = item.score ?? null;
                   const isSelected = selectedStudentId === r.id;
@@ -686,6 +829,11 @@ export default function ExamResultsPage() {
                   const studentGrade = s ? getStudentGrade(r.id, earnedVal, s.totalPoints) : 1;
                   const gradeEdited = gradeOverrides[r.id] !== undefined;
                   const procSummary = getStudentProcedureSummary(r);
+                  const versionMeta = responseVersionMap.get(r.id);
+                  const studentQs = versionMeta?.questions ?? allQuestions;
+                  const versionLabel = versionMeta?.versionLabel ?? 'Tema 1';
+                  const completedCount = countCompletedActivities(studentQs, r.answers);
+                  const correctCount = s ? s.results.filter((res) => res.isCorrect).length : null;
 
                 return (
                   <tr
@@ -716,7 +864,22 @@ export default function ExamResultsPage() {
                         )}
                       </div>
                     </td>
+                    {multiVersion && (
+                      <td className="px-4 py-3 text-center">
+                        <span className="inline-flex rounded-full bg-purple-50 border border-purple-200 px-2 py-0.5 text-[11px] font-mono font-semibold text-purple-800">
+                          {versionLabel}
+                        </span>
+                      </td>
+                    )}
                     <td className="px-4 py-3 text-gray-500">{r.respondent?.email || r.respondentEmail || '—'}</td>
+                    <td className="px-4 py-3 text-center font-mono text-xs text-ink">
+                      <span className="font-semibold">{completedCount}/{studentQs.length}</span>
+                      {correctCount !== null && s && (
+                        <span className="block text-[10px] text-ink-subtle">
+                          {correctCount}/{s.results.length} ok
+                        </span>
+                      )}
+                    </td>
                     {s && (
                       <>
                         <td
@@ -799,8 +962,8 @@ export default function ExamResultsPage() {
                         </td>
                       </>
                     )}
-                    <td className="px-4 py-3 text-gray-400 text-xs">
-                      {r.submittedAt?.toLocaleString() ?? ''}
+                    <td className="px-4 py-3 text-gray-400 text-xs font-mono">
+                      {r.submittedAt?.toLocaleString('es-ES') ?? ''}
                     </td>
                     <td className="px-4 py-3 print:hidden" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-1">
@@ -833,7 +996,7 @@ export default function ExamResultsPage() {
 
           {/* ── Mobile card view (no table) ── */}
           <div className="sm:hidden divide-y">
-            {(displayScores ?? scored ?? responses).map((item: any) => {
+            {(activeScoredList ?? activeResponsesList).map((item: any) => {
               const r: FormResponse = item.response ?? item;
               const s: QuizScore | null = item.score ?? null;
               const isSelected = selectedStudentId === r.id;
@@ -842,6 +1005,10 @@ export default function ExamResultsPage() {
               const pctVal = s && s.totalPoints > 0 ? (earnedVal / s.totalPoints) * 100 : 0;
               const studentGrade = s ? getStudentGrade(r.id, earnedVal, s.totalPoints) : 1;
               const procSummary = getStudentProcedureSummary(r);
+              const versionMeta = responseVersionMap.get(r.id);
+              const studentQs = versionMeta?.questions ?? allQuestions;
+              const versionLabel = versionMeta?.versionLabel ?? 'Tema 1';
+              const completedCount = countCompletedActivities(studentQs, r.answers);
 
               return (
                 <div
@@ -855,6 +1022,11 @@ export default function ExamResultsPage() {
                     <div className="flex items-center gap-2 flex-wrap min-w-0">
                       <Eye className={`h-4 w-4 -ml-1 shrink-0 ${isSelected ? 'text-brand-600' : 'text-gray-400'}`} />
                       <span className="font-medium text-sm">{r.respondent?.name || '—'}</span>
+                      {multiVersion && (
+                        <span className="inline-flex rounded-full bg-purple-50 border border-purple-200 px-2 py-0.5 text-[10px] font-mono font-semibold text-purple-800">
+                          {versionLabel}
+                        </span>
+                      )}
                       {procSummary.pending > 0 && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-200 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
                           <Clock className="h-3 w-3" />
@@ -894,6 +1066,9 @@ export default function ExamResultsPage() {
                   <div className="text-xs text-gray-500">{r.respondent?.email || r.respondentEmail || '—'}</div>
 
                   <div className="flex items-center gap-3 text-xs flex-wrap">
+                    <span>
+                      Actividades: <strong className="font-mono">{completedCount}/{studentQs.length}</strong>
+                    </span>
                     {s && (
                       <>
                         <span>
@@ -911,15 +1086,19 @@ export default function ExamResultsPage() {
                         </span>
                       </>
                     )}
-                    <span className="text-gray-400 ml-auto">{r.submittedAt?.toLocaleString() ?? ''}</span>
+                    <span className="text-gray-400 ml-auto font-mono">{r.submittedAt?.toLocaleString('es-ES') ?? ''}</span>
                   </div>
                 </div>
               );
             })}
           </div>
         </div>
-        {responses.length === 0 && (
-          <div className="text-center py-12 text-gray-400">Sin respuestas aún</div>
+        {activeResponsesList.length === 0 && (
+          <div className="text-center py-12 text-gray-400">
+            {multiVersion && versionFilter !== 'all'
+              ? 'Sin respuestas registradas para este tema'
+              : 'Sin respuestas aún'}
+          </div>
         )}
       </Card>
 
@@ -936,6 +1115,9 @@ export default function ExamResultsPage() {
       >
         {selectedStudentItem && (() => {
           const { response: r, score: s } = selectedStudentItem;
+          const studentVersionMeta = responseVersionMap.get(r.id);
+          const studentQuestions = studentVersionMeta?.questions ?? allQuestions;
+          const studentVersionLabel = studentVersionMeta?.versionLabel ?? 'Tema 1';
           const editing = editTarget === r.id;
           const currentAnswers = editing ? editAnswers : r.answers;
           const scoreResultMap = new Map(s?.results.map((res) => [res.questionId, res]) ?? []);
@@ -951,15 +1133,22 @@ export default function ExamResultsPage() {
               {/* Summary banner */}
               <div className="rounded-xl border border-sand-300 bg-sand-50/70 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="min-w-0 space-y-0.5">
-                  <p className="font-display text-base font-bold text-ink truncate">
-                    {r.respondent?.name || 'Estudiante sin nombre'}
-                  </p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-display text-base font-bold text-ink truncate">
+                      {r.respondent?.name || 'Estudiante sin nombre'}
+                    </p>
+                    {multiVersion && (
+                      <span className="inline-flex rounded-full bg-purple-100 border border-purple-200 px-2 py-0.5 text-[10px] font-mono font-semibold text-purple-800">
+                        {studentVersionLabel}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-ink-light truncate">
                     {r.respondent?.email || r.respondentEmail || 'Sin correo'}
                   </p>
                   {r.submittedAt && (
                     <p className="text-[11px] font-mono text-ink-subtle pt-0.5">
-                      Entregado: {r.submittedAt.toLocaleString()}
+                      Entregado: {r.submittedAt.toLocaleString('es-ES')}
                     </p>
                   )}
                 </div>
@@ -1000,7 +1189,7 @@ export default function ExamResultsPage() {
               {s && (
                 <div className="grid grid-cols-3 gap-2 text-center">
                   <div className="rounded-lg border border-sand-200 bg-white px-3 py-2">
-                    <p className="font-mono text-sm font-bold text-ink">{questions.length}</p>
+                    <p className="font-mono text-sm font-bold text-ink">{studentQuestions.length}</p>
                     <p className="text-[11px] text-ink-subtle">Actividades</p>
                   </div>
                   <div className="rounded-lg border border-green-200 bg-green-50/60 px-3 py-2">
@@ -1016,12 +1205,12 @@ export default function ExamResultsPage() {
 
               {/* Activity-by-activity work */}
               <div className="space-y-3">
-                {questions.length === 0 ? (
+                {studentQuestions.length === 0 ? (
                   <p className="text-sm text-gray-500 text-center py-6">
                     Este examen no tiene actividades registradas.
                   </p>
                 ) : (
-                  questions.map((q, qIdx) => {
+                  studentQuestions.map((q, qIdx) => {
                     const res = scoreResultMap.get(q.id);
                     const rawVal = currentAnswers[q.id];
                     const hasAnswer =
@@ -1173,8 +1362,9 @@ export default function ExamResultsPage() {
                                       type="button"
                                       onClick={() =>
                                         setZoomedProcedurePhoto({
-                                          src: photoSrc,
-                                          title: `Actividad ${qIdx + 1} · Foto ${pIdx + 1} — ${r.respondent?.name || 'Estudiante'}`,
+                                          photos,
+                                          index: pIdx,
+                                          title: `Actividad ${qIdx + 1} — ${r.respondent?.name || 'Estudiante'}`,
                                         })
                                       }
                                       className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-sand-300 bg-white hover:border-brand-500 transition-colors"
@@ -1292,29 +1482,15 @@ export default function ExamResultsPage() {
         })()}
       </Modal>
 
-      {/* ── Procedure photo zoom lightbox modal ── */}
-      <Modal
+      {/* ── Procedure photo enhanced zoom viewer modal ── */}
+      <ProcedurePhotoViewerModal
         open={zoomedProcedurePhoto !== null}
         onClose={() => setZoomedProcedurePhoto(null)}
+        photos={zoomedProcedurePhoto?.photos ?? []}
+        initialIndex={zoomedProcedurePhoto?.index ?? 0}
         title={zoomedProcedurePhoto?.title ?? 'Foto del procedimiento'}
-        size="lg"
         zIndexClass="z-[60]"
-      >
-        {zoomedProcedurePhoto && (
-          <div className="space-y-3">
-            <img
-              src={zoomedProcedurePhoto.src}
-              alt={zoomedProcedurePhoto.title}
-              className="w-full max-h-[75vh] object-contain rounded-lg border border-sand-200 bg-sand-50"
-            />
-            <div className="flex justify-end">
-              <Button type="button" variant="secondary" onClick={() => setZoomedProcedurePhoto(null)}>
-                Cerrar
-              </Button>
-            </div>
-          </div>
-        )}
-      </Modal>
+      />
 
       {/* ── Non-quiz hint ── */}
       {!scored && (
@@ -1453,7 +1629,7 @@ export default function ExamResultsPage() {
                 <td className="text-gray-500 pr-4 py-1 font-medium">Total estudiantes:</td>
                 <td className="text-gray-900 py-1">{totalRespondents}</td>
               </tr>
-              {(displayScores ?? scored) && (displayScores ?? scored)!.length > 0 && (
+              {activeScoredList && activeScoredList.length > 0 && (
                 <tr>
                   <td className="text-gray-500 pr-4 py-1 font-medium">Escala de nota:</td>
                   <td className="text-gray-900 py-1">1–10 ({gradeRounding === 'integer' ? 'redondeado' : 'cada 0.25'})</td>
@@ -1465,7 +1641,7 @@ export default function ExamResultsPage() {
           </table>
 
           {/* Summary cards */}
-          {(displayScores ?? scored) && (
+          {activeScoredList && (
             <div data-section="summary" className="grid grid-cols-5 gap-3 mb-8">
               <div className="border border-gray-300 rounded p-3 text-center">
                 <p className="text-2xl font-bold text-gray-900">{totalRespondents}</p>
@@ -1491,7 +1667,7 @@ export default function ExamResultsPage() {
           )}
 
           {/* Grade distribution */}
-          {(displayScores ?? scored) && (
+          {activeScoredList && (
             <div data-section="distribution" className="mb-8">
               <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-3">Distribución de calificaciones (1–10)</h2>
               <table className="w-full text-xs border-collapse">
@@ -1520,7 +1696,7 @@ export default function ExamResultsPage() {
                         { range: '1.00 a 5.75', letter: 'F', label: 'Insuficiente', min: 0, max: 6 },
                       ]
                   ).map((g) => {
-                    const items = displayScores ?? scored!;
+                    const items = activeScoredList;
                     const count = items.filter(({ response: resp, score: sc }) => {
                       const gradeVal = getStudentGrade(resp.id, sc.earnedPoints, sc.totalPoints);
                       return gradeVal >= g.min && gradeVal < g.max;
@@ -1547,7 +1723,8 @@ export default function ExamResultsPage() {
                 <tr className="border-b-2 border-gray-900">
                   <th className="text-left py-2 font-bold text-gray-900 w-8">N°</th>
                   <th className="text-left py-2 font-bold text-gray-900">Estudiante</th>
-                  {(displayScores ?? scored) && (
+                  {multiVersion && <th className="text-center py-2 font-bold text-gray-900">Tema</th>}
+                  {activeScoredList && (
                     <>
                       <th className="text-center py-2 font-bold text-gray-900">Puntaje</th>
                       <th className="text-center py-2 font-bold text-gray-900">Nota (1-10)</th>
@@ -1558,16 +1735,18 @@ export default function ExamResultsPage() {
                 </tr>
               </thead>
               <tbody>
-                {(displayScores ?? scored ?? responses).map((item: any, idx: number) => {
+                {(activeScoredList ?? activeResponsesList).map((item: any, idx: number) => {
                   const r: FormResponse = item.response ?? item;
                   const s: QuizScore | null = item.score ?? null;
                   const earned = s ? (scoreOverrides[r.id] ?? s.earnedPoints) : 0;
                   const pct = s && s.totalPoints > 0 ? (earned / s.totalPoints) * 100 : 0;
                   const gradeVal = s ? getStudentGrade(r.id, earned, s.totalPoints) : 1;
+                  const vLabel = responseVersionMap.get(r.id)?.versionLabel ?? 'Tema 1';
                   return (
                     <tr key={r.id} className="border-b border-gray-200">
                       <td className="py-1.5 text-gray-500">{idx + 1}</td>
                       <td className="py-1.5 font-medium text-gray-900">{r.respondent?.name || '—'}</td>
+                      {multiVersion && <td className="py-1.5 text-center text-gray-700">{vLabel}</td>}
                       {s && (
                         <>
                           <td className="py-1.5 text-center font-mono text-gray-900">{earned}/{s.totalPoints}</td>
@@ -1588,20 +1767,23 @@ export default function ExamResultsPage() {
           </div>
 
           {/* Per-student detailed reports */}
-          {(displayScores ?? scored) && (
+          {activeScoredList && (
             <div data-section="studentDetail">
               <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-6">Detalle por estudiante</h2>
-              {(displayScores ?? scored!).map(({ response: r, score: s }, idx) => {
+              {activeScoredList.map(({ response: r, score: s }, idx) => {
                 const earned = scoreOverrides[r.id] ?? s.earnedPoints;
                 const pct = s.totalPoints > 0 ? (earned / s.totalPoints) * 100 : 0;
                 const gradeVal = getStudentGrade(r.id, earned, s.totalPoints);
+                const vLabel = responseVersionMap.get(r.id)?.versionLabel ?? 'Tema 1';
                 return (
                 <div key={r.id} className="mb-12 print:break-before-page">
                   {idx > 0 && <div className="h-0 print:break-before-page" />}
                   <div className="border-t-2 border-gray-900 pt-6">
                     <div className="flex items-center justify-between mb-6">
                       <div>
-                        <p className="text-lg font-bold text-gray-900">{r.respondent?.name || '—'}</p>
+                        <p className="text-lg font-bold text-gray-900">
+                          {r.respondent?.name || '—'}{multiVersion ? ` (${vLabel})` : ''}
+                        </p>
                         <p className="text-xs text-gray-500">{r.respondent?.email || r.respondentEmail || '—'}</p>
                       </div>
                       <div className="text-right">
@@ -1623,7 +1805,6 @@ export default function ExamResultsPage() {
                       </thead>
                       <tbody>
                         {s.results.map((res, qIdx) => {
-                          const q = questions.find((qq) => qq.id === res.questionId);
                           return (
                             <tr key={res.questionId} className={`border-b border-gray-200 ${res.isCorrect ? '' : 'bg-red-50'}`}>
                               <td className="py-1.5 text-gray-500">{qIdx + 1}</td>

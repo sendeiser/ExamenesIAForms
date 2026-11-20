@@ -8,6 +8,8 @@ export type ProcedureValidationStatus = 'validated' | 'rejected';
 export interface FormResponse {
   id: string;
   formId: string;
+  versionId?: string | null;
+  versionLabel?: string | null;
   respondentId: string | null;
   respondentEmail: string | null;
   respondent?: RespondentInfo;

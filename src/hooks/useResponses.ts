@@ -19,7 +19,8 @@ export function useResponses(formId: string) {
   async function submitResponse(
     answers: Record<string, any>,
     respondent?: RespondentInfo | null,
-    procedurePhotos?: Record<string, string[]>
+    procedurePhotos?: Record<string, string[]>,
+    versionMeta?: { versionId: string; versionLabel: string }
   ): Promise<string> {
     const clean: Record<string, any> = {};
     for (const [k, v] of Object.entries(answers)) {
@@ -40,6 +41,9 @@ export function useResponses(formId: string) {
       respondentEmail: respondent?.email ?? null,
       respondent: respondent ?? null,
       answers: clean,
+      ...(versionMeta
+        ? { versionId: versionMeta.versionId, versionLabel: versionMeta.versionLabel }
+        : {}),
       ...(Object.keys(cleanPhotos).length > 0 ? { procedurePhotos: cleanPhotos } : {}),
       submittedAt: Timestamp.now(),
     });

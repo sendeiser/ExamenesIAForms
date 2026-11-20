@@ -29,12 +29,19 @@ export interface FormTheme {
   headerFontSize?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
+export interface FormVersion {
+  id: string;
+  label: string;
+  createdAt?: string;
+}
+
 export interface Form {
   id: string;
   ownerId: string;
   title: string;
   description: string;
   shortCode?: string;
+  versions?: FormVersion[];
   settings: FormSettings;
   theme: FormTheme;
   published: boolean;

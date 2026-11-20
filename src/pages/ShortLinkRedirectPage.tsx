@@ -4,7 +4,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
-import { resolveFormIdByShortCode, normalizeShortCode } from '../lib/shortLink';
+import { resolveShortCodeTarget, normalizeShortCode } from '../lib/shortLink';
 import { ArrowRight, KeyRound, AlertCircle } from 'lucide-react';
 
 export default function ShortLinkRedirectPage() {
@@ -28,11 +28,16 @@ export default function ShortLinkRedirectPage() {
 
       setChecking(true);
       setNotFound(false);
-      const formId = await resolveFormIdByShortCode(code);
+      const resolved = await resolveShortCodeTarget(code);
       if (!active) return;
 
-      if (formId) {
-        navigate(`/view/${formId}${location.search}`, { replace: true });
+      if (resolved?.formId) {
+        const searchParams = new URLSearchParams(location.search);
+        if (resolved.versionParam && !searchParams.has('v')) {
+          searchParams.set('v', resolved.versionParam);
+        }
+        const qs = searchParams.toString();
+        navigate(`/view/${resolved.formId}${qs ? `?${qs}` : ''}`, { replace: true });
       } else {
         setChecking(false);
         setNotFound(true);

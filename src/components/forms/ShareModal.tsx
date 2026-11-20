@@ -10,7 +10,12 @@ import {
   shortenExternalUrl,
   updateFormShortCode,
 } from '../../lib/shortLink';
-import { Copy, Check, Download, KeyRound, Link2, Loader2, Pencil, Sparkles } from 'lucide-react';
+import {
+  getFormVersions,
+  getVersionDirectCode,
+  hasMultipleVersions,
+} from '../../lib/examVersions';
+import { Copy, Check, Download, KeyRound, Layers, Link2, Loader2, Pencil, Sparkles } from 'lucide-react';
 
 interface ShareModalProps {
   open: boolean;
@@ -30,13 +35,15 @@ export function ShareModal({ open, onClose, formId, formTitle }: ShareModalProps
   const [savingCode, setSavingCode] = useState(false);
   const [codeError, setCodeError] = useState('');
 
-  const [copiedKey, setCopiedKey] = useState<'code' | 'short' | 'external' | 'full' | null>(null);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [externalShortUrl, setExternalShortUrl] = useState('');
   const [shorteningExternal, setShorteningExternal] = useState(false);
   const [externalError, setExternalError] = useState('');
 
   const fullLink = `${window.location.origin}/view/${formId}`;
   const shortLink = shortCode ? `${window.location.origin}/e/${shortCode}` : fullLink;
+  const versions = getFormVersions(form);
+  const multiVersion = hasMultipleVersions(form);
 
   useEffect(() => {
     if (!open || !formId) return;
@@ -73,7 +80,7 @@ export function ShareModal({ open, onClose, formId, formTitle }: ShareModalProps
     };
   }, [open, formId, form?.shortCode]);
 
-  async function copyText(text: string, key: 'code' | 'short' | 'external' | 'full') {
+  async function copyText(text: string, key: string) {
     await navigator.clipboard.writeText(text);
     setCopiedKey(key);
     setTimeout(() => setCopiedKey((prev) => (prev === key ? null : prev)), 2000);
@@ -208,7 +215,66 @@ export function ShareModal({ open, onClose, formId, formTitle }: ShareModalProps
             En otras PCs o netbooks, los alumnos pueden entrar a{' '}
             <span className="font-mono font-semibold text-ink">{window.location.origin}</span> y escribir este código.
           </p>
+          {multiVersion && (
+            <p className="text-[11px] text-brand-800 bg-white/80 border border-brand-200 rounded-lg px-2.5 py-1.5 leading-relaxed">
+              <strong>Reparto automático ({versions.length} versiones):</strong> al usar el código o link general, se asigna automáticamente un Tema distinto y queda fijado en esa PC.
+            </p>
+          )}
         </div>
+
+        {multiVersion && shortCode && (
+          <div className="rounded-xl border border-sand-300 bg-sand-50/70 p-3.5 space-y-2.5">
+            <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-ink">
+              <Layers className="h-3.5 w-3.5 text-brand-600" />
+              Códigos y links directos por Tema
+            </div>
+            <div className="space-y-1.5">
+              {versions.map((v) => {
+                const directCode = getVersionDirectCode(shortCode, versions, v.id);
+                const directUrl = `${window.location.origin}/e/${directCode}`;
+                return (
+                  <div
+                    key={v.id}
+                    className="rounded-lg border border-sand-200 bg-white px-3 py-2 flex items-center justify-between gap-2 flex-wrap"
+                  >
+                    <div className="min-w-0">
+                      <span className="text-xs font-semibold text-ink">{v.label}</span>
+                      <span className="ml-2 font-mono text-xs font-bold text-brand-700 bg-brand-50 border border-brand-100 rounded px-1.5 py-0.5">
+                        {directCode}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => copyText(directCode, `vcode:${v.id}`)}
+                        className="inline-flex items-center gap-1 rounded border border-sand-300 bg-sand-50 hover:bg-sand-100 px-2 py-1 text-[11px] font-medium text-ink"
+                      >
+                        {copiedKey === `vcode:${v.id}` ? (
+                          <Check className="h-3 w-3 text-green-600" />
+                        ) : (
+                          <Copy className="h-3 w-3" />
+                        )}
+                        Código
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => copyText(directUrl, `vlink:${v.id}`)}
+                        className="inline-flex items-center gap-1 rounded border border-sand-300 bg-sand-50 hover:bg-sand-100 px-2 py-1 text-[11px] font-medium text-brand-700"
+                      >
+                        {copiedKey === `vlink:${v.id}` ? (
+                          <Check className="h-3 w-3 text-green-600" />
+                        ) : (
+                          <Link2 className="h-3 w-3" />
+                        )}
+                        Link directo
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* QR centrado apuntando al link corto */}
         <div className="flex flex-col items-center gap-3">

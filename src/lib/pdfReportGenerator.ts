@@ -15,6 +15,11 @@ import {
   parseMarkdownOrLatexTable,
   cellCoordKey,
 } from './tableUtils';
+import {
+  getQuestionsForResponse,
+  getVersionLabel,
+  hasMultipleVersions,
+} from './examVersions';
 
 export interface PdfReportSections {
   header: boolean;
@@ -34,6 +39,7 @@ export interface ScoredStudentItem {
 export interface GeneratePdfReportInput {
   form: Form | null;
   questions: Question[];
+  allQuestions?: Question[];
   items: ScoredStudentItem[];
   scoreOverrides: Record<string, number>;
   gradeOverrides?: Record<string, number>;
@@ -198,12 +204,15 @@ function sanitizeFilename(name: string): string {
 export function generateExamResultsPdf({
   form,
   questions,
+  allQuestions,
   items,
   scoreOverrides,
   gradeOverrides = {},
   gradeRounding = 'quarter',
   sections,
 }: GeneratePdfReportInput): void {
+  const sourceQuestions = allQuestions ?? questions;
+  const multiVersion = hasMultipleVersions(form);
   const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
   let y = MARGIN_TOP;
 
@@ -537,38 +546,73 @@ export function generateExamResultsPdf({
         const pct = effectivePct(it);
         const earned = effectiveEarned(it);
         const total = it.score?.totalPoints ?? 0;
-        return [
-          String(idx + 1),
-          it.response.respondent?.name || '-',
-          it.response.respondent?.email || it.response.respondentEmail || '-',
-          `${earned}/${total}`,
-          gradeStr,
-          `${pct.toFixed(0)}%`,
-          grade >= 6 ? 'APROBADO' : 'REPROBADO',
-        ];
+        const versionLbl = getVersionLabel(form, it.response.versionId, it.response.versionLabel);
+        return multiVersion
+          ? [
+              String(idx + 1),
+              it.response.respondent?.name || '-',
+              versionLbl,
+              it.response.respondent?.email || it.response.respondentEmail || '-',
+              `${earned}/${total}`,
+              gradeStr,
+              `${pct.toFixed(0)}%`,
+              grade >= 6 ? 'APROBADO' : 'REPROBADO',
+            ]
+          : [
+              String(idx + 1),
+              it.response.respondent?.name || '-',
+              it.response.respondent?.email || it.response.respondentEmail || '-',
+              `${earned}/${total}`,
+              gradeStr,
+              `${pct.toFixed(0)}%`,
+              grade >= 6 ? 'APROBADO' : 'REPROBADO',
+            ];
       });
       drawTableGrid(
-        ['N°', 'Estudiante', 'Email', 'Puntaje', 'Nota (1-10)', '%', 'Estado'],
+        multiVersion
+          ? ['N°', 'Estudiante', 'Tema', 'Email', 'Puntaje', 'Nota (1-10)', '%', 'Estado']
+          : ['N°', 'Estudiante', 'Email', 'Puntaje', 'Nota (1-10)', '%', 'Estado'],
         listRows,
-        [9, 43, 50, 19, 21, 14, 24],
+        multiVersion
+          ? [8, 34, 24, 38, 18, 20, 14, 24]
+          : [9, 43, 50, 19, 21, 14, 24],
         {
-          alignments: ['center', 'left', 'left', 'center', 'center', 'center', 'center'],
-          fontSize: 7.5,
+          alignments: multiVersion
+            ? ['center', 'left', 'center', 'left', 'center', 'center', 'center', 'center']
+            : ['center', 'left', 'left', 'center', 'center', 'center', 'center'],
+          fontSize: 7.4,
           rowHighlight: (rowIdx) => (effectiveGrade(items[rowIdx]) < 6 ? COLOR_RED_BG : null),
         }
       );
     } else {
-      const listRows = items.map((it, idx) => [
-        String(idx + 1),
-        it.response.respondent?.name || '-',
-        it.response.respondent?.email || it.response.respondentEmail || '-',
-        it.response.submittedAt?.toLocaleString() ?? '-',
-      ]);
+      const listRows = items.map((it, idx) =>
+        multiVersion
+          ? [
+              String(idx + 1),
+              it.response.respondent?.name || '-',
+              getVersionLabel(form, it.response.versionId, it.response.versionLabel),
+              it.response.respondent?.email || it.response.respondentEmail || '-',
+              it.response.submittedAt?.toLocaleString('es-ES') ?? '-',
+            ]
+          : [
+              String(idx + 1),
+              it.response.respondent?.name || '-',
+              it.response.respondent?.email || it.response.respondentEmail || '-',
+              it.response.submittedAt?.toLocaleString('es-ES') ?? '-',
+            ]
+      );
       drawTableGrid(
-        ['N°', 'Estudiante', 'Email', 'Fecha de entrega'],
+        multiVersion
+          ? ['N°', 'Estudiante', 'Tema', 'Email', 'Fecha de entrega']
+          : ['N°', 'Estudiante', 'Email', 'Fecha de entrega'],
         listRows,
-        [12, 58, 66, 44],
-        { alignments: ['center', 'left', 'left', 'left'], fontSize: 7.8 }
+        multiVersion ? [10, 46, 28, 52, 44] : [12, 58, 66, 44],
+        {
+          alignments: multiVersion
+            ? ['center', 'left', 'center', 'left', 'left']
+            : ['center', 'left', 'left', 'left'],
+          fontSize: 7.8,
+        }
       );
     }
   }
@@ -607,10 +651,13 @@ export function generateExamResultsPdf({
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
       doc.setTextColor(...COLOR_MUTED);
+      const studentVersionLbl = multiVersion
+        ? ` · ${getVersionLabel(form, r.versionId, r.versionLabel)}`
+        : '';
       doc.text(
         cleanTextForPdf(
-          `${r.respondent?.email || r.respondentEmail || 'Sin correo'}${
-            r.submittedAt ? `  ·  Entregado: ${r.submittedAt.toLocaleString()}` : ''
+          `${r.respondent?.email || r.respondentEmail || 'Sin correo'}${studentVersionLbl}${
+            r.submittedAt ? `  ·  Entregado: ${r.submittedAt.toLocaleString('es-ES')}` : ''
           }`
         ),
         MARGIN_X + 3,
@@ -641,8 +688,9 @@ export function generateExamResultsPdf({
       y += 18;
 
       const scoreMap = new Map(s?.results.map((res) => [res.questionId, res]) ?? []);
+      const studentQuestions = getQuestionsForResponse(sourceQuestions, r);
 
-      questions.forEach((q, qIdx) => {
+      studentQuestions.forEach((q, qIdx) => {
         const res = scoreMap.get(q.id);
         const rawAns = r.answers[q.id];
         const parsedInline = !q.settings?.table ? parseMarkdownOrLatexTable(q.title) : null;

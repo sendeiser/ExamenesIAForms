@@ -99,6 +99,7 @@ interface FormViewProps {
   initialAnswers?: Record<string, any>;
   autoSubmit?: boolean;
   previewMode?: boolean;
+  versionLabel?: string;
 }
 
 export function FormView({
@@ -110,6 +111,7 @@ export function FormView({
   initialAnswers,
   autoSubmit,
   previewMode = false,
+  versionLabel,
 }: FormViewProps) {
   useGlobalTheme(form, !previewMode);
   const scopedThemeStyle = useMemo(() => (previewMode ? buildThemeVars(form) : undefined), [previewMode, form]);
@@ -306,6 +308,7 @@ export function FormView({
               respondentId: null,
               respondentEmail: respondent?.email ?? null,
               respondent,
+              ...(versionLabel ? { versionLabel } : {}),
               answers,
               procedurePhotos,
               submittedAt: new Date(),
@@ -347,6 +350,13 @@ export function FormView({
         </div>
       )}
       <FormHeader title={form.title} description={form.description} theme={form.theme} />
+      {versionLabel && (
+        <div className="flex items-center justify-end">
+          <span className="inline-flex items-center rounded-full bg-white/90 border border-black/15 px-3 py-1 text-xs font-mono font-semibold text-ink shadow-sm">
+            {versionLabel}
+          </span>
+        </div>
+      )}
       {child}
     </div>
   );

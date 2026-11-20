@@ -92,20 +92,12 @@ export async function updateFormShortCode(formId: string, rawCode: string): Prom
   return normalized;
 }
 
-export async function resolveFormIdByShortCode(rawCode: string): Promise<string | null> {
-  const trimmed = rawCode.trim();
-  if (!trimmed) return null;
+export interface ResolvedShortCode {
+  formId: string;
+  versionParam?: string;
+}
 
-  if (!auth.currentUser) {
-    try {
-      await signInAnonymously(auth);
-    } catch {
-      // Continuar por si las reglas permiten lectura pública
-    }
-  }
-
-  const normalized = normalizeShortCode(trimmed);
-
+async function lookupExactFormId(trimmed: string, normalized: string): Promise<string | null> {
   if (normalized) {
     try {
       const snap = await getDocs(
@@ -140,6 +132,44 @@ export async function resolveFormIdByShortCode(rawCode: string): Promise<string 
   }
 
   return null;
+}
+
+export async function resolveShortCodeTarget(rawCode: string): Promise<ResolvedShortCode | null> {
+  const trimmed = rawCode.trim();
+  if (!trimmed) return null;
+
+  if (!auth.currentUser) {
+    try {
+      await signInAnonymously(auth);
+    } catch {
+      // Continuar por si las reglas permiten lectura pública
+    }
+  }
+
+  const normalized = normalizeShortCode(trimmed);
+  const directId = await lookupExactFormId(trimmed, normalized);
+  if (directId) {
+    return { formId: directId };
+  }
+
+  // Soportar sufijo de tema directo, ej: MATE1-2 o ABCDE-T3
+  if (normalized) {
+    const versionMatch = /^([A-Z0-9-]+?)-T?(\d+)$/.exec(normalized);
+    if (versionMatch) {
+      const [, baseCode, versionParam] = versionMatch;
+      const baseFormId = await lookupExactFormId(baseCode, baseCode);
+      if (baseFormId) {
+        return { formId: baseFormId, versionParam };
+      }
+    }
+  }
+
+  return null;
+}
+
+export async function resolveFormIdByShortCode(rawCode: string): Promise<string | null> {
+  const resolved = await resolveShortCodeTarget(rawCode);
+  return resolved?.formId ?? null;
 }
 
 /**

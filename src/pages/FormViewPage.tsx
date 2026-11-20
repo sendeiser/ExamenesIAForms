@@ -18,6 +18,15 @@ import { QuizResult } from '../components/form-view/QuizResult';
 import { RespondentForm } from '../components/form-view/RespondentForm';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { scoreQuiz } from '../lib/quizScoring';
+import {
+  DEFAULT_ORIGINAL_LABEL,
+  ORIGINAL_VERSION_ID,
+  filterQuestionsByVersion,
+  filterSectionsByVersion,
+  getQuestionsForResponse,
+  hasMultipleVersions,
+  pickAssignedVersionForStudent,
+} from '../lib/examVersions';
 import { isDarkColor, getAutoContrastText } from '../lib/examThemes';
 import type { Form } from '../types/form';
 import type { Question, Section } from '../types/question';
@@ -37,6 +46,7 @@ export default function FormViewPage() {
   const params = new URLSearchParams(window.location.search);
   const isAuto = params.has('auto');
   const resultParam = params.get('result');
+  const versionParam = params.get('v');
 
   const [savedResponseId, setSavedResponseId] = useState<string | null>(() => {
     if (!formId) return null;
@@ -145,16 +155,32 @@ export default function FormViewPage() {
     return unsub;
   }, [formId, reviewResponseId, savedResponseId]);
 
+  const multiVersion = hasMultipleVersions(form);
+  const assignedVersion = useMemo(() => {
+    if (!form) return { id: ORIGINAL_VERSION_ID, label: DEFAULT_ORIGINAL_LABEL };
+    return pickAssignedVersionForStudent(form, versionParam);
+  }, [form, versionParam]);
+
+  const activeQuestions = useMemo(
+    () => filterQuestionsByVersion(questions, assignedVersion.id),
+    [questions, assignedVersion.id]
+  );
+
+  const activeSections = useMemo(
+    () => filterSectionsByVersion(sections, assignedVersion.id),
+    [sections, assignedVersion.id]
+  );
+
   const initialAnswers = useMemo(() => {
     if (!isAuto) return undefined;
     const acc: Record<string, any> = {};
-    questions.forEach((q) => {
+    activeQuestions.forEach((q) => {
       if (q.quizSettings?.correctAnswer !== null && q.quizSettings?.correctAnswer !== undefined) {
         acc[q.id] = q.quizSettings.correctAnswer;
       }
     });
     return acc;
-  }, [isAuto, questions]);
+  }, [isAuto, activeQuestions]);
 
   async function handleLookupResult(queryText: string) {
     if (!formId) return;
@@ -226,11 +252,12 @@ export default function FormViewPage() {
       <div className="min-h-screen bg-paper-grid py-10 px-4">
         <FormView
           form={form}
-          questions={questions}
-          sections={sections}
+          questions={activeQuestions}
+          sections={activeSections}
           respondent={{ name: 'Test', email: '' }}
           onSubmit={async () => {}}
           initialAnswers={initialAnswers}
+          versionLabel={multiVersion ? assignedVersion.label : undefined}
           autoSubmit
         />
       </div>
@@ -242,8 +269,9 @@ export default function FormViewPage() {
     const bg = theme.backgroundColor ?? '#F7F5F0';
     const cardBg = theme.cardBackgroundColor ?? (isDarkColor(bg) ? '#1E293B' : '#FFFFFF');
     const textColor = theme.textColor ?? getAutoContrastText(cardBg);
+    const reviewQuestions = getQuestionsForResponse(questions, reviewResponse);
     const reviewScore = scoreQuiz(
-      questions,
+      reviewQuestions,
       reviewResponse.answers,
       reviewResponse.procedureValidations
     );
@@ -262,7 +290,7 @@ export default function FormViewPage() {
           <QuizResult
             score={reviewScore}
             gradeRounding={form.settings?.gradeRounding ?? 'quarter'}
-            questions={questions}
+            questions={reviewQuestions}
             response={reviewResponse}
             isQuiz={Boolean(form.settings?.isQuiz)}
             onBack={() => {
@@ -279,7 +307,7 @@ export default function FormViewPage() {
     return (
       <div className="min-h-screen bg-paper-grid py-12 px-4 flex items-center justify-center">
         <RespondentForm
-          formTitle={form.title}
+          formTitle={multiVersion ? `${form.title} — ${assignedVersion.label}` : form.title}
           hasSavedResult={Boolean(savedResponseId)}
           onViewSavedResult={
             savedResponseId
@@ -307,11 +335,19 @@ export default function FormViewPage() {
     <div className="min-h-screen bg-paper-grid py-10 px-4">
       <FormView
         form={form}
-        questions={questions}
-        sections={sections}
+        questions={activeQuestions}
+        sections={activeSections}
         respondent={respondent}
+        versionLabel={multiVersion ? assignedVersion.label : undefined}
         onSubmit={async (answers, resp, procedurePhotos) => {
-          const createdId = await submitResponse(answers, resp ?? respondent, procedurePhotos);
+          const createdId = await submitResponse(
+            answers,
+            resp ?? respondent,
+            procedurePhotos,
+            multiVersion
+              ? { versionId: assignedVersion.id, versionLabel: assignedVersion.label }
+              : { versionId: ORIGINAL_VERSION_ID, versionLabel: DEFAULT_ORIGINAL_LABEL }
+          );
           if (createdId && formId) {
             try {
               localStorage.setItem(LAST_RESPONSE_KEY(formId), createdId);
