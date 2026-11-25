@@ -15,7 +15,20 @@ import {
   getVersionDirectCode,
   hasMultipleVersions,
 } from '../../lib/examVersions';
-import { Copy, Check, Download, KeyRound, Layers, Link2, Loader2, Pencil, Sparkles } from 'lucide-react';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Copy,
+  Check,
+  Download,
+  Globe,
+  KeyRound,
+  Layers,
+  Link2,
+  Loader2,
+  Pencil,
+  Sparkles,
+} from 'lucide-react';
 
 interface ShareModalProps {
   open: boolean;
@@ -39,6 +52,7 @@ export function ShareModal({ open, onClose, formId, formTitle }: ShareModalProps
   const [externalShortUrl, setExternalShortUrl] = useState('');
   const [shorteningExternal, setShorteningExternal] = useState(false);
   const [externalError, setExternalError] = useState('');
+  const [publishing, setPublishing] = useState(false);
 
   const fullLink = `${window.location.origin}/view/${formId}`;
   const shortLink = shortCode ? `${window.location.origin}/e/${shortCode}` : fullLink;
@@ -129,9 +143,57 @@ export function ShareModal({ open, onClose, formId, formTitle }: ShareModalProps
     a.click();
   }
 
+  async function handleTogglePublishInModal(nextPublished: boolean) {
+    setPublishing(true);
+    try {
+      await updateForm({ published: nextPublished });
+    } finally {
+      setPublishing(false);
+    }
+  }
+
   return (
     <Modal open={open} onClose={onClose} title="Compartir examen" size="md">
       <div className="space-y-5">
+        {!form?.published ? (
+          <div className="rounded-xl border border-amber-300 bg-amber-50 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-2.5 text-xs text-amber-900">
+              <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold">Este examen está en Borrador</p>
+                <p className="text-amber-800 mt-0.5">
+                  Los alumnos verán un aviso de que aún no está habilitado hasta que lo publiques.
+                </p>
+              </div>
+            </div>
+            <Button
+              type="button"
+              onClick={() => void handleTogglePublishInModal(true)}
+              loading={publishing}
+              disabled={publishing}
+              className="shrink-0 text-xs px-3 py-1.5"
+            >
+              <Globe className="h-3.5 w-3.5" />
+              Publicar ahora
+            </Button>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-green-200 bg-green-50/80 px-3.5 py-2.5 flex items-center justify-between gap-2 flex-wrap">
+            <span className="inline-flex items-center gap-2 text-xs font-semibold text-green-800">
+              <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
+              Examen publicado y habilitado para alumnos
+            </span>
+            <button
+              type="button"
+              disabled={publishing}
+              onClick={() => void handleTogglePublishInModal(false)}
+              className="text-xs font-medium text-green-800 hover:underline disabled:opacity-50"
+            >
+              Pasar a borrador
+            </button>
+          </div>
+        )}
+
         {/* Código corto para pizarrón / netbooks */}
         <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-4 space-y-2.5">
           <div className="flex items-center justify-between gap-2">

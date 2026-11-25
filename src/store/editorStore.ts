@@ -13,6 +13,7 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { toDateSafe } from '../lib/dateUtils';
 import {
   ORIGINAL_VERSION_ID,
   filterQuestionsByVersion,
@@ -49,7 +50,38 @@ interface EditorStore {
   reorderSections: (sections: Section[]) => Promise<void>;
 }
 
-export const useEditorStore = create<EditorStore>((set, get) => ({
+const touchTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+function clearPendingTouch(formId: string) {
+  const existing = touchTimers.get(formId);
+  if (existing) {
+    clearTimeout(existing);
+    touchTimers.delete(formId);
+  }
+}
+
+export const useEditorStore = create<EditorStore>((set, get) => {
+  const touchFormUpdatedAt = (formId: string, immediate = true) => {
+    const nowDate = new Date();
+    set((s) => (s.form && s.form.id === formId ? { form: { ...s.form, updatedAt: nowDate } } : s));
+
+    clearPendingTouch(formId);
+
+    const persist = () => {
+      touchTimers.delete(formId);
+      void updateDoc(doc(db, 'forms', formId), { updatedAt: Timestamp.now() }).catch((err) => {
+        console.error('Error updating updatedAt:', err);
+      });
+    };
+
+    if (immediate) {
+      persist();
+    } else {
+      touchTimers.set(formId, setTimeout(persist, 600));
+    }
+  };
+
+  return {
   form: null,
   allQuestions: [],
   allSections: [],
@@ -67,11 +99,13 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
     let loadedForm: Form | null = null;
     if (snap.exists()) {
       const data = snap.data();
+      const createdAt = toDateSafe(data.createdAt) ?? new Date();
+      const updatedAt = toDateSafe(data.updatedAt) ?? createdAt;
       loadedForm = {
         id: snap.id,
         ...data,
-        createdAt: data.createdAt?.toDate(),
-        updatedAt: data.updatedAt?.toDate(),
+        createdAt,
+        updatedAt,
       } as Form;
     }
 
@@ -125,13 +159,15 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
     const nextAllSections = allSections.filter((s) => normalizeVersionId(s.versionId) !== versionId);
     const nextActiveId = activeVersionId === versionId ? ORIGINAL_VERSION_ID : activeVersionId;
 
+    clearPendingTouch(form.id);
+    const now = Timestamp.now();
     await updateDoc(doc(db, 'forms', form.id), {
       versions: JSON.parse(JSON.stringify(nextVersions)),
-      updatedAt: Timestamp.now(),
+      updatedAt: now,
     });
 
     set((s) => ({
-      form: s.form ? { ...s.form, versions: nextVersions } : null,
+      form: s.form ? { ...s.form, versions: nextVersions, updatedAt: now.toDate() } : null,
       allQuestions: nextAllQuestions,
       allSections: nextAllSections,
       activeVersionId: nextActiveId,
@@ -154,9 +190,11 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   updateForm: async (updates) => {
     const { form } = get();
     if (!form) return;
-    set({ form: { ...form, ...updates } });
+    clearPendingTouch(form.id);
+    const now = Timestamp.now();
+    set({ form: { ...form, ...updates, updatedAt: now.toDate() } });
     const clean = JSON.parse(JSON.stringify(updates));
-    await updateDoc(doc(db, 'forms', form.id), { ...clean, updatedAt: Timestamp.now() });
+    await updateDoc(doc(db, 'forms', form.id), { ...clean, updatedAt: now });
   },
 
   addQuestion: async (type, initialUpdates) => {
@@ -190,6 +228,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       allQuestions: nextAllQuestions,
       questions: filterQuestionsByVersion(nextAllQuestions, activeVersionId),
     });
+    touchFormUpdatedAt(form.id, true);
   },
 
   updateQuestion: async (questionId, updates) => {
@@ -209,6 +248,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
         doc(db, 'forms', form.id, 'questions', questionId),
         JSON.parse(JSON.stringify(updates))
       );
+      touchFormUpdatedAt(form.id, false);
     } catch (e: any) {
       console.error('Error saving question:', e);
     }
@@ -225,6 +265,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
         questions: filterQuestionsByVersion(nextAllQuestions, activeVersionId),
       };
     });
+    touchFormUpdatedAt(form.id, true);
   },
 
   reorderQuestions: async (reorderedQuestions) => {
@@ -243,6 +284,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       allQuestions: nextAllQuestions,
       questions: filterQuestionsByVersion(nextAllQuestions, activeVersionId),
     });
+    touchFormUpdatedAt(form.id, true);
   },
 
   loadSections: async (formId) => {
@@ -273,6 +315,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       allSections: nextAllSections,
       sections: filterSectionsByVersion(nextAllSections, activeVersionId),
     });
+    touchFormUpdatedAt(form.id, true);
   },
 
   updateSection: async (sectionId, updates) => {
@@ -288,6 +331,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       };
     });
     await updateDoc(doc(db, 'forms', form.id, 'sections', sectionId), updates);
+    touchFormUpdatedAt(form.id, false);
   },
 
   removeSection: async (sectionId) => {
@@ -313,6 +357,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
         questions: filterQuestionsByVersion(nextAllQuestions, activeVersionId),
       };
     });
+    touchFormUpdatedAt(form.id, true);
   },
 
   moveQuestionToSection: async (questionId, sectionId) => {
@@ -328,6 +373,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
         questions: filterQuestionsByVersion(nextAllQuestions, activeVersionId),
       };
     });
+    touchFormUpdatedAt(form.id, true);
   },
 
   reorderSections: async (reorderedSections) => {
@@ -346,5 +392,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       allSections: nextAllSections,
       sections: filterSectionsByVersion(nextAllSections, activeVersionId),
     });
+    touchFormUpdatedAt(form.id, true);
   },
-}));
+  };
+});

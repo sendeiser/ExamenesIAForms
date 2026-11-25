@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { collection, query, where, orderBy, addDoc, deleteDoc, getDocs, getDoc, updateDoc, doc, Timestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { generateShortCode } from '../lib/shortLink';
+import { toDateSafe } from '../lib/dateUtils';
 import type { Form } from '../types/form';
 
 interface FormStore {
@@ -43,7 +44,17 @@ export const useFormStore = create<FormStore>((set) => ({
     try {
       const q = query(collection(db, 'forms'), where('ownerId', '==', ownerId), orderBy('updatedAt', 'desc'));
       const snapshot = await getDocs(q);
-      const forms = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Form));
+      const forms = snapshot.docs.map((d) => {
+        const data = d.data();
+        const createdAt = toDateSafe(data.createdAt) ?? new Date();
+        const updatedAt = toDateSafe(data.updatedAt) ?? createdAt;
+        return {
+          id: d.id,
+          ...data,
+          createdAt,
+          updatedAt,
+        } as Form;
+      });
       set({ forms });
     } catch (err) {
       console.error('Error fetching forms:', err);
@@ -74,9 +85,13 @@ export const useFormStore = create<FormStore>((set) => ({
   },
 
   togglePublish: async (formId, published) => {
-    await updateDoc(doc(db, 'forms', formId), { published, updatedAt: Timestamp.now() });
+    const now = Timestamp.now();
+    await updateDoc(doc(db, 'forms', formId), { published, updatedAt: now });
+    const nowDate = now.toDate();
     set((s) => ({
-      forms: s.forms.map((f) => (f.id === formId ? { ...f, published } : f)),
+      forms: s.forms.map((f) =>
+        f.id === formId ? { ...f, published, updatedAt: nowDate } : f
+      ),
     }));
   },
 

@@ -16,6 +16,7 @@ import {
   getFormVersions,
   hasMultipleVersions,
 } from '../lib/examVersions';
+import { formatExamDateTime } from '../lib/dateUtils';
 import {
   Eye,
   BarChart3,
@@ -31,6 +32,8 @@ import {
   Trash2,
   Check,
   X,
+  Globe,
+  Lock,
 } from 'lucide-react';
 
 type BuilderViewMode = 'editor' | 'preview' | 'split';
@@ -66,9 +69,11 @@ export default function FormBuilderPage() {
   const versions = getFormVersions(form);
   const multiVersion = hasMultipleVersions(form);
   const previewUrl = multiVersion
-    ? `${window.location.origin}/view/${form.id}?v=${activeVersionId}`
-    : `${window.location.origin}/view/${form.id}`;
-  const testAutoUrl = `${previewUrl}${previewUrl.includes('?') ? '&' : '?'}auto=true`;
+    ? `${window.location.origin}/view/${form.id}?v=${activeVersionId}&preview=true`
+    : `${window.location.origin}/view/${form.id}?preview=true`;
+  const testAutoUrl = multiVersion
+    ? `${window.location.origin}/view/${form.id}?v=${activeVersionId}&auto=true`
+    : `${window.location.origin}/view/${form.id}?auto=true`;
   const totalPoints = questions.reduce((sum, q) => sum + (q.quizSettings?.points ?? 1), 0);
 
   async function handleSaveRename(versionId: string) {
@@ -101,7 +106,10 @@ export default function FormBuilderPage() {
             <span className="text-brand-600 font-semibold">Constructor en vivo</span>
           </nav>
 
-          <div className="flex items-center gap-2 font-mono text-[11px] text-ink-subtle">
+          <div className="flex items-center gap-2 font-mono text-[11px] text-ink-subtle flex-wrap">
+            <span className="px-2 py-0.5 rounded bg-sand-100 border border-sand-300 text-ink-light">
+              Actualizado: {formatExamDateTime(form.updatedAt)}
+            </span>
             <span className="px-2 py-0.5 rounded bg-sand-100 border border-sand-300">
               {questions.length} {questions.length === 1 ? 'pregunta' : 'preguntas'}
             </span>
@@ -122,6 +130,32 @@ export default function FormBuilderPage() {
             className="font-display text-2xl sm:text-3xl font-bold text-ink placeholder:text-ink-light bg-transparent border-0 border-b border-transparent focus:border-brand-600 px-0 py-1 focus:outline-none w-full lg:max-w-xl transition-colors"
           />
           <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => void updateForm({ published: !form.published })}
+              title={
+                form.published
+                  ? 'Examen publicado — clic para cerrarlo y pasar a borrador'
+                  : 'Examen en borrador — clic para publicar y habilitar para alumnos'
+              }
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs sm:text-sm font-semibold transition-colors shrink-0 ${
+                form.published
+                  ? 'border-green-300 bg-green-50 text-state-success hover:bg-green-100'
+                  : 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100'
+              }`}
+            >
+              {form.published ? (
+                <>
+                  <Globe className="h-4 w-4" />
+                  <span>Publicado</span>
+                </>
+              ) : (
+                <>
+                  <Lock className="h-4 w-4" />
+                  <span>Borrador · Publicar</span>
+                </>
+              )}
+            </button>
             <div className="px-3 py-1.5 rounded-lg bg-sand-100 border border-sand-300">
               <Toggle
                 label="Modo examen"

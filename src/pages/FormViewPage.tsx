@@ -17,7 +17,20 @@ import { FormHeader } from '../components/form-view/FormHeader';
 import { QuizResult } from '../components/form-view/QuizResult';
 import { RespondentForm } from '../components/form-view/RespondentForm';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { Card } from '../components/ui/Card';
+import { Input } from '../components/ui/Input';
+import { Button } from '../components/ui/Button';
+import { toDateSafe } from '../lib/dateUtils';
 import { scoreQuiz } from '../lib/quizScoring';
+import {
+  ArrowRight,
+  Award,
+  CheckCircle2,
+  Eye,
+  Loader2,
+  Lock,
+  Search,
+} from 'lucide-react';
 import {
   DEFAULT_ORIGINAL_LABEL,
   ORIGINAL_VERSION_ID,
@@ -45,6 +58,7 @@ export default function FormViewPage() {
 
   const params = new URLSearchParams(window.location.search);
   const isAuto = params.has('auto');
+  const isPreview = params.get('preview') === 'true';
   const resultParam = params.get('result');
   const versionParam = params.get('v');
 
@@ -61,6 +75,7 @@ export default function FormViewPage() {
   const [reviewLoading, setReviewLoading] = useState(Boolean(resultParam));
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupError, setLookupError] = useState('');
+  const [draftLookupQuery, setDraftLookupQuery] = useState('');
 
   const { submitResponse } = useResponses(formId!);
 
@@ -77,7 +92,9 @@ export default function FormViewPage() {
 
     (async () => {
       try {
-        await signInAnonymously(auth);
+        if (!auth.currentUser) {
+          await signInAnonymously(auth);
+        }
       } catch {
         setAuthError(
           'Error de configuración. El administrador debe habilitar "Autenticación anónima" en Firebase Console > Authentication > Sign-in method, ' +
@@ -91,11 +108,13 @@ export default function FormViewPage() {
         return;
       }
       const data = formSnap.data();
+      const createdAt = toDateSafe(data.createdAt) ?? new Date();
+      const updatedAt = toDateSafe(data.updatedAt) ?? createdAt;
       setForm({
         id: formSnap.id,
         ...data,
-        createdAt: data.createdAt?.toDate(),
-        updatedAt: data.updatedAt?.toDate(),
+        createdAt,
+        updatedAt,
       } as Form);
 
       const qSnap = await getDocs(
@@ -303,9 +322,95 @@ export default function FormViewPage() {
     );
   }
 
-  if (!respondent) {
+  if (!form.published && !isAuto && !isPreview && !reviewResponse) {
     return (
       <div className="min-h-screen bg-paper-grid py-12 px-4 flex items-center justify-center">
+        <Card className="p-8 w-full max-w-md mx-auto animate-editorial-in space-y-6">
+          <div className="space-y-3">
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-mono uppercase tracking-wider">
+              <Lock className="h-3.5 w-3.5" />
+              Borrador · No habilitado
+            </div>
+            <h1 className="font-display text-2xl font-bold text-ink leading-tight">
+              {form.title}
+            </h1>
+            <p className="text-sm text-ink-subtle leading-relaxed">
+              Este examen todavía no está publicado o fue cerrado por el docente. Cuando el docente lo publique, podrás ingresar con este mismo enlace o código.
+            </p>
+          </div>
+
+          <div className="pt-4 border-t border-sand-200 space-y-4">
+            <div className="flex items-center gap-2 text-xs font-semibold text-ink">
+              <Award className="h-4 w-4 text-brand-600" />
+              <span>¿Ya rendiste este examen? Consulta tu nota</span>
+            </div>
+
+            {savedResponseId && (
+              <div className="rounded-xl border border-green-200 bg-green-50/70 p-3.5 space-y-2.5">
+                <div className="flex items-center gap-2 text-xs font-semibold text-green-800">
+                  <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
+                  <span>Ya entregaste este examen desde este dispositivo</span>
+                </div>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setLookupError('');
+                    setReviewResponseId(savedResponseId);
+                  }}
+                  className="w-full justify-center !bg-green-600 hover:!bg-green-700"
+                >
+                  Ver mi examen entregado / nota
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!draftLookupQuery.trim()) return;
+                void handleLookupResult(draftLookupQuery);
+              }}
+              className="space-y-3"
+            >
+              <Input
+                label="Buscar por correo electrónico o nombre"
+                placeholder="Ej: alumno@institucion.edu o María Torres"
+                value={draftLookupQuery}
+                onChange={(e) => setDraftLookupQuery(e.target.value)}
+              />
+              {lookupError && (
+                <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                  {lookupError}
+                </p>
+              )}
+              <Button
+                type="submit"
+                variant={savedResponseId ? 'secondary' : 'primary'}
+                disabled={lookupLoading || !draftLookupQuery.trim()}
+                className="w-full justify-center py-2.5"
+              >
+                {lookupLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                {lookupLoading ? 'Buscando entrega...' : 'Ver mi nota y examen'}
+              </Button>
+            </form>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!respondent) {
+    return (
+      <div className="min-h-screen bg-paper-grid py-12 px-4 flex flex-col items-center justify-center gap-4">
+        {!form.published && isPreview && (
+          <div className="w-full max-w-md rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs text-amber-900 flex items-center gap-2 shadow-sm">
+            <Eye className="h-4 w-4 text-amber-600 shrink-0" />
+            <span>
+              <strong>Vista previa docente:</strong> este examen está en borrador y aún no es visible para alumnos.
+            </span>
+          </div>
+        )}
         <RespondentForm
           formTitle={multiVersion ? `${form.title} — ${assignedVersion.label}` : form.title}
           hasSavedResult={Boolean(savedResponseId)}
@@ -333,6 +438,14 @@ export default function FormViewPage() {
 
   return (
     <div className="min-h-screen bg-paper-grid py-10 px-4">
+      {!form.published && isPreview && (
+        <div className="max-w-3xl mx-auto mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-xs text-amber-900 flex items-center gap-2 shadow-sm">
+          <Eye className="h-4 w-4 text-amber-600 shrink-0" />
+          <span>
+            <strong>Vista previa docente:</strong> este examen está en borrador y aún no es visible para alumnos.
+          </span>
+        </div>
+      )}
       <FormView
         form={form}
         questions={activeQuestions}

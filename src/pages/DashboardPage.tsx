@@ -15,12 +15,13 @@ import {
   replicateExamWithOptionalAi,
   type VariationMode,
 } from '../lib/examPrintAndExport';
+import { formatExamDateTime } from '../lib/dateUtils';
 import {
   Plus,
   FileText,
   Trash2,
-  Eye,
-  EyeOff,
+  Globe,
+  Lock,
   BarChart3,
   Copy,
   Search,
@@ -59,6 +60,7 @@ export default function DashboardPage() {
 
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterTab>('all');
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const stats = useMemo(() => {
     const total = forms.length;
@@ -168,6 +170,16 @@ export default function DashboardPage() {
     if (!user) return;
     const newId = await duplicateForm(formId);
     navigate(`/form/${newId}`);
+  };
+
+  const handleTogglePublish = async (formId: string, nextPublished: boolean) => {
+    if (togglingId) return;
+    setTogglingId(formId);
+    try {
+      await togglePublish(formId, nextPublished);
+    } finally {
+      setTogglingId(null);
+    }
   };
 
   if (loading) return <LoadingSpinner />;
@@ -328,20 +340,35 @@ export default function DashboardPage() {
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-2">
-                  <span
-                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
+                  <button
+                    type="button"
+                    disabled={togglingId === form.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void handleTogglePublish(form.id, !form.published);
+                    }}
+                    title={
                       form.published
-                        ? 'bg-green-50 text-state-success border border-green-200'
-                        : 'bg-sand-100 text-ink-subtle border border-sand-300'
+                        ? 'Publicado — clic para pasar a borrador'
+                        : 'Borrador — clic para publicar examen'
+                    }
+                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors disabled:opacity-60 ${
+                      form.published
+                        ? 'bg-green-50 text-state-success border border-green-200 hover:bg-green-100'
+                        : 'bg-sand-100 text-ink-subtle border border-sand-300 hover:bg-sand-200 hover:text-ink'
                     }`}
                   >
-                    <span
-                      className={`h-1.5 w-1.5 rounded-full ${
-                        form.published ? 'bg-state-success' : 'bg-ink-light'
-                      }`}
-                    />
+                    {togglingId === form.id ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full ${
+                          form.published ? 'bg-state-success' : 'bg-ink-light'
+                        }`}
+                      />
+                    )}
                     {form.published ? 'Publicado' : 'Borrador'}
-                  </span>
+                  </button>
 
                   <div className="flex items-center gap-1.5">
                     {form.versions && form.versions.length > 1 && (
@@ -386,7 +413,7 @@ export default function DashboardPage() {
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between text-[11px] font-mono text-ink-light bg-sand-50 border border-sand-200 rounded-lg px-2.5 py-1.5">
                   <span>Actualizado</span>
-                  <span>{new Date(form.updatedAt).toLocaleDateString('es-ES')}</span>
+                  <span>{formatExamDateTime(form.updatedAt)}</span>
                 </div>
 
                 <div
@@ -395,11 +422,18 @@ export default function DashboardPage() {
                 >
                   <Button
                     variant="ghost"
-                    onClick={() => togglePublish(form.id, !form.published)}
+                    disabled={togglingId === form.id}
+                    onClick={() => void handleTogglePublish(form.id, !form.published)}
                     className="p-1.5"
-                    title={form.published ? 'Pasar a borrador' : 'Publicar examen'}
+                    title={form.published ? 'Cerrar y pasar a borrador' : 'Publicar examen'}
                   >
-                    {form.published ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {togglingId === form.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : form.published ? (
+                      <Lock className="h-4 w-4 text-amber-600" />
+                    ) : (
+                      <Globe className="h-4 w-4 text-state-success" />
+                    )}
                   </Button>
                   <Button
                     variant="ghost"
