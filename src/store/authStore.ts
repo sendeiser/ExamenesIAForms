@@ -8,6 +8,8 @@ import {
 } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 
+export const AUTH_REDIRECT_PENDING_KEY = 'auth_redirect_pending';
+
 export function formatFirebaseAuthError(err: any): string {
   const code = typeof err?.code === 'string' ? err.code : '';
   const host = typeof window !== 'undefined' ? window.location.hostname : '';
@@ -16,7 +18,7 @@ export function formatFirebaseAuthError(err: any): string {
     case 'auth/unauthorized-domain':
       return `El dominio "${host}" no está autorizado en Firebase Authentication > Settings > Authorized domains (${code}).`;
     case 'auth/popup-blocked':
-      return `El navegador bloqueó la ventana emergente de Google. Intenta nuevamente o usa el acceso en esta misma pestaña (${code}).`;
+      return `El navegador bloqueó la ventana emergente de Google. Habilita las ventanas emergentes para "${host}" en la barra de direcciones y vuelve a pulsar "Continuar con Google" (${code}).`;
     case 'auth/popup-closed-by-user':
       return `Se cerró la ventana de inicio de sesión antes de completar el ingreso (${code}).`;
     case 'auth/cancelled-popup-request':
@@ -39,6 +41,11 @@ function buildGoogleProvider(): GoogleAuthProvider {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: 'select_account' });
   return provider;
+}
+
+function isSameOriginAuthDomain(): boolean {
+  if (typeof window === 'undefined') return false;
+  return auth.config?.authDomain === window.location.hostname;
 }
 
 interface AuthState {
@@ -65,18 +72,25 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ error: null, signingIn: true });
     const provider = buildGoogleProvider();
     try {
-      await signInWithPopup(auth, provider);
-      set({ signingIn: false });
+      const cred = await signInWithPopup(auth, provider);
+      set({ user: cred.user, loading: false, signingIn: false, error: null });
     } catch (err: any) {
       const code = err?.code;
       if (
-        code === 'auth/popup-blocked' ||
-        code === 'auth/operation-not-supported-in-this-environment'
+        (code === 'auth/popup-blocked' ||
+          code === 'auth/operation-not-supported-in-this-environment') &&
+        isSameOriginAuthDomain()
       ) {
         try {
+          try {
+            sessionStorage.setItem(AUTH_REDIRECT_PENDING_KEY, '1');
+          } catch {}
           await signInWithRedirect(auth, provider);
           return;
         } catch (redirectErr: any) {
+          try {
+            sessionStorage.removeItem(AUTH_REDIRECT_PENDING_KEY);
+          } catch {}
           set({ error: formatFirebaseAuthError(redirectErr), signingIn: false });
           return;
         }
@@ -88,8 +102,14 @@ export const useAuthStore = create<AuthState>((set) => ({
   signInWithGoogleRedirect: async () => {
     set({ error: null, signingIn: true });
     try {
+      try {
+        sessionStorage.setItem(AUTH_REDIRECT_PENDING_KEY, '1');
+      } catch {}
       await signInWithRedirect(auth, buildGoogleProvider());
     } catch (err: any) {
+      try {
+        sessionStorage.removeItem(AUTH_REDIRECT_PENDING_KEY);
+      } catch {}
       set({ error: formatFirebaseAuthError(err), signingIn: false });
     }
   },

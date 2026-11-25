@@ -40,10 +40,16 @@ export const useFormStore = create<FormStore>((set) => ({
 
   fetchForms: async (ownerId) => {
     set({ loading: true });
-    const q = query(collection(db, 'forms'), where('ownerId', '==', ownerId), orderBy('updatedAt', 'desc'));
-    const snapshot = await getDocs(q);
-    const forms = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Form));
-    set({ forms, loading: false });
+    try {
+      const q = query(collection(db, 'forms'), where('ownerId', '==', ownerId), orderBy('updatedAt', 'desc'));
+      const snapshot = await getDocs(q);
+      const forms = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Form));
+      set({ forms });
+    } catch (err) {
+      console.error('Error fetching forms:', err);
+    } finally {
+      set({ loading: false });
+    }
   },
 
   createForm: async (ownerId, title) => {
