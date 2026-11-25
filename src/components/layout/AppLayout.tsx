@@ -8,7 +8,7 @@ export function AppLayout() {
   const { user, loading } = useAuth();
 
   if (loading) return <LoadingSpinner />;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user || user.isAnonymous) return <Navigate to="/login" replace />;
 
   return (
     <div className="min-h-screen bg-canvas">
